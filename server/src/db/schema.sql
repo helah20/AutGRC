@@ -1,0 +1,475 @@
+-- ============================================================================
+-- AutGRC — Cybersecurity Governance Documentation Platform
+-- Relational schema. Every governance object carries provenance so that
+-- regulatory source material is never confused with generated content.
+-- ============================================================================
+
+PRAGMA foreign_keys = ON;
+
+-- ---------------------------------------------------------------- identity --
+CREATE TABLE IF NOT EXISTS users (
+  id              TEXT PRIMARY KEY,
+  email           TEXT NOT NULL UNIQUE,
+  name            TEXT NOT NULL,
+  password_hash   TEXT NOT NULL,
+  role            TEXT NOT NULL CHECK (role IN
+                    ('admin','grc_manager','cyber_user','reviewer','approver','auditor','read_only')),
+  job_title       TEXT,
+  status          TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended')),
+  failed_logins   INTEGER NOT NULL DEFAULT 0,
+  locked_until    TEXT,
+  last_login_at   TEXT,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id            TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  refresh_hash  TEXT NOT NULL,
+  user_agent    TEXT,
+  ip            TEXT,
+  created_at    TEXT NOT NULL,
+  last_seen_at  TEXT NOT NULL,
+  expires_at    TEXT NOT NULL,
+  revoked_at    TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  at            TEXT NOT NULL,
+  user_id       TEXT,
+  user_email    TEXT,
+  action        TEXT NOT NULL,
+  entity_type   TEXT,
+  entity_id     TEXT,
+  summary       TEXT,
+  detail        TEXT,
+  ip            TEXT,
+  outcome       TEXT NOT NULL DEFAULT 'success'
+);
+CREATE INDEX IF NOT EXISTS idx_audit_at ON audit_log(at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
+
+-- ------------------------------------------------------- organisation data --
+CREATE TABLE IF NOT EXISTS org_profile (
+  id                    INTEGER PRIMARY KEY CHECK (id = 1),
+  org_name              TEXT NOT NULL,
+  org_type              TEXT,
+  industry              TEXT,
+  size                  TEXT,
+  country               TEXT,
+  regulators            TEXT,      -- JSON array
+  operating_model       TEXT,
+  technology_env        TEXT,      -- JSON array
+  risk_appetite         TEXT,
+  business_requirements TEXT,
+  data_classifications  TEXT,      -- JSON array
+  logo_data_url         TEXT,
+  updated_at            TEXT NOT NULL
+);
+
+-- ------------------------------------------------------------- frameworks --
+CREATE TABLE IF NOT EXISTS frameworks (
+  id            TEXT PRIMARY KEY,
+  code          TEXT NOT NULL UNIQUE,
+  name          TEXT NOT NULL,
+  publisher     TEXT,
+  version       TEXT,
+  kind          TEXT NOT NULL DEFAULT 'framework'
+                  CHECK (kind IN ('regulation','framework','standard','benchmark')),
+  jurisdiction  TEXT,
+  description   TEXT,
+  source_note   TEXT,
+  is_mandatory  INTEGER NOT NULL DEFAULT 0,
+  created_at    TEXT NOT NULL
+);
+
+-- Authoritative source requirements. provenance is always regulatory/framework.
+CREATE TABLE IF NOT EXISTS framework_requirements (
+  id            TEXT PRIMARY KEY,
+  framework_id  TEXT NOT NULL REFERENCES frameworks(id) ON DELETE CASCADE,
+  ref           TEXT NOT NULL,            -- e.g. "2-2-3-4", "A.8.2", "PR.AA-05"
+  parent_ref    TEXT,
+  title         TEXT NOT NULL,
+  statement     TEXT,
+  domain_key    TEXT,
+  level         INTEGER NOT NULL DEFAULT 1,
+  provenance    TEXT NOT NULL DEFAULT 'framework_guidance'
+                  CHECK (provenance IN ('regulatory_requirement','framework_guidance')),
+  source_status TEXT NOT NULL DEFAULT 'reference'
+                  CHECK (source_status IN ('reference','verified_official','user_imported')),
+  created_at    TEXT NOT NULL,
+  UNIQUE (framework_id, ref)
+);
+CREATE INDEX IF NOT EXISTS idx_fwreq_domain ON framework_requirements(domain_key);
+CREATE INDEX IF NOT EXISTS idx_fwreq_fw ON framework_requirements(framework_id);
+
+-- -------------------------------------------------------------- documents --
+CREATE TABLE IF NOT EXISTS documents (
+  id              TEXT PRIMARY KEY,
+  reference       TEXT NOT NULL UNIQUE,   -- e.g. "POL-IAM-001"
+  title           TEXT NOT NULL,
+  doc_type        TEXT NOT NULL CHECK (doc_type IN
+                    ('policy','standard','procedure','guideline','framework',
+                     'roles','raci','control_matrix','work_instruction')),
+  domain_key      TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'draft' CHECK (status IN
+                    ('draft','under_review','approved','published','under_revision','retired')),
+  classification  TEXT NOT NULL DEFAULT 'internal'
+                    CHECK (classification IN ('public','internal','confidential','secret','top_secret')),
+  version         TEXT NOT NULL DEFAULT '0.1',
+  owner_id        TEXT REFERENCES users(id) ON DELETE SET NULL,
+  approver_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  reviewer_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  effective_date  TEXT,
+  review_date     TEXT,
+  retired_date    TEXT,
+  summary         TEXT,
+  parent_id       TEXT REFERENCES documents(id) ON DELETE SET NULL,
+  package_id      TEXT,
+  generation_meta TEXT,                  -- JSON: inputs, assumptions, provider
+  provenance      TEXT NOT NULL DEFAULT 'organizational_policy',
+  created_by      TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_doc_type ON documents(doc_type);
+CREATE INDEX IF NOT EXISTS idx_doc_domain ON documents(domain_key);
+CREATE INDEX IF NOT EXISTS idx_doc_status ON documents(status);
+CREATE INDEX IF NOT EXISTS idx_doc_package ON documents(package_id);
+
+CREATE TABLE IF NOT EXISTS document_sections (
+  id           TEXT PRIMARY KEY,
+  document_id  TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  section_key  TEXT NOT NULL,
+  heading      TEXT NOT NULL,
+  body         TEXT NOT NULL DEFAULT '',   -- sanitised HTML
+  position     INTEGER NOT NULL DEFAULT 0,
+  provenance   TEXT NOT NULL DEFAULT 'ai_recommendation',
+  source_refs  TEXT,                       -- JSON array of source pointers
+  locked       INTEGER NOT NULL DEFAULT 0,
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sec_doc ON document_sections(document_id, position);
+
+CREATE TABLE IF NOT EXISTS document_versions (
+  id           TEXT PRIMARY KEY,
+  document_id  TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  version      TEXT NOT NULL,
+  snapshot     TEXT NOT NULL,   -- JSON of document + sections
+  change_note  TEXT,
+  change_type  TEXT NOT NULL DEFAULT 'revision',
+  author_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  author_name  TEXT,
+  created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ver_doc ON document_versions(document_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS document_approvals (
+  id           TEXT PRIMARY KEY,
+  document_id  TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  action       TEXT NOT NULL,        -- submitted | reviewed | approved | rejected | published | retired
+  from_status  TEXT,
+  to_status    TEXT,
+  actor_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  actor_name   TEXT,
+  actor_role   TEXT,
+  comment      TEXT,
+  created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_appr_doc ON document_approvals(document_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS comments (
+  id           TEXT PRIMARY KEY,
+  document_id  TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  section_id   TEXT REFERENCES document_sections(id) ON DELETE CASCADE,
+  author_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  author_name  TEXT,
+  body         TEXT NOT NULL,
+  quote        TEXT,
+  resolved     INTEGER NOT NULL DEFAULT 0,
+  resolved_by  TEXT,
+  created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_comment_doc ON comments(document_id, created_at DESC);
+
+-- Explicit relationships: hierarchy + traceability edges between documents.
+CREATE TABLE IF NOT EXISTS document_links (
+  id           TEXT PRIMARY KEY,
+  from_id      TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  to_id        TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  link_type    TEXT NOT NULL DEFAULT 'implements'
+                 CHECK (link_type IN ('implements','supports','supersedes','references','derived_from')),
+  note         TEXT,
+  created_at   TEXT NOT NULL,
+  UNIQUE (from_id, to_id, link_type)
+);
+
+-- ------------------------------------------------------------------ roles --
+CREATE TABLE IF NOT EXISTS roles (
+  id                TEXT PRIMARY KEY,
+  code              TEXT NOT NULL UNIQUE,
+  name              TEXT NOT NULL,
+  short_name        TEXT,
+  category          TEXT,
+  purpose           TEXT,
+  reporting_line    TEXT,
+  authority         TEXT,
+  domain_key        TEXT,
+  competencies      TEXT,   -- JSON array
+  interfaces        TEXT,   -- JSON array [{role, nature}]
+  document_id       TEXT REFERENCES documents(id) ON DELETE SET NULL,
+  provenance        TEXT NOT NULL DEFAULT 'organizational_policy',
+  is_demo           INTEGER NOT NULL DEFAULT 0,
+  created_at        TEXT NOT NULL,
+  updated_at        TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS role_items (
+  id          TEXT PRIMARY KEY,
+  role_id     TEXT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL CHECK (kind IN
+                ('responsibility','accountability','activity','approval','escalation')),
+  text        TEXT NOT NULL,
+  position    INTEGER NOT NULL DEFAULT 0,
+  domain_key  TEXT,
+  provenance  TEXT NOT NULL DEFAULT 'ai_recommendation',
+  created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_roleitem ON role_items(role_id, kind, position);
+
+-- ------------------------------------------------------------------- raci --
+CREATE TABLE IF NOT EXISTS raci_matrices (
+  id           TEXT PRIMARY KEY,
+  name         TEXT NOT NULL,
+  domain_key   TEXT,
+  mode         TEXT NOT NULL DEFAULT 'raci' CHECK (mode IN ('raci','rasci')),
+  description  TEXT,
+  document_id  TEXT REFERENCES documents(id) ON DELETE SET NULL,
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS raci_roles (
+  id          TEXT PRIMARY KEY,
+  matrix_id   TEXT NOT NULL REFERENCES raci_matrices(id) ON DELETE CASCADE,
+  role_id     TEXT REFERENCES roles(id) ON DELETE SET NULL,
+  label       TEXT NOT NULL,
+  position    INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS raci_activities (
+  id            TEXT PRIMARY KEY,
+  matrix_id     TEXT NOT NULL REFERENCES raci_matrices(id) ON DELETE CASCADE,
+  activity      TEXT NOT NULL,
+  phase         TEXT,
+  control_id    TEXT,
+  position      INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS raci_assignments (
+  id           TEXT PRIMARY KEY,
+  matrix_id    TEXT NOT NULL REFERENCES raci_matrices(id) ON DELETE CASCADE,
+  activity_id  TEXT NOT NULL REFERENCES raci_activities(id) ON DELETE CASCADE,
+  role_col_id  TEXT NOT NULL REFERENCES raci_roles(id) ON DELETE CASCADE,
+  value        TEXT NOT NULL CHECK (value IN ('R','A','S','C','I','')),
+  UNIQUE (activity_id, role_col_id)
+);
+
+-- --------------------------------------------------------------- controls --
+CREATE TABLE IF NOT EXISTS controls (
+  id                TEXT PRIMARY KEY,
+  control_id        TEXT NOT NULL UNIQUE,   -- e.g. IAM-001
+  name              TEXT NOT NULL,
+  domain_key        TEXT NOT NULL,
+  description       TEXT,
+  requirement       TEXT,
+  control_type      TEXT CHECK (control_type IN
+                      ('preventive','detective','corrective','deterrent','compensating','directive')),
+  control_nature    TEXT CHECK (control_nature IN ('technical','administrative','physical','hybrid')),
+  implementation    TEXT,
+  responsible_role  TEXT,
+  accountable_role  TEXT,
+  frequency         TEXT,
+  kpi               TEXT,
+  risk              TEXT,
+  risk_rating       TEXT CHECK (risk_rating IN ('low','medium','high','critical')),
+  maturity          INTEGER DEFAULT 0,
+  testing_method    TEXT,
+  policy_ref        TEXT,
+  standard_ref      TEXT,
+  procedure_ref     TEXT,
+  policy_id         TEXT REFERENCES documents(id) ON DELETE SET NULL,
+  standard_id       TEXT REFERENCES documents(id) ON DELETE SET NULL,
+  procedure_id      TEXT REFERENCES documents(id) ON DELETE SET NULL,
+  requirement_key   TEXT,                  -- link back to the canonical requirement
+  status            TEXT NOT NULL DEFAULT 'proposed'
+                      CHECK (status IN ('proposed','approved','implemented','retired')),
+  provenance        TEXT NOT NULL DEFAULT 'organizational_policy',
+  created_at        TEXT NOT NULL,
+  updated_at        TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ctrl_domain ON controls(domain_key);
+
+CREATE TABLE IF NOT EXISTS evidence (
+  id             TEXT PRIMARY KEY,
+  evidence_id    TEXT NOT NULL UNIQUE,
+  name           TEXT NOT NULL,
+  description    TEXT,
+  evidence_type  TEXT,
+  domain_key     TEXT,
+  control_id     TEXT REFERENCES controls(id) ON DELETE CASCADE,
+  frequency      TEXT,
+  owner_role     TEXT,
+  source_system  TEXT,
+  retention      TEXT,
+  status         TEXT NOT NULL DEFAULT 'required'
+                   CHECK (status IN ('required','collected','verified','missing','expired')),
+  last_collected TEXT,
+  file_id        TEXT,
+  provenance     TEXT NOT NULL DEFAULT 'organizational_policy',
+  created_at     TEXT NOT NULL,
+  updated_at     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ev_control ON evidence(control_id);
+
+-- ---------------------------------------------------------------- mapping --
+CREATE TABLE IF NOT EXISTS control_mappings (
+  id                TEXT PRIMARY KEY,
+  control_id        TEXT REFERENCES controls(id) ON DELETE CASCADE,
+  requirement_id    TEXT REFERENCES framework_requirements(id) ON DELETE CASCADE,
+  coverage          TEXT NOT NULL DEFAULT 'covered'
+                      CHECK (coverage IN ('covered','partial','not_covered','not_applicable')),
+  rationale         TEXT,
+  confidence        TEXT DEFAULT 'medium' CHECK (confidence IN ('low','medium','high')),
+  mapped_by         TEXT,
+  provenance        TEXT NOT NULL DEFAULT 'ai_recommendation',
+  created_at        TEXT NOT NULL,
+  updated_at        TEXT NOT NULL,
+  UNIQUE (control_id, requirement_id)
+);
+CREATE INDEX IF NOT EXISTS idx_map_req ON control_mappings(requirement_id);
+
+-- Cross-framework equivalences (ECC 2-2-3-4 <-> ISO A.8.2 <-> NIST PR.AA-05)
+CREATE TABLE IF NOT EXISTS crosswalks (
+  id            TEXT PRIMARY KEY,
+  source_id     TEXT NOT NULL REFERENCES framework_requirements(id) ON DELETE CASCADE,
+  target_id     TEXT NOT NULL REFERENCES framework_requirements(id) ON DELETE CASCADE,
+  relation      TEXT NOT NULL DEFAULT 'equivalent'
+                  CHECK (relation IN ('equivalent','broader','narrower','related')),
+  note          TEXT,
+  created_at    TEXT NOT NULL,
+  UNIQUE (source_id, target_id)
+);
+
+-- ---------------------------------------------------------- gap assessment --
+CREATE TABLE IF NOT EXISTS assessments (
+  id           TEXT PRIMARY KEY,
+  name         TEXT NOT NULL,
+  framework_id TEXT REFERENCES frameworks(id) ON DELETE SET NULL,
+  scope        TEXT,
+  status       TEXT NOT NULL DEFAULT 'in_progress'
+                 CHECK (status IN ('planned','in_progress','completed','archived')),
+  owner_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  started_at   TEXT,
+  due_at       TEXT,
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS gap_items (
+  id              TEXT PRIMARY KEY,
+  assessment_id   TEXT NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+  requirement_id  TEXT REFERENCES framework_requirements(id) ON DELETE SET NULL,
+  requirement_ref TEXT,
+  requirement_txt TEXT,
+  current_state   TEXT,
+  target_state    TEXT,
+  gap             TEXT,
+  risk            TEXT,
+  risk_rating     TEXT CHECK (risk_rating IN ('low','medium','high','critical')),
+  recommendation  TEXT,
+  owner           TEXT,
+  due_date        TEXT,
+  status          TEXT NOT NULL DEFAULT 'non_compliant' CHECK (status IN
+                    ('compliant','partially_compliant','non_compliant','not_applicable')),
+  evidence_ref    TEXT,
+  document_id     TEXT REFERENCES documents(id) ON DELETE SET NULL,
+  control_id      TEXT REFERENCES controls(id) ON DELETE SET NULL,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_gap_assess ON gap_items(assessment_id);
+
+-- ------------------------------------------------------- quality findings --
+CREATE TABLE IF NOT EXISTS findings (
+  id            TEXT PRIMARY KEY,
+  scope_type    TEXT NOT NULL,   -- document | package | domain | matrix | import
+  scope_id      TEXT,
+  category      TEXT NOT NULL CHECK (category IN
+                  ('completeness','consistency','accountability','auditability',
+                   'compliance','ambiguity','duplication','currency','ownership')),
+  severity      TEXT NOT NULL CHECK (severity IN ('info','low','medium','high','critical')),
+  title         TEXT NOT NULL,
+  detail        TEXT,
+  location      TEXT,
+  recommendation TEXT,
+  evidence      TEXT,            -- JSON: the conflicting statements
+  status        TEXT NOT NULL DEFAULT 'open'
+                  CHECK (status IN ('open','acknowledged','resolved','accepted_risk','false_positive')),
+  source        TEXT NOT NULL DEFAULT 'engine',  -- engine | ai | user
+  created_at    TEXT NOT NULL,
+  updated_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_find_scope ON findings(scope_type, scope_id);
+
+-- --------------------------------------------------------------- imports --
+CREATE TABLE IF NOT EXISTS uploads (
+  id            TEXT PRIMARY KEY,
+  filename      TEXT NOT NULL,
+  stored_name   TEXT NOT NULL,
+  mime          TEXT,
+  size_bytes    INTEGER,
+  sha256        TEXT,
+  kind          TEXT,         -- policy | procedure | standard | control_matrix | framework | evidence
+  domain_key    TEXT,
+  status        TEXT NOT NULL DEFAULT 'uploaded'
+                  CHECK (status IN ('uploaded','analyzed','imported','failed')),
+  extracted_text TEXT,
+  analysis      TEXT,         -- JSON report
+  uploaded_by   TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TEXT NOT NULL
+);
+
+-- ------------------------------------------------------------ ai activity --
+CREATE TABLE IF NOT EXISTS ai_runs (
+  id          TEXT PRIMARY KEY,
+  kind        TEXT NOT NULL,     -- generate | review | rewrite | map | analyze
+  provider    TEXT NOT NULL,
+  model       TEXT,
+  scope_type  TEXT,
+  scope_id    TEXT,
+  input       TEXT,
+  output      TEXT,
+  assumptions TEXT,
+  duration_ms INTEGER,
+  status      TEXT NOT NULL DEFAULT 'success',
+  user_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_airun_scope ON ai_runs(scope_type, scope_id);
+
+-- --------------------------------------------------------- search indexing --
+CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
+  entity_type,
+  entity_id UNINDEXED,
+  title,
+  body,
+  domain_key,
+  badge UNINDEXED,
+  url UNINDEXED,
+  tokenize = 'porter unicode61'
+);
