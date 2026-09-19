@@ -23,7 +23,7 @@ export default function FlowDiagram({ steps, params = {} }) {
   return (
     <div className="flow-canvas">
       <svg className="flow-svg" viewBox={`0 0 ${width} ${height}`} width={width} height={height}
-        role="img" aria-label="Process flow diagram">
+        preserveAspectRatio="xMinYMin meet" role="img" aria-label="Process flow diagram">
         <defs>
           <marker id="flow-arrow" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
             <polygon points="0 0, 9 3.5, 0 7" className="flow-arrow" />
@@ -46,7 +46,7 @@ export default function FlowDiagram({ steps, params = {} }) {
               <rect x={PAD} y={y} width={BOX_W} height={BOX_H} rx="7" className={`flow-node-box ${kind}`} />
               <text x={PAD + 11} y={y + 18} className="flow-node-num">{String(i + 1).padStart(2, '0')}</text>
               <text x={PAD + 11} y={y + 36} className="flow-node-title">
-                {truncate(resolve(step.name), 24)}
+                {truncate(resolve(step.name), 26)}
               </text>
               <text x={PAD + 11} y={y + 51} className="flow-node-actor">
                 {truncate(resolve(step.actor), 30)}
@@ -60,7 +60,7 @@ export default function FlowDiagram({ steps, params = {} }) {
                   <rect x={PAD + BOX_W + 38} y={y + 6} width={DECISION_W} height={BOX_H - 12} rx="6"
                     className="flow-node-box decision" />
                   <text x={PAD + BOX_W + 48} y={y + 26} className="flow-node-actor" style={{ fontWeight: 600 }}>
-                    {truncate(resolve(step.decision.question), 30)}
+                    {truncate(resolve(step.decision.question), 28)}
                   </text>
                   <text x={PAD + BOX_W + 48} y={y + 42} className="flow-node-actor">
                     {truncate(resolve(step.decision.no), 32)}

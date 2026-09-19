@@ -143,7 +143,9 @@
 /* =========================================================== flow diagram == */
 
 .flow-canvas { overflow-x: auto; padding: 6px 2px 14px; }
-.flow-svg { display: block; min-width: 100%; }
+/* Render at natural size and anchor left; stretching to the container width
+   scales the diagram up and centres it behind a large empty gutter. */
+.flow-svg { display: block; max-width: 100%; height: auto; }
 .flow-node-box { fill: var(--bg-raised); stroke: var(--border-strong); stroke-width: 1.2; }
 .flow-node-box.decision { fill: var(--warn-soft); stroke: var(--warn); }
 .flow-node-box.terminal { fill: var(--accent-soft); stroke: var(--accent); }
