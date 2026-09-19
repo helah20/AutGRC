@@ -7,7 +7,7 @@
  * rather than producing a subtly wrong governance document.
  */
 
-import { DOMAIN_META, DOMAIN_INDEX, domainName, domainShort, resolveText, unresolvedPlaceholders } from './domains.js';
+import { DOMAIN_META, DOMAIN_INDEX, DOMAIN_CATEGORIES, domainName, domainShort, resolveText, unresolvedPlaceholders } from './domains.js';
 import { FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE } from './frameworks.js';
 import { ROLE_LIBRARY, ROLE_INDEX, roleName, roleShort } from './roles.js';
 import { buildProcedure, STD_ROLES } from './req-helpers.js';
@@ -162,7 +162,7 @@ export function buildParameterSet(domainKey, orgProfile = {}, overrides = {}) {
 }
 
 export {
-  DOMAIN_META, DOMAIN_INDEX, domainName, domainShort, resolveText, unresolvedPlaceholders,
+  DOMAIN_META, DOMAIN_INDEX, DOMAIN_CATEGORIES, domainName, domainShort, resolveText, unresolvedPlaceholders,
   FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE,
   ROLE_LIBRARY, ROLE_INDEX, roleName, roleShort, STD_ROLES
 };
