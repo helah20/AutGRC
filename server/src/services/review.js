@@ -90,10 +90,15 @@ const FREQUENCY_CANON = {
 
 const DURATION_RE = /\b(\d+)\s+(minutes?|hours?|business days?|days?|weeks?|months?|years?)\b/gi;
 
-const STOP_WORDS = new Set([
-  'frequency', 'sla', 'target', 'default', 'requirement', 'requirements', 'method',
-  'standard', 'type', 'types', 'max', 'duration', 'threshold', 'policy', 'level',
-  'source', 'mode', 'authority', 'coverage', 'retention', 'alert', 'storage', 'model', 'value'
+/**
+ * Words that only ever describe the shape of a parameter, never its subject.
+ * Stripping these leaves the topic; stripping subject words as well (policy,
+ * committee, retention) would reduce a parameter to a single generic term
+ * such as "review", which then matches any sentence containing that word.
+ */
+const SUFFIX_WORDS = new Set([
+  'frequency', 'sla', 'target', 'default', 'max', 'duration', 'threshold',
+  'requirement', 'requirements', 'method', 'type', 'types', 'mode', 'value', 'level'
 ]);
 
 /** accessReviewFrequency -> ['access','review'] */
@@ -102,21 +107,36 @@ function topicWords(paramName) {
     .replace(/([A-Z])/g, ' $1')
     .toLowerCase()
     .split(/\s+/)
-    .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+    .filter((w) => w.length > 2 && !SUFFIX_WORDS.has(w));
+}
+
+/**
+ * Match a topic word at a word boundary, allowing an inflected ending.
+ * A plain substring test would match "priv" inside "privileged" wherever it
+ * appeared, pulling in sentences about an unrelated subject.
+ */
+function mentions(sentence, word) {
+  return new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(sentence);
 }
 
 function splitSentences(text) {
   return String(text || '')
     .split(/(?<=[.;:])\s+|\n+/)
     .map((s) => s.trim())
-    .filter((s) => s.length > 15);
+    // htmlToText renders table cells tab-separated. A control-matrix row
+    // listing one control's frequency is an attribute listing, not a
+    // statement of commitment, so comparing it against a parameter produces
+    // false conflicts. Analyse prose only.
+    .filter((s) => s.length > 15 && !s.includes('\t'));
 }
 
 function frequenciesIn(sentence) {
   const lower = sentence.toLowerCase();
   const found = new Set();
   for (const term of FREQUENCY_TERMS) {
-    const re = new RegExp(`\\b${term.replace(/[-\s]/g, '[-\\s]')}\\b`, 'i');
+    // The leading guard stops "semi-annually" from also registering as
+    // "annually", which would make a correct document look self-contradictory.
+    const re = new RegExp(`(?<![\\w-])${term.replace(/[-\s]/g, '[-\\s]')}\\b`, 'i');
     if (re.test(lower)) found.add(FREQUENCY_CANON[term]);
   }
   return [...found];
@@ -442,7 +462,9 @@ export function checkConsistency(domainKey) {
   for (const [paramName, rawValue] of Object.entries(model.parameters)) {
     const value = resolveText(String(params[paramName] ?? rawValue), params);
     const words = topicWords(paramName);
-    if (words.length < 1) continue;
+    // A single-word topic cannot be matched precisely enough to assert a
+    // conflict, so those parameters are not compared across documents.
+    if (words.length < 2) continue;
 
     const expectedFreq = frequenciesIn(value);
     const expectedDur = durationsIn(value);
@@ -453,9 +475,11 @@ export function checkConsistency(domainKey) {
       for (const s of sections) {
         const text = htmlToText(s.body);
         for (const sentence of splitSentences(text)) {
-          const lower = sentence.toLowerCase();
-          const hits = words.filter((w) => lower.includes(w)).length;
-          if (hits < Math.min(2, words.length)) continue;
+          // Every topic word must appear. Requiring only some of them lets
+          // "service account review" match a sentence about "accountable"
+          // reviewers, and lets the privileged-access parameter match any
+          // sentence about access review.
+          if (!words.every((w) => mentions(sentence, w))) continue;
 
           const freqs = frequenciesIn(sentence);
           const durs = durationsIn(sentence);

@@ -243,10 +243,13 @@ export function seedInconsistency() {
   const section = q.get("SELECT * FROM document_sections WHERE document_id = ? AND section_key = 'steps'", procedure.id);
   if (!section || !section.body.includes('quarterly')) return false;
 
-  // Replace only the access-review step's frequency, leaving the rest intact.
+  // Rewrite the access-review step so it states a single, contradictory
+  // frequency. Leaving the original "or quarterly where the entitlement is
+  // privileged" clause in place would make the sentence state both values,
+  // which is not the inconsistency this demonstration is meant to show.
   const edited = section.body.replace(
-    /Recertify the entitlement during the quarterly access review cycle/,
-    'Recertify the entitlement during the annually access review cycle'
+    /Recertify the entitlement during the quarterly access review cycle, or quarterly where the entitlement is privileged\./,
+    'Recertify the entitlement during the annually access review cycle.'
   );
   if (edited === section.body) return false;
 
