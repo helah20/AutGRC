@@ -180,6 +180,11 @@ table.raci thead th.col-activity {
   left: 0; z-index: 4; text-align: left; min-width: 280px; max-width: 420px; padding-left: 13px;
 }
 table.raci thead th.col-phase { min-width: 92px; text-align: left; }
+
+/* Column removal is revealed on hover so the header row stays readable. */
+table.raci thead th .btn { opacity: 0; transition: opacity .12s; }
+table.raci thead th:hover .btn,
+table.raci thead th .btn:focus-visible { opacity: 1; }
 table.raci tbody th.cell-activity {
   position: sticky; left: 0; z-index: 2; background: var(--bg-raised);
   text-align: left; font-weight: 500; font-size: 12.5px; color: var(--text);
