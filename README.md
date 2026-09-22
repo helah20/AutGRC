@@ -180,8 +180,11 @@ development a secret is generated and persisted on first run.
 ## Testing
 
 ```bash
-npm test          # 31 tests — requires the API running on :4000
+npm test          # 9 engine tests standalone; 31 with a server on :4000
 ```
+
+The end-to-end suite needs a running server and reports itself as skipped
+without one.
 
 `server/test/workflow.test.js` exercises the complete path the platform
 exists to support: generate → map controls → review → identify inconsistencies

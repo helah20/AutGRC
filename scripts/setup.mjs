@@ -5,13 +5,15 @@
  * Checks the toolchain, installs dependencies, builds the client, creates the
  * demonstration database if there isn't one, and prints how to start.
  *
- *   node scripts/setup.mjs            install, build and seed if empty
- *   node scripts/setup.mjs --reset    rebuild the demonstration data
- *   node scripts/setup.mjs --no-build skip the client build (dev mode only)
+ *   node scripts/setup.mjs             install, build and seed if empty
+ *   node scripts/setup.mjs --reset     rebuild the demonstration data (destructive)
+ *   node scripts/setup.mjs --reset -y  the same, without the confirmation prompt
+ *   node scripts/setup.mjs --no-build  skip the client build (dev mode only)
  */
 
 import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import readline from 'node:readline/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import net from 'node:net';
@@ -20,6 +22,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = new Set(process.argv.slice(2));
 const reset = args.has('--reset');
 const skipBuild = args.has('--no-build');
+const assumeYes = args.has('--yes') || args.has('-y');
 
 const c = {
   reset: '\x1b[0m', bold: '\x1b[1m', dim: '\x1b[2m',
@@ -78,7 +81,7 @@ try {
 // ---------------------------------------------------------- dependencies --
 step('2/5  Installing dependencies');
 
-if (existsSync(path.join(ROOT, 'node_modules')) && !reset) {
+if (existsSync(path.join(ROOT, 'node_modules'))) {
   ok('node_modules already present — skipping install');
   info('Run "npm install" yourself if you have changed a package.json.');
 } else {
@@ -109,7 +112,7 @@ try {
 step('4/5  Building the client');
 if (skipBuild) {
   ok('Skipped (--no-build). Use "npm run dev" for the Vite dev server.');
-} else if (existsSync(path.join(ROOT, 'client', 'dist', 'index.html')) && !reset) {
+} else if (existsSync(path.join(ROOT, 'client', 'dist', 'index.html'))) {
   ok('Client already built — skipping');
   info('Run "npm run build" after changing anything under client/src.');
 } else {
@@ -126,8 +129,31 @@ const dbFile = path.join(dataDir, 'autgrc.db');
 
 if (existsSync(dbFile) && !reset) {
   ok('Database already exists — leaving your data alone');
-  info('Run "npm run setup -- --reset" to rebuild it from scratch.');
+  info('Run "npm run reset" to rebuild it from scratch.');
 } else {
+  if (existsSync(dbFile)) {
+    // Seeding on top of an existing database would duplicate the controls and
+    // evidence rather than rebuilding them, so the file is removed first.
+    warn('This deletes server/data/autgrc.db and everything you have created in it.');
+    if (!assumeYes) {
+      if (!process.stdin.isTTY) {
+        fail('Refusing to delete the database without confirmation.', [
+          'Re-run interactively, or pass --yes:  npm run reset -- --yes'
+        ]);
+      }
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const answer = (await rl.question('  Continue? (y/N) ')).trim().toLowerCase();
+      rl.close();
+      if (answer !== 'y' && answer !== 'yes') {
+        console.log('\nCancelled. Nothing was changed.\n');
+        process.exit(0);
+      }
+    }
+    for (const suffix of ['', '-wal', '-shm']) {
+      rmSync(`${dbFile}${suffix}`, { force: true });
+    }
+    ok('Previous database removed');
+  }
   run('npm run seed', 'Seeding');
   ok('Demonstration data created');
 }

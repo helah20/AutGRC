@@ -76,9 +76,11 @@ After editing anything under `client/src`, run `npm run build` before
 
 All of it is git-ignored, so your content is never committed.
 
-**Back up** by copying `server/data/`. **Start over** with `npm run reset`,
-which rebuilds the demonstration data — this deletes anything you have
-created.
+**Back up** by copying `server/data/`.
+
+**Start over** with `npm run reset`. This deletes the database and rebuilds
+the demonstration data, so it asks you to confirm first. In a script, pass
+`npm run reset -- --yes` to skip the prompt.
 
 To keep the database somewhere else, create a `.env` file in the project root:
 
@@ -122,20 +124,31 @@ binary. If your platform needs to compile it:
 Then `npm rebuild better-sqlite3`.
 
 **Sign-in fails after pulling new code.** Run `npm run reset` to rebuild the
-demonstration accounts.
+demonstration accounts. This deletes your data, so it asks first.
 
-**Forgotten password.** `npm run reset` restores every account to
-`Autgrc#2025`.
+**Forgotten password.** An administrator can reset any password under
+Settings → Users. If no administrator account is reachable, `npm run reset`
+restores every demonstration account to `Autgrc#2025` — at the cost of your
+data.
 
 ## Confirming it works
 
 ```bash
-npm start           # in one terminal
-npm test            # in another — 31 tests
+npm test
 ```
 
-The tests drive a running server through the whole workflow: generate a
-governance package, map controls to framework requirements, run the quality
+The nine quality-engine tests run on their own. The end-to-end suite needs a
+running server, so start one in another terminal first:
+
+```bash
+npm start           # terminal 1
+npm test            # terminal 2 — 31 tests
+```
+
+Without a server it reports that suite as skipped rather than failing.
+
+The end-to-end tests drive a live server through the whole workflow: generate
+a governance package, map controls to framework requirements, run the quality
 review, catch the seeded inconsistency, approve the document and export it to
 Word, PDF and Excel.
 

@@ -17,6 +17,21 @@ const PASSWORD = process.env.SEED_PASSWORD || 'Autgrc#2025';
 
 const state = { tokens: {}, packageId: null, docs: {}, matrixId: null };
 
+/**
+ * This suite drives a running server. Rather than emitting a failure for every
+ * case when nothing is listening, check once and skip with an explanation.
+ */
+async function serverReachable() {
+  try {
+    const res = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(2500) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+const reachable = await serverReachable();
+
 async function login(email) {
   const res = await fetch(`${BASE}/api/auth/login`, {
     method: 'POST',
@@ -48,7 +63,9 @@ async function api(method, path, { as = 'grc@autgrc.demo', body, raw = false } =
   return { status: res.status, body: parsed };
 }
 
-test('AutGRC end-to-end governance workflow', async (t) => {
+test('AutGRC end-to-end governance workflow', {
+  skip: reachable ? false : `No server responding at ${BASE}. Start one with "npm start" in another terminal, or set AUTGRC_TEST_URL.`
+}, async (t) => {
   await t.test('health check reports a consistent knowledge base', async () => {
   const res = await fetch(`${BASE}/api/health`);
   const body = await res.json();
