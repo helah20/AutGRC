@@ -45,15 +45,23 @@ never presents generated text as a regulatory requirement. See
 
 ---
 
-## Quick start
+## Run it on your machine
+
+Node.js 20 or newer is the only prerequisite. Everything else is local — the
+database is a single file on your disk, and nothing is sent anywhere.
 
 ```bash
-npm install
-npm run seed        # loads the framework catalogue and a demo data set
-npm run dev         # API on :4000, client on :5173
+git clone https://github.com/helah20/AutGRC.git
+cd AutGRC
+git checkout claude/grc-documentation-platform-qovrtf
+npm run setup       # checks your toolchain, installs, builds and seeds
+npm start           # http://localhost:4000
 ```
 
-Open <http://localhost:5173> and sign in with any demonstration account:
+[docs/LOCAL-SETUP.md](docs/LOCAL-SETUP.md) covers Windows, where your data
+lives, backups, and troubleshooting.
+
+Sign in with any demonstration account:
 
 | Account | Role | Can |
 | --- | --- | --- |
@@ -67,11 +75,8 @@ Open <http://localhost:5173> and sign in with any demonstration account:
 
 Password for all demonstration accounts: `Autgrc#2025`
 
-For a single-process deployment:
-
-```bash
-npm run build && npm start   # serves the API and the client from :4000
-```
+While changing the code, `npm run dev` runs the API on `:4000` and a
+hot-reloading client on <http://localhost:5173>.
 
 ---
 
