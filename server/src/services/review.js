@@ -172,6 +172,94 @@ function mentions(sentence, word) {
   return new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(sentence);
 }
 
+/**
+ * Arabic subjects for the parameters this check compares.
+ *
+ * The English path derives a topic from the parameter name —
+ * accessReviewFrequency gives "access review" — and requires every word in the
+ * sentence. There is nothing to derive from for Arabic: an Arabic sentence
+ * contains no English word, so the check simply never matched one. It appeared
+ * to work only because the Arabic Procedure still carried English prose, and
+ * the moment that prose was translated the engine would have gone quiet on
+ * Arabic documents without reporting anything. A contradiction nobody hears
+ * about is the worst failure this engine has, so the subjects are written out.
+ *
+ * Terms are stems, matched after normalisation and as substrings, because
+ * Arabic attaches the article and prepositions to the word: مراجعة, المراجعة
+ * and بمراجعة are one word for this purpose. All of a parameter's terms must
+ * appear, which is what keeps "مراجعة الوصول" apart from "مراجعة الأصول".
+ */
+const AR_PARAMETER_TOPICS = {
+  // identity and access. "راجع" rather than "مراجع" because the same statement
+  // appears as a noun (مراجعة الوصول) and as a passive verb (تُراجَع), and a
+  // stem that only matched the noun would miss half the corpus.
+  accessReviewFrequency: ['راجع', 'وصول'],
+  privAccessReviewFrequency: ['راجع', 'وصول', 'ممتاز'],
+  serviceAccountReviewFrequency: ['راجع', 'حساب', 'خدم'],
+  accountLockoutDuration: ['حساب', 'اغلاق'],
+  dormantAccountThreshold: ['حساب', 'خامد'],
+  sessionIdleTimeout: ['جلس', 'خمول'],
+  // vulnerabilities
+  criticalRemediationSla: ['عالج', 'حرج'],
+  highRemediationSla: ['عالج', 'عالي'],
+  mediumRemediationSla: ['عالج', 'متوسط'],
+  lowRemediationSla: ['عالج', 'منخفض'],
+  emergencyPatchSla: ['ثغر', 'مستغل'],
+  internalScanFrequency: ['فحص', 'داخلي'],
+  externalScanFrequency: ['فحص', 'خارجي'],
+  authenticatedScanFrequency: ['فحص', 'مصادق'],
+  // incidents
+  regulatoryNotificationSla: ['شعار', 'تنظيمي'],
+  lessonsLearnedSla: ['راجع', 'بعد الحادث'],
+  irPlanTestFrequency: ['خطة', 'استجاب', 'ختبر'],
+  evidenceRetention: ['حتفاظ', 'دلة'],
+  postIncidentActionSla: ['جراء', 'بعد الحادث'],
+  // assets
+  inventoryReviewFrequency: ['سجل', 'صديق'],
+  // "اصول" and not "اصل": the plural drops the lam of the singular stem, and
+  // the shorter "صول" would also match الوصول, an unrelated subject.
+  unauthorisedAssetSla: ['اصول', 'غير المصرح'],
+  // third parties. The supplier is المورّد throughout; مزوّد is reserved for a
+  // provider of something other than the contracted service, such as the
+  // identity provider, so it is not a term for this subject.
+  dueDiligenceValidity: ['عناي', 'واجب'],
+  criticalSupplierReviewFrequency: ['مورد', 'حرج'],
+  supplierIncidentNotificationSla: ['مورد', 'حادث'],
+  dataReturnSla: ['بيانات', 'عاد']
+};
+
+/**
+ * Fold the spellings that carry no meaning for matching.
+ *
+ * Generated Arabic uses diacritics where they disambiguate a verb — مُمتاز,
+ * يُراجَع — and a stem written without them would never match. Alef and yeh
+ * variants are folded for the same reason: it is one word spelled two ways,
+ * not two words.
+ */
+function normaliseArabic(text) {
+  return String(text || '')
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+    .replace(/[\u0622\u0623\u0625]/g, '\u0627')
+    .replace(/\u0649/g, '\u064A')
+    .replace(/\u0629/g, '\u0647');
+}
+
+/** True when every Arabic subject term for the parameter is present. */
+function mentionsArabic(sentence, terms) {
+  const text = normaliseArabic(sentence);
+  return terms.every((term) => text.includes(normaliseArabic(term)));
+}
+
+/**
+ * The Arabic subjects for a parameter, or null when it has none.
+ * Null means the sentence cannot be attributed, so nothing is asserted about
+ * it — silence here is the only honest answer, and `arabicTopicGaps` reports
+ * which parameters are in that position so it never passes unnoticed.
+ */
+export function arabicTopicsFor(paramName) {
+  return AR_PARAMETER_TOPICS[paramName] ?? null;
+}
+
 function splitSentences(text) {
   return String(text || '')
     .split(/(?<=[.;:])\s+|\n+/)
@@ -509,6 +597,28 @@ export function checkCompliance({ doc }) {
   return out;
 }
 
+/**
+ * Parameters a translated domain compares across documents but has no Arabic
+ * subject for, so Arabic prose about them is never attributed.
+ *
+ * Exported so the test suite can assert the list is empty: the engine going
+ * quiet on Arabic is exactly the failure that is invisible from the outside,
+ * and a passing consistency check on documents nothing was compared in would
+ * read as a clean bill of health.
+ */
+export function arabicTopicGaps(domainKey) {
+  const model = DOMAIN_MODELS[domainKey];
+  if (!model) return [];
+  const gaps = [];
+  for (const [paramName, rawValue] of Object.entries(model.parameters)) {
+    if (topicWords(paramName).length < 2) continue;
+    const value = String(rawValue);
+    if (!frequenciesIn(value).length && !durationsIn(value).length) continue;
+    if (!arabicTopicsFor(paramName)) gaps.push(paramName);
+  }
+  return gaps;
+}
+
 // -------------------------------------------------- cross-document check ---
 
 /**
@@ -548,6 +658,9 @@ export function checkConsistency(domainKey) {
     // A single-word topic cannot be matched precisely enough to assert a
     // conflict, so those parameters are not compared across documents.
     if (words.length < 2) continue;
+    // The Arabic subject is written out rather than derived; without one an
+    // Arabic sentence cannot be attributed to this parameter at all.
+    const arabicTerms = arabicTopicsFor(paramName);
 
     const expectedFreq = frequenciesIn(value);
     const expectedDur = durationsIn(value);
@@ -561,8 +674,14 @@ export function checkConsistency(domainKey) {
           // Every topic word must appear. Requiring only some of them lets
           // "service account review" match a sentence about "accountable"
           // reviewers, and lets the privileged-access parameter match any
-          // sentence about access review.
-          if (!words.every((w) => mentions(sentence, w))) continue;
+          // sentence about access review. Arabic is matched the same way
+          // against its own written-out subject; a parameter with none is not
+          // compared against Arabic prose rather than compared wrongly.
+          const arabic = hasArabic(sentence);
+          if (arabic && !arabicTerms) continue;
+          if (arabic
+            ? !mentionsArabic(sentence, arabicTerms)
+            : !words.every((w) => mentions(sentence, w))) continue;
 
           const freqs = frequenciesIn(sentence);
           const durs = durationsIn(sentence);

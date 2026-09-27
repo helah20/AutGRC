@@ -26,7 +26,8 @@ process.env.JWT_SECRET = 'test-secret-for-the-arabic-suite-only';
 const { q } = await import('../src/db/index.js');
 const { seedFrameworks, seedOrg, seedUsers } = await import('../src/db/seed.js');
 const { generatePackage } = await import('../src/services/generator.js');
-const { reviewDomain, frequenciesIn, durationsIn, hasArabic } = await import('../src/services/review.js');
+const { reviewDomain, frequenciesIn, durationsIn, hasArabic, arabicTopicGaps } =
+  await import('../src/services/review.js');
 const { DOMAIN_MODELS, localisedModel, validateKnowledgeBase, buildParameterSet } =
   await import('../src/knowledge/index.js');
 const { translatedDomains, isTranslated } = await import('../src/knowledge/ar/index.js');
@@ -226,7 +227,6 @@ const arPkg = generatePackage({
 });
 
 const arDocs = q.all('SELECT * FROM documents WHERE package_id = ?', arPkg.packageId);
-const arDocOf = (type) => arDocs.find((d) => d.doc_type === type);
 
 test('Arabic package generation', async (t) => {
   await t.test('every document is recorded and titled in Arabic', () => {
@@ -314,40 +314,73 @@ test('Arabic package generation', async (t) => {
 
 // ------------------------------------- consistency, read in Arabic ---------
 
+/**
+ * One planted contradiction per domain: the agreed Arabic value, and a
+ * different value of the same kind. Between them these cover the frequency
+ * path and the duration path, Arabic-Indic digits, and the "business day" unit.
+ */
+const PLANTED = {
+  iam: { docType: 'procedure', agreed: 'ربع سنوي', wrong: 'سنوي', parameter: 'accessReviewFrequency' },
+  vulnerability_management: { docType: 'procedure', agreed: '١٥ يوماً', wrong: '٣٠ يوماً', parameter: 'criticalRemediationSla' },
+  incident_management: { docType: 'procedure', agreed: '١٠ أيام عمل', wrong: '٣٠ يوم عمل', parameter: 'lessonsLearnedSla' },
+  asset_management: { docType: 'procedure', agreed: '٤٨ ساعة', wrong: '٧٢ ساعة', parameter: 'unauthorisedAssetSla' },
+  third_party: { docType: 'procedure', agreed: '٢٤ ساعة', wrong: '٤٨ ساعة', parameter: 'supplierIncidentNotificationSla' }
+};
+
 test('Arabic consistency detection', async (t) => {
-  await t.test('a freshly generated Arabic package is internally consistent', () => {
-    const findings = reviewDomain('iam').findings.filter((f) => f.category === 'consistency');
-    assert.deepEqual(findings.map((f) => f.title), [],
-      `unexpected findings: ${JSON.stringify(findings.map((f) => f.title))}`);
+  await t.test('every translated domain has an Arabic subject for the parameters it compares', () => {
+    // Without one, an Arabic sentence cannot be attributed to the parameter and
+    // the check silently compares nothing — a clean report on documents the
+    // engine never read, which is worse than no check at all.
+    for (const key of translatedDomains()) {
+      assert.deepEqual(arabicTopicGaps(key), [], `${key} has parameters with no Arabic subject`);
+    }
   });
 
-  await t.test('detects an Arabic frequency that disagrees with the agreed value', () => {
-    const procedure = arDocOf('procedure');
-    const rows = q.all('SELECT * FROM document_sections WHERE document_id = ?', procedure.id);
-    const target = rows.find((s) => s.body.includes('ربع سنوي'));
-    assert.ok(target, 'the Arabic procedure states the agreed quarterly interval somewhere');
+  for (const [domainKey, plant] of Object.entries(PLANTED)) {
+    await t.test(`${domainKey}: a contradiction in Arabic is reported and clears on repair`, () => {
+      const pkg = generatePackage({
+        domainKey,
+        docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'],
+        frameworkCodes: ['NCA-ECC', 'ISO-27001'],
+        org, userId: users.grc_manager.id, ownerId: users.grc_manager.id, language: 'ar'
+      });
 
-    // Demote the agreed quarterly interval to annual in one document only.
-    // Nothing else changes, so a finding here can only come from reading the
-    // Arabic text.
-    q.run('UPDATE document_sections SET body = ? WHERE id = ?',
-      target.body.split('ربع سنوي').join('سنوي'), target.id);
+      const consistency = () => reviewDomain(domainKey).findings.filter((f) => f.category === 'consistency');
+      const baseline = consistency();
+      assert.deepEqual(baseline.map((f) => f.evidence?.parameter), [],
+        'a freshly generated Arabic package is internally consistent');
 
-    const findings = reviewDomain('iam').findings.filter((f) => f.category === 'consistency');
-    assert.ok(findings.length >= 1, 'the contradiction is reported');
-    const finding = findings[0];
-    assert.equal(finding.severity, 'high');
-    assert.ok(finding.evidence?.conflicting?.statement, 'the finding quotes the conflicting statement');
-    assert.ok(hasArabic(finding.evidence.conflicting.statement), 'and quotes it in Arabic');
-    assert.ok(finding.evidence.agreedValue, 'and states the agreed value');
-    assert.ok(finding.recommendation, 'and offers a reconciliation');
+      const doc = q.get('SELECT * FROM documents WHERE package_id = ? AND doc_type = ?', pkg.packageId, plant.docType);
+      const candidates = q.all(
+        "SELECT * FROM document_sections WHERE document_id = ? AND section_key NOT LIKE '\\_%' ESCAPE '\\'",
+        doc.id
+      ).filter((s) => s.body.includes(plant.agreed));
+      assert.ok(candidates.length, `the Arabic ${plant.docType} states the agreed value ${plant.agreed}`);
 
-    q.run('UPDATE document_sections SET body = ? WHERE id = ?', target.body, target.id);
-    assert.equal(
-      reviewDomain('iam').findings.filter((f) => f.category === 'consistency').length, 0,
-      'the finding clears once the documents agree again'
-    );
-  });
+      // A sentence that names no subject — a bare decision branch, say — cannot
+      // be attributed to a parameter in either language, so the question is
+      // whether some statement of the commitment is caught, not every one.
+      let detected = null;
+      for (const section of candidates) {
+        q.run('UPDATE document_sections SET body = ? WHERE id = ?',
+          section.body.split(plant.agreed).join(plant.wrong), section.id);
+        const found = consistency().filter((f) => f.evidence?.parameter === plant.parameter);
+        if (found.length) detected = found[0];
+
+        q.run('UPDATE document_sections SET body = ? WHERE id = ?', section.body, section.id);
+        assert.deepEqual(consistency().map((f) => f.evidence?.parameter), [],
+          `the finding clears once ${section.section_key} agrees again`);
+        if (detected) break;
+      }
+
+      assert.ok(detected, `no section of the Arabic ${plant.docType} reported the contradiction`);
+      assert.equal(detected.severity, 'high');
+      assert.ok(hasArabic(detected.evidence.conflicting.statement), 'the finding quotes the Arabic statement');
+      assert.ok(detected.evidence.agreedValue, 'and states the agreed value');
+      assert.ok(detected.recommendation, 'and offers a reconciliation');
+    });
+  }
 });
 
 test.after(() => {
