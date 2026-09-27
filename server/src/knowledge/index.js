@@ -9,7 +9,7 @@
 
 import { DOMAIN_META, DOMAIN_INDEX, DOMAIN_CATEGORIES, domainName, domainShort, resolveText, unresolvedPlaceholders } from './domains.js';
 import { FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE } from './frameworks.js';
-import { ROLE_LIBRARY, ROLE_INDEX, roleName, roleShort } from './roles.js';
+import { ROLE_LIBRARY, ROLE_INDEX, roleName, roleShort, localisedRole, localisedRoles } from './roles.js';
 import { buildProcedure, STD_ROLES } from './req-helpers.js';
 import { ACCESS_DOMAINS } from './req-access.js';
 import { OPERATE_DOMAINS } from './req-operate.js';
@@ -19,7 +19,7 @@ import { TECH_DOMAINS } from './req-tech.js';
 import { RESILIENCE_DOMAINS } from './req-resilience.js';
 import {
   AR_DOMAINS, LANGUAGES, isTranslated, translatedDomains,
-  arText, arParameters, arObjectives, arDomainName, arFrequency
+  arText, arParameters, arObjectives, arDomainName, arFrequency, AR_ROLES
 } from './ar/index.js';
 
 const SOURCES = [ACCESS_DOMAINS, OPERATE_DOMAINS, DATA_DOMAINS, GOVERN_DOMAINS, TECH_DOMAINS, RESILIENCE_DOMAINS];
@@ -212,6 +212,57 @@ export function validateKnowledgeBase() {
     }
   }
 
+  // ------------------------------------------------------ translated roles --
+  // The Roles document pairs each list against the role's RACI assignments by
+  // position, so a translated list of a different length would misalign the
+  // document rather than merely read oddly.
+  const ROLE_TEXT = ['name', 'shortName', 'purpose', 'reportingLine', 'authority'];
+  const ROLE_LISTS = ['competencies', 'responsibilities', 'accountabilities', 'activities', 'approvals', 'escalations'];
+  for (const code of Object.keys(AR_ROLES)) {
+    if (!ROLE_INDEX[code]) problems.push(`Arabic role exists for unknown role "${code}"`);
+  }
+  for (const role of ROLE_LIBRARY) {
+    const arabic = AR_ROLES[role.code];
+    if (!arabic) continue;
+    for (const field of ROLE_TEXT) {
+      if (!arabic[field]) problems.push(`role ${role.code}: Arabic "${field}" is missing`);
+    }
+    for (const field of ROLE_LISTS) {
+      const list = arabic[field];
+      if (!Array.isArray(list)) { problems.push(`role ${role.code}: Arabic "${field}" is missing`); continue; }
+      if (list.length !== role[field].length) {
+        problems.push(`role ${role.code}: Arabic "${field}" has ${list.length} entries where the English has ${role[field].length}`);
+      }
+    }
+    if (!Array.isArray(arabic.interfaces)) {
+      problems.push(`role ${role.code}: Arabic "interfaces" is missing`);
+    } else {
+      if (arabic.interfaces.length !== role.interfaces.length) {
+        problems.push(`role ${role.code}: Arabic "interfaces" has ${arabic.interfaces.length} entries where the English has ${role.interfaces.length}`);
+      }
+      for (const [i, entry] of arabic.interfaces.entries()) {
+        if (!entry?.role || !entry?.nature) problems.push(`role ${role.code}: Arabic interface ${i + 1} is incomplete`);
+      }
+    }
+    // {{orgName}} is the only placeholder a role carries; dropping it would
+    // leave the Arabic role purpose describing no organisation at all.
+    for (const field of ['purpose', 'reportingLine', 'authority']) {
+      if (!role[field] || !arabic[field]) continue;
+      const english = new Set(unresolvedPlaceholders(role[field]));
+      const translated = new Set(unresolvedPlaceholders(arabic[field]));
+      for (const name of english) {
+        if (!translated.has(name)) problems.push(`role ${role.code}: Arabic "${field}" drops the {{${name}}} placeholder`);
+      }
+      for (const name of translated) {
+        if (!english.has(name)) problems.push(`role ${role.code}: Arabic "${field}" adds a {{${name}}} placeholder the English does not have`);
+      }
+    }
+    const known = new Set([...ROLE_TEXT, ...ROLE_LISTS, 'interfaces']);
+    for (const field of Object.keys(arabic)) {
+      if (!known.has(field)) problems.push(`role ${role.code}: Arabic model has unknown field "${field}"`);
+    }
+  }
+
   return problems;
 }
 
@@ -235,9 +286,9 @@ export function buildParameterSet(domainKey, orgProfile = {}, overrides = {}, la
 export {
   DOMAIN_META, DOMAIN_INDEX, DOMAIN_CATEGORIES, domainName, domainShort, resolveText, unresolvedPlaceholders,
   FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE,
-  ROLE_LIBRARY, ROLE_INDEX, roleName, roleShort, STD_ROLES,
+  ROLE_LIBRARY, ROLE_INDEX, roleName, roleShort, localisedRole, localisedRoles, STD_ROLES,
   AR_DOMAINS, LANGUAGES, isTranslated, translatedDomains,
-  arText, arParameters, arObjectives, arDomainName
+  arText, arParameters, arObjectives, arDomainName, arFrequency
 };
 
 /**

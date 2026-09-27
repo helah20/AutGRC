@@ -15,7 +15,7 @@ import { db, q, nowIso, toJson, fromJson } from '../db/index.js';
 import { id, padNumber } from '../utils/ids.js';
 import {
   DOMAIN_MODELS, localisedModel, FRAMEWORKS, ROLE_LIBRARY, ROLE_INDEX,
-  buildParameterSet, resolveText, domainShort, roleName
+  buildParameterSet, resolveText, domainShort, roleName, roleShort, localisedRoles
 } from '../knowledge/index.js';
 import {
   buildPolicy, buildStandard, buildProcedureDoc, buildGuideline,
@@ -148,7 +148,7 @@ export function generatePackage(opts) {
   const assumptions = collectAssumptions(org, model, params);
   const packageId = id('pkg');
   const at = nowIso();
-  const roles = model.roles.map((c) => ROLE_INDEX[c]).filter(Boolean);
+  const roles = localisedRoles(model.roles, documentLanguage);
 
   // ------------------------------------------------ build control records --
   const controlIdFor = nextControlId(domainKey);
@@ -169,8 +169,8 @@ export function generatePackage(opts) {
       control_type: req.controlType,
       control_nature: req.controlNature,
       implementation: resolveText(req.guidance || req.standard, params),
-      responsible_role: roleName(responsible),
-      accountable_role: roleName(accountable),
+      responsible_role: roleName(responsible, documentLanguage),
+      accountable_role: roleName(accountable, documentLanguage),
       frequency: resolveText(req.frequency, params),
       kpi: resolveText(req.kpi, params),
       risk: resolveText(req.risk, params),
@@ -399,7 +399,7 @@ export function generatePackage(opts) {
       model.roles.forEach((code, i) => {
         const cid = id('rcl');
         q.run('INSERT INTO raci_roles (id, matrix_id, role_id, label, position) VALUES (?,?,?,?,?)',
-          cid, matrixId, roleIds[code] || null, ROLE_INDEX[code]?.shortName || code, i);
+          cid, matrixId, roleIds[code] || null, roleShort(code, documentLanguage), i);
         colIds[code] = cid;
       });
       model.raciActivities.forEach((a, i) => {
@@ -412,7 +412,7 @@ export function generatePackage(opts) {
             id('ras'), matrixId, aid, colIds[code], value);
         }
         const summary = Object.entries(a.assign)
-          .map(([code, v]) => `${v}: ${roleName(code)}`).join('; ');
+          .map(([code, v]) => `${v}: ${roleName(code, documentLanguage)}`).join('; ');
         indexRaciActivity(matrixId, { id: aid, activity: a.activity, phase: a.phase }, summary, domainKey);
       });
     }
@@ -454,7 +454,7 @@ export function previewPackage({
   if (!model) throw Object.assign(new Error(`Unknown domain "${domainKey}"`), { status: 400 });
   const params = buildParameterSet(domainKey, org, parameterOverrides, model.language);
   const selectedFrameworks = FRAMEWORKS.filter((f) => frameworkCodes.includes(f.code));
-  const roles = model.roles.map((c) => ROLE_INDEX[c]).filter(Boolean);
+  const roles = localisedRoles(model.roles, model.language);
 
   const controlDrafts = model.requirements.map((req, i) => ({
     control_id: `${domainShort(domainKey)}-${padNumber(i + 1)}`,
@@ -462,7 +462,7 @@ export function previewPackage({
     control_type: req.controlType,
     control_nature: req.controlNature,
     frequency: resolveText(req.frequency, params),
-    responsible_role: roleName(defaultResponsible(model, req)),
+    responsible_role: roleName(defaultResponsible(model, req), model.language),
     risk: resolveText(req.risk, params),
     risk_rating: req.riskRating,
     kpi: resolveText(req.kpi, params),

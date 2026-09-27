@@ -23,6 +23,7 @@ import { AR_OPERATE } from './ar-operate.js';
 import { AR_DATA } from './ar-data.js';
 
 export { AR_FREQUENCY, arFrequency } from './ar-common.js';
+export { AR_ROLES, arRole } from './ar-roles.js';
 
 export const AR_DOMAINS = {
   ...AR_ACCESS,

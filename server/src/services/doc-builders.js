@@ -89,6 +89,16 @@ const docTitle = (model, type) => (activeT.isRtl
 const T = (text, values) => activeT(text, values);
 
 /**
+ * Role names in the language of the document being built.
+ *
+ * A role name is not interface chrome: it names the party answerable for a
+ * clause, and it appears in the Policy role table, the RACI column headers,
+ * the Procedure actor column and every control record.
+ */
+const RN = (code) => roleName(code, activeT.language);
+const RS = (code) => roleShort(code, activeT.language);
+
+/**
  * Connective prose.
  *
  * `key` selects a translation; `english` is the sentence to use when there is
@@ -153,7 +163,7 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks }) 
     const acts = model.raciActivities.filter((a) => a.assign[code] === 'A').map((a) => a.activity);
     const resp = model.raciActivities.filter((a) => a.assign[code] === 'R').map((a) => a.activity);
     return [
-      roleName(code),
+      RN(code),
       acts.length ? acts.join('; ') : T('No accountability assigned in this domain'),
       resp.length ? resp.join('; ') : '—'
     ];
@@ -376,7 +386,7 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
               r.controlName,
               r.controlType,
               resolveText(r.frequency, params),
-              roleName(defaultResponsible(model, r))
+              RN(defaultResponsible(model, r))
             ]))
         ), P.STANDARD, reqs.map((r) => ref.requirement(model.key, r.key))),
 
@@ -394,7 +404,7 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
         joinBlocks(
           h.p(TP('standard.monitoringLead', 'Compliance with this Standard is monitored as follows:')),
           h.table([T('Requirement'), T('Indicator'), T('Frequency'), TP('standard.colReportedTo', 'Reported to')],
-            reqs.filter((r) => r.kpi).map((r) => [r.title, resolveText(r.kpi, params), resolveText(r.frequency, params), roleName('grc_manager')]))
+            reqs.filter((r) => r.kpi).map((r) => [r.title, resolveText(r.kpi, params), resolveText(r.frequency, params), RN('grc_manager')]))
         ), P.STANDARD, []),
 
       section('compliance', 'Compliance',
@@ -534,7 +544,7 @@ export function buildProcedureDoc({ model, params, frameworkCodes }) {
               const parts = [];
               if (a) parts.push(TP('procedure.accountableForN', `Accountable for ${a} activit${a === 1 ? 'y' : 'ies'}`, { n: a }));
               if (r) parts.push(TP('procedure.responsibleForN', `Responsible for ${r} activit${r === 1 ? 'y' : 'ies'}`, { n: r }));
-              return [roleName(code), parts.length ? parts.join('; ') : TP('procedure.consultedOnly', 'Consulted or informed only')];
+              return [RN(code), parts.length ? parts.join('; ') : TP('procedure.consultedOnly', 'Consulted or informed only')];
             }))
         ), P.PROCEDURE, []),
 
@@ -643,7 +653,7 @@ export function buildRolesDoc({ model, params, roles }) {
 
 export function buildRaciDoc({ model, params, mode = 'raci' }) {
   const cols = model.roles;
-  const headers = [T('Activity'), T('Phase'), ...cols.map((c) => roleShort(c))];
+  const headers = [T('Activity'), T('Phase'), ...cols.map((c) => RS(c))];
   const rows = model.raciActivities.map((a) => [
     a.activity,
     a.phase ? T(a.phase) : '—',

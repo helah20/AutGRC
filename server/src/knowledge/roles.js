@@ -6,6 +6,8 @@
  * is the key referenced from every domain's `raciActivities`.
  */
 
+import { arRole } from './ar/index.js';
+
 export const ROLE_LIBRARY = [
   {
     code: 'ciso', name: 'Chief Information Security Officer', shortName: 'CISO', category: 'Leadership',
@@ -471,10 +473,29 @@ export const ROLE_LIBRARY = [
 
 export const ROLE_INDEX = Object.fromEntries(ROLE_LIBRARY.map((r) => [r.code, r]));
 
-export function roleName(code) {
-  return ROLE_INDEX[code]?.name || code;
+/**
+ * One role in the requested language.
+ *
+ * A role with no translation comes back in English rather than half-filled:
+ * a RACI column headed by a code, or a responsibility list with Arabic and
+ * English entries side by side, reads as a defect in the document.
+ */
+export function localisedRole(code, language = 'en') {
+  const role = ROLE_INDEX[code];
+  if (!role) return null;
+  const arabic = language === 'ar' ? arRole(code) : null;
+  return arabic ? { ...role, ...arabic, language: 'ar' } : { ...role, language: 'en' };
 }
 
-export function roleShort(code) {
-  return ROLE_INDEX[code]?.shortName || ROLE_INDEX[code]?.name || code;
+export function localisedRoles(codes, language = 'en') {
+  return codes.map((c) => localisedRole(c, language)).filter(Boolean);
+}
+
+export function roleName(code, language = 'en') {
+  return localisedRole(code, language)?.name || code;
+}
+
+export function roleShort(code, language = 'en') {
+  const role = localisedRole(code, language);
+  return role?.shortName || role?.name || code;
 }
