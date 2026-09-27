@@ -6,8 +6,10 @@ import { useAuth } from '../lib/auth.jsx';
 import { Card, Loading, ErrorNote, Empty, Badge, DataTable, Modal, Field, Select, useToast } from '../components/ui.jsx';
 import { IconGrid, IconPlus, IconAlert, IconCheck } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 export default function RaciList() {
+  const labels = useLabels();
   const { data, loading, error, reload } = useFetch('/raci');
   const { data: options } = useFetch('/generator/options');
   const navigate = useNavigate();

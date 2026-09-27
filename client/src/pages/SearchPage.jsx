@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useFetch, useDebounced } from '../lib/useApi.js';
 import { Card, Loading, ErrorNote, Empty, Badge, SearchInput } from '../components/ui.jsx';
 import { IconSearch } from '../components/Icons.jsx';
+import { useLabels } from '../i18n/labels.js';
 
 const ROUTE = {
   document: (r) => `/documents/${r.id}`,
@@ -15,6 +16,7 @@ const ROUTE = {
 };
 
 export default function SearchPage() {
+  const labels = useLabels();
   const [params, setParams] = useSearchParams();
   const [term, setTerm] = useState(params.get('q') || '');
   const debounced = useDebounced(term, 260);

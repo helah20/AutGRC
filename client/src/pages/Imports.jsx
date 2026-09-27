@@ -10,8 +10,10 @@ import {
 import FindingCard from '../components/FindingCard.jsx';
 import { IconUpload, IconCheck, IconX, IconAlert, IconDocument } from '../components/Icons.jsx';
 import { formatDate, titleCase, relativeTime } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 export default function Imports() {
+  const labels = useLabels();
   const toast = useToast();
   const navigate = useNavigate();
   const { can } = useAuth();

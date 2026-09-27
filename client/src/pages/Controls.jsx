@@ -9,8 +9,12 @@ import {
 } from '../components/ui.jsx';
 import { IconShield, IconDownload, IconX, IconLink, IconArchive } from '../components/Icons.jsx';
 import { titleCase, RISK_TONE, COVERAGE_TONE } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 export default function Controls() {
+  const labels = useLabels();
+  const { t, formatNumber } = useI18n();
   const toast = useToast();
   const { can } = useAuth();
   const [search, setSearch] = useState('');
@@ -53,7 +57,7 @@ export default function Controls() {
         <div className="table-toolbar">
           <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder="Search controls…" /></div>
           <Select value={domain} onChange={setDomain} placeholder="All domains"
-            options={(data?.facets?.domains || []).map((d) => ({ value: d.domain_key, label: `${d.label} (${d.n})` }))} />
+            options={(data?.facets?.domains || []).map((d) => ({ value: d.domain_key, label: `${labels.domain(d.domain_key, d.label)} (${d.n})` }))} />
           <Select value={type} onChange={setType} placeholder="All types"
             options={(data?.facets?.types || []).map((t) => ({ value: t.control_type, label: `${titleCase(t.control_type)} (${t.n})` }))} />
           <Select value={risk} onChange={setRisk} placeholder="All risk levels"
@@ -63,7 +67,7 @@ export default function Controls() {
               <IconX width={13} height={13} />Clear
             </button>
           )}
-          <span className="table-count">{data ? `${data.items.length} of ${data.total}` : '—'}</span>
+          <span className="table-count">{data ? `${formatNumber(data.items.length)} ${t('common.of')} ${formatNumber(data.total)}` : '—'}</span>
         </div>
 
         {loading && <Loading />}
@@ -73,9 +77,9 @@ export default function Controls() {
             columns={[
               { key: 'control_id', header: 'ID', nowrap: true, width: 96, render: (c) => <span className="ref-tag">{c.control_id}</span> },
               { key: 'name', header: 'Control', render: (c) => (<><div className="cell-title">{c.name}</div><div className="cell-sub clamp-2">{c.requirement}</div></>) },
-              { key: 'domain_label', header: 'Domain', nowrap: true, render: (c) => <span className="small">{c.domain_label}</span> },
+              { key: 'domain_label', header: 'Domain', nowrap: true, render: (c) => <span className="small">{labels.domain(c.domain_key, c.domain_label)}</span> },
               { key: 'control_type', header: 'Type', nowrap: true, render: (c) => <Badge tone="neutral">{titleCase(c.control_type)}</Badge> },
-              { key: 'risk_rating', header: 'Risk', nowrap: true, render: (c) => <Badge tone={RISK_TONE[c.risk_rating] || 'neutral'}>{titleCase(c.risk_rating)}</Badge> },
+              { key: 'risk_rating', header: 'Risk', nowrap: true, render: (c) => <Badge tone={RISK_TONE[c.risk_rating] || 'neutral'}>{labels.rating(c.risk_rating)}</Badge> },
               { key: 'responsible_role', header: 'Responsible', nowrap: true, render: (c) => <span className="small">{c.responsible_role || '—'}</span> },
               { key: 'evidence_count', header: 'Evidence', align: 'right', render: (c) => c.evidence_count || <span className="muted">0</span> },
               { key: 'mapping_count', header: 'Mappings', align: 'right', render: (c) => c.mapping_count || <span className="muted">0</span> }
@@ -96,14 +100,15 @@ export default function Controls() {
 }
 
 function ControlDetail({ data }) {
+  const labels = useLabels();
   const c = data.control;
   return (
     <div className="stack">
       <div className="row-tight">
-        <Badge tone={RISK_TONE[c.risk_rating] || 'neutral'}>{titleCase(c.risk_rating)} risk</Badge>
+        <Badge tone={RISK_TONE[c.risk_rating] || 'neutral'}>{labels.rating(c.risk_rating)} risk</Badge>
         <Badge tone="neutral">{titleCase(c.control_type)}</Badge>
         <Badge tone="neutral">{titleCase(c.control_nature)}</Badge>
-        <Badge tone="info">{c.domain_label}</Badge>
+        <Badge tone="info">{labels.domain(c.domain_key, c.domain_label)}</Badge>
         <ProvenanceTag provenance={c.provenance} />
       </div>
 
@@ -132,7 +137,7 @@ function ControlDetail({ data }) {
           <dt>Frequency</dt><dd>{c.frequency || '—'}</dd>
           <dt>Indicator</dt><dd>{c.kpi || '—'}</dd>
           <dt>Testing method</dt><dd>{c.testing_method || '—'}</dd>
-          <dt>Status</dt><dd><Badge tone={c.status === 'implemented' ? 'ok' : c.status === 'approved' ? 'info' : 'neutral'}>{titleCase(c.status)}</Badge></dd>
+          <dt>Status</dt><dd><Badge tone={c.status === 'implemented' ? 'ok' : c.status === 'approved' ? 'info' : 'neutral'}>{labels.status(c.status)}</Badge></dd>
         </div>
       </section>
 

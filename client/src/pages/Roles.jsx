@@ -6,8 +6,10 @@ import { useAuth } from '../lib/auth.jsx';
 import { Card, Loading, ErrorNote, Empty, Badge, Modal, Field, useToast, DataTable } from '../components/ui.jsx';
 import { IconUsers, IconPlus, IconDownload } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 export default function Roles() {
+  const labels = useLabels();
   const { data, loading, error, reload } = useFetch('/roles');
   const navigate = useNavigate();
   const toast = useToast();

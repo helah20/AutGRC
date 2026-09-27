@@ -8,6 +8,8 @@ import {
 } from '../components/ui.jsx';
 import { IconLayers, IconX, IconCheck, IconAlert, IconDownload } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 const IMPLEMENTATION_TONE = {
   implemented: 'ok', partial: 'warn', planned: 'info',
@@ -23,6 +25,8 @@ const IMPLEMENTATION_TONE = {
  * do not show.
  */
 export default function Soa() {
+  const labels = useLabels();
+  const { t, formatNumber } = useI18n();
   const toast = useToast();
   const { can } = useAuth();
   const [code, setCode] = useState('ISO-27001');
@@ -48,20 +52,19 @@ export default function Soa() {
   async function decide(row, applicable, justification) {
     try {
       await api.put(`/soa/${encodeURIComponent(code)}/decisions/${row.requirement_id}`, { applicable, justification });
-      toast.success(applicable ? 'Recorded as applicable' : 'Recorded as excluded');
+      toast.success(applicable ? t('soa.recordedApplicable') : t('soa.recordedExcluded'));
       setEditing(null);
       reload();
-    } catch (err) { toast.error('Could not record the decision', err.message); }
+    } catch (err) { toast.error(t('soa.couldNotRecord'), err.message); }
   }
 
   return (
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Statement of Applicability</h1>
+          <h1 className="page-title">{t('soa.title')}</h1>
           <p className="page-sub">
-            A reasoned decision for every control, including the ones you exclude. Implementation status
-            is read from the control library rather than stated here, so the two cannot disagree.
+{t('soa.subtitle')}
           </p>
         </div>
         <div className="page-actions">
@@ -71,9 +74,9 @@ export default function Soa() {
               label: `${f.code}${f.version ? ` (${f.version})` : ''}${f.edition_status === 'superseded' ? ' — superseded' : ''}`
             }))} />
           <button className="btn" onClick={() => api.download(`/export/soa.xlsx${qs({ framework: code })}`, `Statement of Applicability — ${code}.xlsx`)
-            .then(() => toast.success('Exported'))
-            .catch((e) => toast.error('Export failed', e.message))}>
-            <IconDownload />Export
+            .then(() => toast.success(t('common.exported')))
+            .catch((e) => toast.error(t('common.exportFailed'), e.message))}>
+            <IconDownload />{t('common.export')}
           </button>
         </div>
       </div>
@@ -86,21 +89,20 @@ export default function Soa() {
           {s.exclusionsWithoutJustification > 0 && (
             <div className="callout" data-callout="danger" style={{ marginBottom: 14 }}>
               <div className="row-tight"><IconAlert width={14} height={14} />
-                <strong style={{ margin: 0 }}>{s.exclusionsWithoutJustification} exclusion(s) with no justification</strong></div>
+                <strong style={{ margin: 0 }}>{t('soa.unjustified', { count: formatNumber(s.exclusionsWithoutJustification) })}</strong></div>
               <p style={{ marginTop: 4, marginBottom: 0 }}>
-                An unjustified exclusion is the first thing an auditor writes up. Record why each one
-                does not apply.
+{t('soa.unjustifiedBody')}
               </p>
             </div>
           )}
 
           <div className="grid grid-4" style={{ marginBottom: 14 }}>
-            <Kpi label="Applicable" value={s.applicable} meta={`of ${s.total} controls`} onClick={() => setFilter('applicable')} />
-            <Kpi label="Implemented" value={s.implemented}
-              meta={`${s.partial} partial, ${s.planned} planned`} tone={s.implemented ? 'ok' : undefined} />
-            <Kpi label="Not implemented" value={s.notImplemented} tone={s.notImplemented ? 'danger' : undefined}
-              meta="Applicable, nothing mapped" onClick={() => setFilter('not_implemented')} />
-            <Kpi label="Excluded" value={s.excluded} meta={`${s.decisionsRecorded} decisions recorded`}
+            <Kpi label={t('soa.kpiApplicable')} value={formatNumber(s.applicable)} meta={t('soa.kpiApplicableMeta', { total: formatNumber(s.total) })} onClick={() => setFilter('applicable')} />
+            <Kpi label={t('soa.kpiImplemented')} value={formatNumber(s.implemented)}
+              meta={t('soa.kpiImplementedMeta', { partial: formatNumber(s.partial), planned: formatNumber(s.planned) })} tone={s.implemented ? 'ok' : undefined} />
+            <Kpi label={t('soa.kpiNotImplemented')} value={formatNumber(s.notImplemented)} tone={s.notImplemented ? 'danger' : undefined}
+              meta={t('soa.kpiNotImplementedMeta')} onClick={() => setFilter('not_implemented')} />
+            <Kpi label={t('soa.kpiExcluded')} value={formatNumber(s.excluded)} meta={t('soa.kpiExcludedMeta', { count: formatNumber(s.decisionsRecorded) })}
               onClick={() => setFilter('excluded')} />
           </div>
         </>
@@ -108,17 +110,17 @@ export default function Soa() {
 
       <Card flush>
         <div className="table-toolbar">
-          <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder="Search by reference or title…" /></div>
-          <Select value={filter} onChange={setFilter} placeholder="Everything"
+          <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder={t('soa.searchPlaceholder')} /></div>
+          <Select value={filter} onChange={setFilter} placeholder={t('soa.everything')}
             options={[
-              { value: 'applicable', label: 'Applicable only' },
-              { value: 'excluded', label: 'Excluded only' },
-              { value: 'undecided', label: 'No decision recorded' },
-              { value: 'not_implemented', label: 'Not implemented' }
+              { value: 'applicable', label: t('soa.applicableOnly') },
+              { value: 'excluded', label: t('soa.excludedOnly') },
+              { value: 'undecided', label: t('soa.undecided') },
+              { value: 'not_implemented', label: t('soa.notImplementedOnly') }
             ]} />
           {(search || filter) && (
             <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setFilter(''); }}>
-              <IconX width={13} height={13} />Clear
+              <IconX width={13} height={13} />{t('common.clear')}
             </button>
           )}
           <span className="table-count">{data ? `${rows.length} of ${data.rows.length}` : '—'}</span>
@@ -127,41 +129,41 @@ export default function Soa() {
         {!loading && !error && (
           <DataTable
             columns={[
-              { key: 'ref', header: 'Ref', nowrap: true, width: 104, render: (r) => <span className="ref-tag">{r.ref}</span> },
+              { key: 'ref', header: t('soa.columnRef'), nowrap: true, width: 104, render: (r) => <span className="ref-tag">{r.ref}</span> },
               {
-                key: 'title', header: 'Control',
+                key: 'title', header: t('soa.columnControl'),
                 render: (r) => (<>
-                  <div className={r.level <= 2 ? 'cell-title' : ''}>{r.title}</div>
-                  {r.domain_label && <div className="cell-sub">{r.domain_label}</div>}
+                  <div className={`${r.level <= 2 ? 'cell-title' : ''} ltr-content`}>{r.title}</div>
+                  {r.domain_label && <div className="cell-sub">{labels.domain(r.domain_key, r.domain_label)}</div>}
                 </>)
               },
               {
-                key: 'applicable', header: 'Applicable', nowrap: true,
+                key: 'applicable', header: t('soa.columnApplicable'), nowrap: true,
                 render: (r) => (r.applicable
-                  ? <Badge tone="ok">Yes</Badge>
-                  : <Badge tone="neutral" title={r.justification || 'No justification recorded'}>No</Badge>)
+                  ? <Badge tone="ok">{t('common.yes')}</Badge>
+                  : <Badge tone="neutral" title={r.justification || t('soa.justificationError')}>{t('common.no')}</Badge>)
               },
               {
-                key: 'implementation', header: 'Implementation', nowrap: true,
+                key: 'implementation', header: t('soa.columnImplementation'), nowrap: true,
                 render: (r) => <Badge tone={IMPLEMENTATION_TONE[r.implementation]}>{titleCase(r.implementation.replace(/_/g, ' '))}</Badge>
               },
               {
-                key: 'controls', header: 'Controls',
+                key: 'controls', header: t('soa.columnControls'),
                 render: (r) => (r.controls.length
                   ? <div className="row-tight">{r.controls.slice(0, 3).map((c) => <span key={c.id} className="pill mono">{c.control_id}</span>)}
                       {r.controls.length > 3 && <span className="tiny muted">+{r.controls.length - 3}</span>}</div>
                   : <span className="muted small">None</span>)
               },
               {
-                key: 'justification', header: 'Decision', width: 220,
+                key: 'justification', header: t('soa.columnDecision'), width: 220,
                 render: (r) => (r.decision_recorded
-                  ? <span className="small clamp-2" title={r.justification || ''}>{r.justification || <span className="muted">Recorded, no note</span>}</span>
-                  : <span className="tiny muted">Applicable by default — no decision recorded</span>)
+                  ? <span className="small clamp-2" title={r.justification || ''}>{r.justification || <span className="muted">{t('soa.recordedNoNote')}</span>}</span>
+                  : <span className="tiny muted">{t('soa.noDecision')}</span>)
               }
             ]}
             rows={rows}
             onRowClick={can('soa:write') ? setEditing : undefined}
-            empty={<Empty icon={IconLayers} title="Nothing to show">No requirement matches the current filter.</Empty>}
+            empty={<Empty icon={IconLayers} title={t('soa.emptyTitle')}>{t('soa.emptyBody')}</Empty>}
           />
         )}
       </Card>
@@ -172,6 +174,8 @@ export default function Soa() {
 }
 
 function DecisionModal({ row, onClose, onSave }) {
+  const labels = useLabels();
+  const { t, formatNumber } = useI18n();
   const [applicable, setApplicable] = useState(true);
   const [justification, setJustification] = useState('');
 
@@ -189,36 +193,36 @@ function DecisionModal({ row, onClose, onSave }) {
       title={row ? `${row.ref} — ${row.title}` : ''}
       footer={
         <>
-          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn" onClick={onClose}>{t('common.cancel')}</button>
           <button className="btn btn-primary" disabled={needsJustification}
             onClick={() => onSave(row, applicable, justification.trim() || null)}>
-            <IconCheck width={13} height={13} />Record the decision
+            <IconCheck width={13} height={13} />{t('soa.recordDecision')}
           </button>
         </>
       }>
       {row && (
         <div className="stack">
-          {row.statement && <p className="small muted">{row.statement}</p>}
+          {row.statement && <p className="small muted ltr-content">{row.statement}</p>}
 
-          <Field label="Does this control apply to your organisation?">
+          <Field label={t('soa.appliesQuestion')}>
             <div className="checkbox-row">
               <label className={`checkbox-chip ${applicable ? 'on' : ''}`}>
                 <input type="radio" name="applicable" checked={applicable} onChange={() => setApplicable(true)} />
-                Applicable
+                {t('soa.applicable')}
               </label>
               <label className={`checkbox-chip ${!applicable ? 'on' : ''}`}>
                 <input type="radio" name="applicable" checked={!applicable} onChange={() => setApplicable(false)} />
-                Excluded
+                {t('soa.excluded')}
               </label>
             </div>
           </Field>
 
-          <Field label="Justification"
+          <Field label={t('soa.justification')}
             required={!applicable}
             hint={applicable
-              ? 'Optional for an applicable control, but it helps the next reader.'
-              : 'Required. ISO/IEC 27001 asks for the reason behind every exclusion.'}
-            error={needsJustification ? 'An excluded control needs a reason.' : null}>
+              ? t('soa.justificationOptional')
+              : t('soa.justificationRequired')}
+            error={needsJustification ? t('soa.justificationError') : null}>
             <textarea className="textarea" rows={3} value={justification}
               onChange={(e) => setJustification(e.target.value)}
               placeholder={applicable
@@ -228,13 +232,13 @@ function DecisionModal({ row, onClose, onSave }) {
 
           {row.controls.length > 0 && (
             <div>
-              <h4>Controls mapped to this requirement</h4>
+              <h4>{t('soa.mappedControls')}</h4>
               <ul className="attachment-list">
                 {row.controls.map((c) => (
                   <li key={c.id} className="attachment">
                     <div className="attachment-main">
                       <div className="attachment-name"><span className="ref-tag">{c.control_id}</span> {c.name}</div>
-                      <div className="attachment-meta">{titleCase(c.status)} · coverage {titleCase(c.coverage)}</div>
+                      <div className="attachment-meta">{labels.status(c.status)} · coverage {labels.coverage(c.coverage)}</div>
                     </div>
                   </li>
                 ))}

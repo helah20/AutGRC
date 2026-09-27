@@ -8,8 +8,10 @@ import {
 } from '../components/ui.jsx';
 import { IconTarget, IconPlus } from '../components/Icons.jsx';
 import { formatDate, titleCase } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 export default function GapAssessments() {
+  const labels = useLabels();
   const { data, loading, error, reload } = useFetch('/assessments');
   const { data: frameworks } = useFetch('/frameworks');
   const navigate = useNavigate();
@@ -44,7 +46,7 @@ export default function GapAssessments() {
           columns={[
             { key: 'name', header: 'Assessment', render: (a) => (<><div className="cell-title">{a.name}</div><div className="cell-sub clamp-2">{a.scope || 'No scope recorded'}</div></>) },
             { key: 'framework_code', header: 'Framework', nowrap: true, render: (a) => a.framework_code ? <Badge tone="info">{a.framework_code}</Badge> : <span className="muted">—</span> },
-            { key: 'status', header: 'Status', nowrap: true, render: (a) => <Badge tone={a.status === 'completed' ? 'ok' : a.status === 'in_progress' ? 'warn' : 'neutral'}>{titleCase(a.status)}</Badge> },
+            { key: 'status', header: 'Status', nowrap: true, render: (a) => <Badge tone={a.status === 'completed' ? 'ok' : a.status === 'in_progress' ? 'warn' : 'neutral'}>{labels.humanise(a.status)}</Badge> },
             { key: 'items', header: 'Items', align: 'right', render: (a) => a.summary.total },
             { key: 'compliant', header: 'Compliant', align: 'right', render: (a) => a.summary.byStatus.compliant },
             { key: 'non', header: 'Non-compliant', align: 'right', render: (a) => a.summary.byStatus.non_compliant > 0 ? <span style={{ color: 'var(--danger)' }}>{a.summary.byStatus.non_compliant}</span> : 0 },

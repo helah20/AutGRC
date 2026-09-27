@@ -8,8 +8,10 @@ import {
 import TraceChain from '../components/TraceChain.jsx';
 import { IconLayers, IconDownload, IconX, IconInfo } from '../components/Icons.jsx';
 import { titleCase, COVERAGE_TONE } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 export default function Frameworks() {
+  const labels = useLabels();
   const toast = useToast();
   const { data, loading, error, reload } = useFetch('/frameworks');
   const [active, setActive] = useState(null);
@@ -98,8 +100,8 @@ export default function Frameworks() {
                   key: 'title', header: 'Requirement',
                   render: (r) => (
                     <div style={{ paddingLeft: (r.level - 1) * 14 }}>
-                      <div className={r.level <= 2 ? 'cell-title' : ''}>{r.title}</div>
-                      {r.domain_label && <div className="cell-sub">{r.domain_label}</div>}
+                      <div className={`${r.level <= 2 ? 'cell-title' : ''} ltr-content`}>{r.title}</div>
+                      {r.domain_label && <div className="cell-sub">{labels.domain(r.domain_key, r.domain_label)}</div>}
                     </div>
                   )
                 },

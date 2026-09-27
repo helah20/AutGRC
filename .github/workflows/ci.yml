@@ -33,6 +33,9 @@ jobs:
       - name: Check the knowledge base for integrity problems
         run: npm --workspace server run verify:knowledge
 
+      - name: Check the client for hooks used out of scope
+        run: npm run check
+
       - name: Seed the database
         run: npm run seed
 

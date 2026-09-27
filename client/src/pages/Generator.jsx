@@ -18,12 +18,14 @@ import {
   IconSparkles, IconEye, IconShield, IconBuilding
 } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 const STEPS = ['Document types', 'Domain', 'Frameworks', 'Context', 'Review & generate'];
 
 const DEFAULT_TYPES = ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'];
 
 export default function Generator() {
+  const labels = useLabels();
   const { data: options, loading, error, reload } = useFetch('/generator/options');
   const navigate = useNavigate();
   const toast = useToast();
@@ -267,12 +269,12 @@ export default function Generator() {
             <div className="field-row">
               <Field label="Document owner" hint="Accountable for content and the review cycle.">
                 <Select value={ownerId} onChange={setOwnerId}
-                  options={options.users.map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || titleCase(u.role)}` }))} />
+                  options={options.users.map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
               </Field>
               <Field label="Approver" hint="A document cannot be approved by its own owner.">
                 <Select value={approverId} onChange={setApproverId} placeholder="Assign later"
                   options={options.users.filter((u) => ['approver', 'admin'].includes(u.role))
-                    .map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || titleCase(u.role)}` }))} />
+                    .map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
               </Field>
               <Field label="Classification">
                 <Select value={classification} onChange={setClassification}

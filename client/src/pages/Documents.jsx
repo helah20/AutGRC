@@ -9,6 +9,8 @@ import {
 } from '../components/ui.jsx';
 import { formatDate, relativeTime, titleCase, daysUntil } from '../lib/format.js';
 import { IconWand, IconDownload, IconDocument, IconFilter, IconX } from '../components/Icons.jsx';
+import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 const TYPE_LABEL = {
   policy: 'Policy', standard: 'Standard', procedure: 'Procedure', guideline: 'Guideline',
@@ -17,6 +19,8 @@ const TYPE_LABEL = {
 };
 
 export default function Documents({ fixedType }) {
+  const labels = useLabels();
+  const { t, formatNumber } = useI18n();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -65,7 +69,7 @@ export default function Documents({ fixedType }) {
       render: (d) => (
         <>
           <div className="cell-title">{d.title}</div>
-          <div className="cell-sub">{d.domain_label} · v{d.version} · {d.classification.replace('_', ' ')}</div>
+          <div className="cell-sub">{labels.domain(d.domain_key, d.domain_label)} · v{d.version} · {d.classification.replace('_', ' ')}</div>
         </>
       )
     },
@@ -131,7 +135,7 @@ export default function Documents({ fixedType }) {
               setSearch(''); if (!fixedType) setType(''); setDomain(''); setStatus(''); setReviewDue(false);
             }}><IconX width={13} height={13} />Clear</button>
           )}
-          <span className="table-count">{data ? `${data.items.length} of ${data.total}` : '—'}</span>
+          <span className="table-count">{data ? `${formatNumber(data.items.length)} ${t('common.of')} ${formatNumber(data.total)}` : '—'}</span>
         </div>
 
         {loading && <Loading />}

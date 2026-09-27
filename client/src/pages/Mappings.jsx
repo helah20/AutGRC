@@ -10,8 +10,10 @@ import {
 import TraceChain from '../components/TraceChain.jsx';
 import { IconLink, IconDownload, IconArrowRight } from '../components/Icons.jsx';
 import { titleCase, TONE_COLORS } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 export default function Mappings() {
+  const labels = useLabels();
   const toast = useToast();
   const { data, loading, error, reload } = useFetch('/frameworks/coverage');
   const [domain, setDomain] = useState('');

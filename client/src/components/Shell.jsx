@@ -5,69 +5,71 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import { api } from '../lib/api.js';
 import { initials, relativeTime } from '../lib/format.js';
+import { useI18n } from '../i18n/index.jsx';
 import {
   IconDashboard, IconDocument, IconWand, IconUsers, IconGrid, IconShield, IconLayers,
   IconLink, IconArchive, IconChart, IconSettings, IconSearch, IconUpload, IconAlert,
   IconSun, IconMoon, IconLogout, IconMenu, IconBook, IconTarget, IconX, IconChevronRight,
-  IconBell, IconInbox, IconCheck, IconTrash
+  IconBell, IconInbox, IconCheck, IconTrash, IconGlobe
 } from './Icons.jsx';
 
 const NAV = [
   {
-    label: 'Overview',
+    labelKey: 'nav.overview',
     items: [
-      { to: '/dashboard', label: 'Dashboard', icon: IconDashboard },
-      { to: '/my-work', label: 'My Work', icon: IconInbox, countKey: 'myWork', tone: 'warn' },
-      { to: '/generator', label: 'Generate', icon: IconWand, permission: 'generate:run' }
+      { to: '/dashboard', labelKey: 'nav.dashboard', icon: IconDashboard },
+      { to: '/my-work', labelKey: 'nav.myWork', icon: IconInbox, countKey: 'myWork', tone: 'warn' },
+      { to: '/generator', labelKey: 'nav.generate', icon: IconWand, permission: 'generate:run' }
     ]
   },
   {
-    label: 'Governance Library',
+    labelKey: 'nav.library',
     items: [
-      { to: '/documents', label: 'All Documents', icon: IconDocument, countKey: 'totalDocuments' },
-      { to: '/policies', label: 'Policies', icon: IconBook, countKey: 'policies' },
-      { to: '/standards', label: 'Standards', icon: IconLayers, countKey: 'standards' },
-      { to: '/procedures', label: 'Procedures', icon: IconGrid, countKey: 'procedures' },
-      { to: '/hierarchy', label: 'Hierarchy', icon: IconLink }
+      { to: '/documents', labelKey: 'nav.allDocuments', icon: IconDocument, countKey: 'totalDocuments' },
+      { to: '/policies', labelKey: 'nav.policies', icon: IconBook, countKey: 'policies' },
+      { to: '/standards', labelKey: 'nav.standards', icon: IconLayers, countKey: 'standards' },
+      { to: '/procedures', labelKey: 'nav.procedures', icon: IconGrid, countKey: 'procedures' },
+      { to: '/hierarchy', labelKey: 'nav.hierarchy', icon: IconLink }
     ]
   },
   {
-    label: 'Accountability',
+    labelKey: 'nav.accountability',
     items: [
-      { to: '/roles', label: 'Roles', icon: IconUsers, countKey: 'roles' },
-      { to: '/raci', label: 'RACI Matrices', icon: IconGrid, countKey: 'raciMatrices' }
+      { to: '/roles', labelKey: 'nav.roles', icon: IconUsers, countKey: 'roles' },
+      { to: '/raci', labelKey: 'nav.raci', icon: IconGrid, countKey: 'raciMatrices' }
     ]
   },
   {
-    label: 'Control Environment',
+    labelKey: 'nav.controlEnvironment',
     items: [
-      { to: '/controls', label: 'Controls', icon: IconShield, countKey: 'controls' },
-      { to: '/frameworks', label: 'Frameworks', icon: IconLayers, countKey: 'frameworks' },
-      { to: '/mappings', label: 'Mappings', icon: IconLink },
-      { to: '/evidence', label: 'Evidence', icon: IconArchive, countKey: 'evidence' }
+      { to: '/controls', labelKey: 'nav.controls', icon: IconShield, countKey: 'controls' },
+      { to: '/frameworks', labelKey: 'nav.frameworks', icon: IconLayers, countKey: 'frameworks' },
+      { to: '/mappings', labelKey: 'nav.mappings', icon: IconLink },
+      { to: '/evidence', labelKey: 'nav.evidence', icon: IconArchive, countKey: 'evidence' }
     ]
   },
   {
-    label: 'Risk',
+    labelKey: 'nav.risk',
     items: [
-      { to: '/risks', label: 'Risk Register', icon: IconTarget, countKey: 'risks', permission: 'risk:read' },
-      { to: '/actions', label: 'Corrective Actions', icon: IconCheck, countKey: 'openActions', tone: 'warn' }
+      { to: '/risks', labelKey: 'nav.riskRegister', icon: IconTarget, countKey: 'risks', permission: 'risk:read' },
+      { to: '/actions', labelKey: 'nav.actions', icon: IconCheck, countKey: 'openActions', tone: 'warn' }
     ]
   },
   {
-    label: 'Assurance',
+    labelKey: 'nav.assurance',
     items: [
-      { to: '/gap-assessment', label: 'Gap Assessment', icon: IconTarget },
-      { to: '/soa', label: 'Statement of Applicability', icon: IconLayers },
-      { to: '/findings', label: 'Findings', icon: IconAlert, countKey: 'openFindings', tone: 'danger' },
-      { to: '/imports', label: 'Import & Analyse', icon: IconUpload, permission: 'import:write' },
-      { to: '/reports', label: 'Reports', icon: IconChart }
+      { to: '/gap-assessment', labelKey: 'nav.gapAssessment', icon: IconTarget },
+      { to: '/soa', labelKey: 'nav.soa', icon: IconLayers },
+      { to: '/findings', labelKey: 'nav.findings', icon: IconAlert, countKey: 'openFindings', tone: 'danger' },
+      { to: '/imports', labelKey: 'nav.imports', icon: IconUpload, permission: 'import:write' },
+      { to: '/reports', labelKey: 'nav.reports', icon: IconChart }
     ]
   }
 ];
 
 export default function Shell({ children }) {
   const { user, org, logout, can } = useAuth();
+  const { t, formatNumber } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const [counts, setCounts] = useState({});
@@ -105,7 +107,7 @@ export default function Shell({ children }) {
 
   return (
     <div className="app-shell">
-      <nav className={`sidebar ${menuOpen ? 'open' : ''}`} aria-label="Main navigation">
+      <nav className={`sidebar ${menuOpen ? 'open' : ''}`} aria-label={t('nav.mainNavigation')}>
         <div className="sidebar-brand">
           <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
             <rect width="32" height="32" rx="7" fill="#2E6F9E" />
@@ -114,7 +116,7 @@ export default function Shell({ children }) {
           </svg>
           <span className="sidebar-brand-text">
             <span className="sidebar-brand-name">AutGRC</span>
-            <span className="sidebar-brand-sub">Governance Platform</span>
+            <span className="sidebar-brand-sub">{t('app.tagline')}</span>
           </span>
         </div>
 
@@ -124,50 +126,51 @@ export default function Shell({ children }) {
             if (!items.length) return null;
             return (
               <div key={group.label}>
-                <div className="nav-group-label">{group.label}</div>
+                <div className="nav-group-label">{t(group.labelKey)}</div>
                 {items.map((item) => {
                   const Icon = item.icon;
                   const count = item.countKey ? counts[item.countKey] : undefined;
                   return (
                     <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                       <Icon />
-                      <span className="nav-item-label">{item.label}</span>
-                      {count > 0 && <span className="nav-count">{count}</span>}
+                      <span className="nav-item-label">{t(item.labelKey)}</span>
+                      {count > 0 && <span className="nav-count">{formatNumber(count)}</span>}
                     </NavLink>
                   );
                 })}
               </div>
             );
           })}
-          <div className="nav-group-label">Administration</div>
+          <div className="nav-group-label">{t('nav.administration')}</div>
           <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-            <IconSettings /><span className="nav-item-label">Settings</span>
+            <IconSettings /><span className="nav-item-label">{t('nav.settings')}</span>
           </NavLink>
         </div>
 
         <div className="sidebar-footer">
           <div className="truncate" title={org?.org_name}>{org?.org_name || 'Organisation'}</div>
-          <div style={{ opacity: .75 }}>AutGRC v1.0</div>
+          <div style={{ opacity: .75 }}>{t('app.version')}</div>
         </div>
       </nav>
 
       <div className="main-area">
         <header className="topbar">
-          <button className="btn btn-ghost btn-icon menu-toggle" onClick={() => setMenuOpen((o) => !o)} aria-label="Toggle navigation">
+          <button className="btn btn-ghost btn-icon menu-toggle" onClick={() => setMenuOpen((o) => !o)} aria-label={t('nav.toggleNavigation')}>
             {menuOpen ? <IconX /> : <IconMenu />}
           </button>
 
           <button className="topbar-search" onClick={() => setPaletteOpen(true)} type="button"
-            style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer' }} aria-label="Open search">
+            style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer' }} aria-label={t('search.openSearch')}>
             <IconSearch width={14} height={14} />
-            <input readOnly value="" placeholder="Search policies, controls, requirements, roles…" style={{ cursor: 'pointer' }} />
+            <input readOnly value="" placeholder={t('search.placeholder')} style={{ cursor: 'pointer' }} />
             <kbd>⌘K</kbd>
           </button>
 
           <div className="topbar-right">
+            <LanguageSwitch />
             <NotificationBell />
             <button className="btn btn-ghost btn-icon" onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} title="Toggle theme">
+              aria-label={theme === 'dark' ? t('common.lightTheme') : t('common.darkTheme')} title={t('common.toggleTheme')}>
               {theme === 'dark' ? <IconSun /> : <IconMoon />}
             </button>
             <div className="row-tight" style={{ paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
@@ -178,7 +181,7 @@ export default function Shell({ children }) {
               </div>
             </div>
             <button className="btn btn-ghost btn-icon" onClick={() => logout().then(() => navigate('/login'))}
-              aria-label="Sign out" title="Sign out"><IconLogout /></button>
+              aria-label={t('common.signOut')} title={t('common.signOut')}><IconLogout /></button>
           </div>
         </header>
 
@@ -187,6 +190,29 @@ export default function Shell({ children }) {
 
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------- language -- */
+
+/**
+ * Language and direction. Two languages need a toggle, not a dropdown, and
+ * each option is written in its own script so it is recognisable to someone
+ * who cannot read the other one.
+ */
+function LanguageSwitch() {
+  const { language, setLanguage, languages, t } = useI18n();
+  const next = languages.find((l) => l.code !== language) || languages[0];
+
+  return (
+    <button className="btn btn-ghost btn-sm lang-switch"
+      onClick={() => setLanguage(next.code)}
+      title={t('common.changeLanguage')}
+      aria-label={`${t('common.changeLanguage')}: ${next.label}`}
+      lang={next.code}>
+      <IconGlobe width={14} height={14} />
+      <span className="lang-switch-label">{next.native}</span>
+    </button>
   );
 }
 

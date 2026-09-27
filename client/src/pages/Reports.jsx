@@ -3,8 +3,10 @@ import { api } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import { Card, Loading, ErrorNote, Empty, useToast, Badge } from '../components/ui.jsx';
 import { IconChart, IconDownload, IconChevronRight, IconX } from '../components/Icons.jsx';
+import { useLabels } from '../i18n/labels.js';
 
 export default function Reports() {
+  const labels = useLabels();
   const toast = useToast();
   const { data: reports, loading, error, reload } = useFetch('/reports');
   const [active, setActive] = useState(null);

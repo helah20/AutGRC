@@ -9,6 +9,7 @@ import {
 import FindingCard from '../components/FindingCard.jsx';
 import { IconLink, IconArrowDown, IconSparkles, IconWand, IconAlert } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 const TIERS = [
   { key: 'framework', label: 'Framework / Regulation', types: ['framework'], help: 'The authoritative sources adopted for this domain.' },
@@ -20,6 +21,7 @@ const TIERS = [
 ];
 
 export default function Hierarchy() {
+  const labels = useLabels();
   const toast = useToast();
   const { can } = useAuth();
   const { data: docs, loading, error, reload } = useFetch('/documents?limit=500');
@@ -163,7 +165,7 @@ export default function Hierarchy() {
                   onStatusChange={async (finding, status) => {
                     try {
                       await api.patch(`/findings/${finding.id}`, { status });
-                      toast.success('Finding updated', titleCase(status));
+                      toast.success('Finding updated', labels.status(status));
                       setReview((r) => ({ ...r, findings: r.findings.filter((x) => x.id !== finding.id) }));
                     } catch (err) { toast.error('Update failed', err.message); }
                   }} />

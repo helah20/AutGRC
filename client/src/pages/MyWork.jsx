@@ -7,6 +7,8 @@ import {
 } from '../components/ui.jsx';
 import { IconCheck, IconArchive, IconComment, IconAlert, IconArrowRight } from '../components/Icons.jsx';
 import { formatDate, relativeTime, titleCase } from '../lib/format.js';
+import { useT } from '../i18n/index.jsx';
+import { useLabels } from '../i18n/labels.js';
 
 /**
  * Everything outstanding for the signed-in person, read from live state rather
@@ -17,6 +19,8 @@ export default function MyWork() {
   const { user } = useAuth();
   const toast = useToast();
   const { data, loading, error, reload } = useFetch('/notifications/my-work');
+  const t = useT();
+  const labels = useLabels();
 
   async function verify(file) {
     try {
@@ -31,30 +35,29 @@ export default function MyWork() {
       <div className="page-head">
         <div className="page-head-text">
           <h1 className="page-title">
-            My Work
-            {data?.total > 0 && <Badge tone="warn">{data.total} outstanding</Badge>}
+            {t('myWork.title')}
+            {data?.total > 0 && <Badge tone="warn">{t('myWork.outstanding', { count: data.total })}</Badge>}
           </h1>
           <p className="page-sub">
-            What is waiting on {user?.name?.split(' ')[0] || 'you'} as {user?.roleLabel}. Nothing here is
-            assigned by role alone — each item is one you can act on now.
+{t('myWork.subtitle', { name: user?.name?.split(' ')[0] || '', role: user?.roleLabel || '' })}
           </p>
         </div>
       </div>
 
-      {loading && <Loading label="Gathering your queue…" />}
+      {loading && <Loading label={t('myWork.gathering')} />}
       {error && <ErrorNote error={error} onRetry={reload} />}
 
       {data && data.total === 0 && (
         <Card>
-          <Empty icon={IconCheck} title="Nothing is waiting on you">
-            No approvals, reviews, evidence checks, findings or comments are outstanding for your account.
-          </Empty>
+          <Empty icon={IconCheck} title={t('myWork.nothingWaiting')}>{t('myWork.nothingWaitingBody')}</Empty>
         </Card>
       )}
 
       <div className="stack">
         {data?.groups?.map((group) => (
-          <Card key={group.key} title={group.label} subtitle={group.help}
+          <Card key={group.key}
+          title={t(`myWorkGroup.${group.key}`) === group.key ? group.label : t(`myWorkGroup.${group.key}`)}
+          subtitle={t(`myWorkGroup.${group.key}Help`).endsWith('Help') ? group.help : t(`myWorkGroup.${group.key}Help`)}
             actions={<Badge tone="neutral">{group.documents.length}</Badge>}
             flush>
             <ul className="worklist">
@@ -73,7 +76,7 @@ export default function MyWork() {
                   <div className="worklist-actions">
                     {doc.overdue && <Badge tone="danger">Overdue</Badge>}
                     <Link to={`/documents/${doc.id}`} className="btn btn-sm">
-                      {group.action}<IconArrowRight width={13} height={13} />
+                      {t(`myWorkGroup.${group.key}Action`).endsWith('Action') ? group.action : t(`myWorkGroup.${group.key}Action`)}<IconArrowRight width={13} height={13} />
                     </Link>
                   </div>
                 </li>
@@ -83,8 +86,8 @@ export default function MyWork() {
         ))}
 
         {data?.evidence?.length > 0 && (
-          <Card title="Evidence awaiting your verification"
-            subtitle="Collected by someone else, so you are able to attest to it."
+          <Card title={t('myWork.evidenceTitle')}
+            subtitle={t('myWork.evidenceSubtitle')}
             actions={<Badge tone="neutral">{data.evidence.length}</Badge>}
             flush>
             <ul className="worklist">
@@ -102,9 +105,9 @@ export default function MyWork() {
                   </div>
                   <div className="worklist-actions">
                     <button className="btn btn-sm btn-primary" onClick={() => verify(file)}>
-                      <IconCheck width={13} height={13} />Verify
+                      <IconCheck width={13} height={13} />{t('myWork.verify')}
                     </button>
-                    <Link to="/evidence" className="btn btn-sm btn-ghost btn-icon" aria-label="Open the evidence register">
+                    <Link to="/evidence" className="btn btn-sm btn-ghost btn-icon" aria-label={t('myWork.openEvidence')}>
                       <IconArchive width={13} height={13} />
                     </Link>
                   </div>
@@ -115,8 +118,8 @@ export default function MyWork() {
         )}
 
         {data?.findings?.length > 0 && (
-          <Card title="Open findings on documents you own"
-            subtitle="Raised by the quality engine or an AI review, most severe first."
+          <Card title={t('myWork.findingsTitle')}
+            subtitle={t('myWork.findingsSubtitle')}
             actions={<Badge tone="neutral">{data.findings.length}</Badge>}
             flush>
             <ul className="worklist">
@@ -127,7 +130,7 @@ export default function MyWork() {
                       <IconAlert width={13} height={13} />{finding.title}
                     </div>
                     <div className="worklist-meta">
-                      {finding.reference} — {finding.document_title} · {titleCase(finding.category)} · {relativeTime(finding.created_at)}
+                      {finding.reference} — {finding.document_title} · {labels.findingCategory(finding.category)} · {relativeTime(finding.created_at)}
                     </div>
                   </div>
                   <div className="worklist-actions">
@@ -143,8 +146,8 @@ export default function MyWork() {
         )}
 
         {data?.comments?.length > 0 && (
-          <Card title="Unresolved comments"
-            subtitle="On documents where you are the owner, reviewer or approver."
+          <Card title={t('myWork.commentsTitle')}
+            subtitle={t('myWork.commentsSubtitle')}
             actions={<Badge tone="neutral">{data.comments.length}</Badge>}
             flush>
             <ul className="worklist">

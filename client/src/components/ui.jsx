@@ -6,6 +6,8 @@ import {
   IconX, IconCheck, IconAlert, IconInfo, IconChevronDown, IconSearch, IconChevronRight
 } from './Icons.jsx';
 import { titleCase, STATUS_TONE, SEVERITY_TONE } from '../lib/format.js';
+import { useI18n } from '../i18n/index.jsx';
+import { useLabels } from '../i18n/labels.js';
 
 /* ---------------------------------------------------------------- badges -- */
 
@@ -19,11 +21,13 @@ export function Badge({ tone = 'neutral', children, dot = false, title }) {
 }
 
 export function StatusBadge({ status }) {
-  return <Badge tone={STATUS_TONE[status] || 'neutral'} dot>{titleCase(status)}</Badge>;
+  const labels = useLabels();
+  return <Badge tone={STATUS_TONE[status] || 'neutral'} dot>{labels.status(status)}</Badge>;
 }
 
 export function SeverityBadge({ severity }) {
-  return <Badge tone={SEVERITY_TONE[severity] || 'neutral'}>{titleCase(severity)}</Badge>;
+  const labels = useLabels();
+  return <Badge tone={SEVERITY_TONE[severity] || 'neutral'}>{labels.rating(severity)}</Badge>;
 }
 
 const PROVENANCE_LABEL = {
@@ -51,10 +55,17 @@ const PROVENANCE_HELP = {
 };
 
 export function ProvenanceTag({ provenance }) {
+  const { t } = useI18n();
   if (!provenance) return null;
+  // The help text stays in the dictionary under provenanceHelp so the reason a
+  // label matters is available in both languages, not only the label itself.
+  const help = t(`provenanceHelp.${provenance}`);
   return (
-    <span className={`provenance-tag ${provenance}`} title={PROVENANCE_HELP[provenance] || ''}>
-      {PROVENANCE_LABEL[provenance] || titleCase(provenance)}
+    <span className={`provenance-tag ${provenance}`}
+      title={help === provenance ? (PROVENANCE_HELP[provenance] || '') : help}>
+      {t(`provenance.${provenance}`) === provenance
+        ? (PROVENANCE_LABEL[provenance] || titleCase(provenance))
+        : t(`provenance.${provenance}`)}
     </span>
   );
 }

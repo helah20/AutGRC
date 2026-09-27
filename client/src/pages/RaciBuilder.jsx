@@ -10,6 +10,7 @@ import FindingCard from '../components/FindingCard.jsx';
 import {
   IconPlus, IconDownload, IconTrash, IconAlert, IconCheck, IconChevronRight, IconX
 } from '../components/Icons.jsx';
+import { useLabels } from '../i18n/labels.js';
 
 const VALUES = ['', 'R', 'A', 'S', 'C', 'I'];
 const LEGEND = {
@@ -21,6 +22,7 @@ const LEGEND = {
 };
 
 export default function RaciBuilder() {
+  const labels = useLabels();
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -73,7 +75,7 @@ export default function RaciBuilder() {
         <div className="page-head-text">
           <div className="row-tight" style={{ marginBottom: 5 }}>
             <Badge tone="neutral">{matrix.mode.toUpperCase()}</Badge>
-            {matrix.domain_label && <Badge tone="info">{matrix.domain_label}</Badge>}
+            {matrix.domain_label && <Badge tone="info">{labels.domain(matrix.domain_key, matrix.domain_label)}</Badge>}
             {validation.length === 0
               ? <Badge tone="ok"><IconCheck width={11} height={11} />Valid</Badge>
               : <Badge tone="danger"><IconAlert width={11} height={11} />{validation.length} issue{validation.length === 1 ? '' : 's'}</Badge>}

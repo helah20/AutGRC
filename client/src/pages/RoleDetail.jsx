@@ -8,6 +8,7 @@ import {
 } from '../components/ui.jsx';
 import { IconEdit, IconTrash, IconPlus, IconCheck, IconX, IconChevronRight, IconGrid } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 const KINDS = [
   { key: 'responsibility', label: 'Key Responsibilities', help: 'What the role does on an ongoing basis.' },
@@ -18,6 +19,7 @@ const KINDS = [
 ];
 
 export default function RoleDetail() {
+  const labels = useLabels();
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -67,7 +69,7 @@ export default function RoleDetail() {
         <div className="page-head-text">
           <div className="row-tight" style={{ marginBottom: 5 }}>
             <Badge tone="neutral">{role.category}</Badge>
-            {role.domain_label && <Badge tone="info">{role.domain_label}</Badge>}
+            {role.domain_label && <Badge tone="info">{labels.domain(role.domain_key, role.domain_label)}</Badge>}
             <span className="pill mono">{role.code}</span>
           </div>
           <h1 className="page-title">{role.name}</h1>

@@ -9,10 +9,12 @@ import {
 } from '../components/ui.jsx';
 import { IconTarget, IconDownload, IconChevronRight, IconCheck } from '../components/Icons.jsx';
 import { formatDate, titleCase, GAP_TONE, RISK_TONE } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 
 const STATUSES = ['compliant', 'partially_compliant', 'non_compliant', 'not_applicable'];
 
 export default function GapAssessmentDetail() {
+  const labels = useLabels();
   const { id } = useParams();
   const toast = useToast();
   const { can } = useAuth();
@@ -52,7 +54,7 @@ export default function GapAssessmentDetail() {
         <div className="page-head-text">
           <div className="row-tight" style={{ marginBottom: 5 }}>
             {assessment.framework_code && <Badge tone="info">{assessment.framework_code}</Badge>}
-            <Badge tone={assessment.status === 'completed' ? 'ok' : 'warn'}>{titleCase(assessment.status)}</Badge>
+            <Badge tone={assessment.status === 'completed' ? 'ok' : 'warn'}>{labels.humanise(assessment.status)}</Badge>
             {assessment.due_at && <span className="tiny muted">Due {formatDate(assessment.due_at)}</span>}
           </div>
           <h1 className="page-title">{assessment.name}</h1>
@@ -92,13 +94,13 @@ export default function GapAssessmentDetail() {
         <DataTable
           columns={[
             { key: 'requirement_ref', header: 'Requirement', nowrap: true, width: 110, render: (i) => <span className="ref-tag">{i.requirement_ref}</span> },
-            { key: 'requirement_txt', header: 'Requirement text', render: (i) => (<><div className="clamp-2">{i.requirement_txt}</div>{i.domain_label && <div className="cell-sub">{i.domain_label}</div>}</>) },
+            { key: 'requirement_txt', header: 'Requirement text', render: (i) => (<><div className="clamp-2">{i.requirement_txt}</div>{i.domain_label && <div className="cell-sub">{labels.domain(i.domain_key, i.domain_label)}</div>}</>) },
             { key: 'current_state', header: 'Current state', render: (i) => <span className="small clamp-2">{i.current_state}</span> },
             { key: 'gap', header: 'Gap', render: (i) => <span className="small clamp-2">{i.gap}</span> },
-            { key: 'risk_rating', header: 'Risk', nowrap: true, render: (i) => i.risk_rating ? <Badge tone={RISK_TONE[i.risk_rating]}>{titleCase(i.risk_rating)}</Badge> : '—' },
+            { key: 'risk_rating', header: 'Risk', nowrap: true, render: (i) => i.risk_rating ? <Badge tone={RISK_TONE[i.risk_rating]}>{labels.rating(i.risk_rating)}</Badge> : '—' },
             { key: 'owner', header: 'Owner', nowrap: true, render: (i) => <span className="small">{i.owner || '—'}</span> },
             { key: 'due_date', header: 'Due', nowrap: true, render: (i) => i.due_date ? <span className="small">{formatDate(i.due_date)}</span> : '—' },
-            { key: 'status', header: 'Status', nowrap: true, render: (i) => <Badge tone={GAP_TONE[i.status]}>{titleCase(i.status)}</Badge> }
+            { key: 'status', header: 'Status', nowrap: true, render: (i) => <Badge tone={GAP_TONE[i.status]}>{labels.gapStatus(i.status)}</Badge> }
           ]}
           rows={filtered}
           onRowClick={can('gap:write') ? setSelected : undefined}

@@ -12,6 +12,7 @@ import {
 } from '../components/Icons.jsx';
 import { formatDate, relativeTime, titleCase } from '../lib/format.js';
 import { EnrolMfa } from './AccountAction.jsx';
+import { useLabels } from '../i18n/labels.js';
 
 /**
  * Roles as the server defines them. Kept here rather than fetched, because the
@@ -29,6 +30,7 @@ const ROLE_OPTIONS = [
 ];
 
 export default function Settings() {
+  const labels = useLabels();
   const { can, user } = useAuth();
   const [tab, setTab] = useState('organisation');
 
@@ -191,6 +193,7 @@ function OrgSettings({ canEdit }) {
 /* -------------------------------------------------------------------- users */
 
 function UserSettings() {
+  const labels = useLabels();
   const toast = useToast();
   const { data, loading, error, reload } = useFetch('/admin/users');
   const [addOpen, setAddOpen] = useState(false);
@@ -225,7 +228,7 @@ function UserSettings() {
               key: 'status', header: 'Status', nowrap: true,
               render: (u) => u.locked_until && new Date(u.locked_until) > new Date()
                 ? <Badge tone="danger"><IconLock width={11} height={11} />Locked</Badge>
-                : <Badge tone={u.status === 'active' ? 'ok' : 'neutral'}>{titleCase(u.status)}</Badge>
+                : <Badge tone={u.status === 'active' ? 'ok' : 'neutral'}>{labels.humanise(u.status)}</Badge>
             },
             {
               key: 'mfa_enabled', header: 'Two-step', nowrap: true,

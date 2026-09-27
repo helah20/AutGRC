@@ -15,8 +15,10 @@ import {
   IconDownload, IconEdit, IconSparkles, IconHistory, IconComment, IconCheck, IconAlert,
   IconTrash, IconFlow, IconShield, IconLink, IconChevronRight, IconRefresh, IconX, IconInfo
 } from '../components/Icons.jsx';
+import { useLabels } from '../i18n/labels.js';
 
 export default function DocumentDetail() {
+  const labels = useLabels();
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -152,7 +154,7 @@ export default function DocumentDetail() {
           </div>
           <h1 className="page-title">{doc.title}</h1>
           <p className="page-sub">
-            {doc.domain_label} · Owner {doc.owner_name || 'unassigned'}
+            {labels.domain(doc.domain_key, doc.domain_label)} · Owner {doc.owner_name || 'unassigned'}
             {doc.approver_name ? ` · Approver ${doc.approver_name}` : ''}
             {doc.review_date ? ` · Review due ${formatDate(doc.review_date)}` : ''}
           </p>
@@ -586,6 +588,7 @@ export default function DocumentDetail() {
 }
 
 function PropertiesModal({ open, onClose, doc, directory, onSaved, onDelete, canDelete }) {
+  const labels = useLabels();
   const toast = useToast();
   const [form, setForm] = useState({});
   useEffect(() => {
@@ -631,11 +634,11 @@ function PropertiesModal({ open, onClose, doc, directory, onSaved, onDelete, can
       <div className="field-row">
         <Field label="Document owner" hint="Accountable for content and review.">
           <Select value={form.owner_id} onChange={(v) => setForm((f) => ({ ...f, owner_id: v }))} placeholder="Unassigned"
-            options={directory.map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || titleCase(u.role)}` }))} />
+            options={directory.map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
         </Field>
         <Field label="Approver">
           <Select value={form.approver_id} onChange={(v) => setForm((f) => ({ ...f, approver_id: v }))} placeholder="Unassigned"
-            options={directory.filter((u) => ['approver', 'admin'].includes(u.role)).map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || titleCase(u.role)}` }))} />
+            options={directory.filter((u) => ['approver', 'admin'].includes(u.role)).map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
         </Field>
       </div>
       <div className="field-row">
