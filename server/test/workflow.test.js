@@ -307,6 +307,75 @@ test('AutGRC end-to-end governance workflow', {
   assert.ok(published.body.approvals.length >= 3, 'approval history recorded');
 });
 
+  await t.test('notifications reach whoever the work now waits on', async () => {
+    const docId = state.docs.policy.id;
+
+    // The lifecycle case above submitted, approved and published this document
+    // as the GRC manager and the CISO. The approver should have been told the
+    // approval was needed, and the owner that it was approved.
+    const approverInbox = await api('GET', '/api/notifications?limit=50', { as: 'ciso@autgrc.demo' });
+    assert.equal(approverInbox.status, 200);
+    const approverKinds = approverInbox.body.items
+      .filter((n) => n.entity_id === docId)
+      .map((n) => n.kind);
+    assert.ok(approverKinds.includes('approval_requested'), 'the approver is told an approval is needed');
+
+    const ownerInbox = await api('GET', '/api/notifications?limit=50');
+    const ownerForDoc = ownerInbox.body.items.filter((n) => n.entity_id === docId);
+    assert.ok(ownerForDoc.some((n) => n.kind === 'approved'), 'the owner is told their document was approved');
+    // The GRC manager submitted and published; neither should notify them.
+    assert.ok(
+      !ownerForDoc.some((n) => ['approval_requested', 'published'].includes(n.kind)),
+      'nobody is notified of their own action'
+    );
+
+    const unread = await api('GET', '/api/notifications/unread-count', { as: 'ciso@autgrc.demo' });
+    assert.ok(unread.body.unread > 0);
+
+    const first = approverInbox.body.items[0];
+    const read = await api('POST', `/api/notifications/${first.id}/read`, { as: 'ciso@autgrc.demo' });
+    assert.equal(read.status, 200);
+    assert.ok(read.body.notification.read_at, 'marking read records when');
+
+    // Another person's notification is not found rather than forbidden, so the
+    // response does not confirm that it exists.
+    const crossUser = await api('POST', `/api/notifications/${first.id}/read`, { as: 'auditor@autgrc.demo' });
+    assert.equal(crossUser.status, 404);
+
+    // Sweeps are keyed, so running one twice raises nothing the second time.
+    const firstSweep = await api('POST', '/api/notifications/sweep', { body: {} });
+    assert.equal(firstSweep.status, 200);
+    const secondSweep = await api('POST', '/api/notifications/sweep', { body: {} });
+    assert.equal(secondSweep.body.review.raised, 0, 'a repeated sweep raises no duplicate review notice');
+    assert.equal(secondSweep.body.evidence.raised, 0, 'a repeated sweep raises no duplicate evidence notice');
+
+    const cannotSweep = await api('POST', '/api/notifications/sweep', { as: 'viewer@autgrc.demo', body: {} });
+    assert.equal(cannotSweep.status, 403);
+  });
+
+  await t.test('My Work offers only actions the person can actually take', async () => {
+    const approver = await api('GET', '/api/notifications/my-work', { as: 'ciso@autgrc.demo' });
+    assert.equal(approver.status, 200);
+    const awaiting = approver.body.groups.find((g) => g.key === 'awaiting_approval');
+    if (awaiting) {
+      // Segregation of duties would refuse these, so the queue must not offer them.
+      const me = await api('GET', '/api/auth/me', { as: 'ciso@autgrc.demo' });
+      assert.ok(
+        awaiting.documents.every((d) => d.owner_id !== me.body.user.id),
+        'the approval queue excludes documents the approver owns'
+      );
+    }
+
+    // Read-only holds no action permission, so its queue is genuinely empty.
+    const readOnly = await api('GET', '/api/notifications/my-work', { as: 'viewer@autgrc.demo' });
+    assert.equal(readOnly.body.total, 0);
+    assert.equal(readOnly.body.groups.length, 0);
+
+    // The sidebar badge and the page read the same function.
+    const dashboard = await api('GET', '/api/dashboard', { as: 'ciso@autgrc.demo' });
+    assert.equal(dashboard.body.kpis.myWork, approver.body.total, 'the sidebar count matches the queue');
+  });
+
   await t.test('published documents are protected from direct edit and deletion', async () => {
   const docId = state.docs.policy.id;
   const detail = await api('GET', `/api/documents/${docId}`);

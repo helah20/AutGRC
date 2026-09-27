@@ -393,3 +393,69 @@ table.raci td.cell-assign { padding: 0; text-align: center; }
 /* A destructive action that still reads as secondary until hovered. */
 .btn-danger-ghost { color: var(--danger); }
 .btn-danger-ghost:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger); }
+
+/* ================================================== notifications + queue == */
+
+.notif-wrap { position: relative; display: flex; }
+.notif-dot {
+  position: absolute; top: -3px; right: -3px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 8px; background: var(--danger); color: #fff;
+  font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
+  border: 2px solid var(--bg-raised);
+}
+/* Catches the click that closes the panel without dimming the page. */
+.notif-backdrop { position: fixed; inset: 0; z-index: 40; }
+.notif-panel {
+  position: absolute; top: calc(100% + 7px); inset-inline-end: 0; z-index: 41;
+  width: min(384px, calc(100vw - 24px));
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.notif-head, .notif-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 12px;
+}
+.notif-head { border-bottom: 1px solid var(--border); }
+.notif-foot { border-top: 1px solid var(--border); background: var(--bg-sunken); }
+.notif-list { max-height: min(460px, 60vh); overflow-y: auto; }
+.notif-item { display: flex; align-items: flex-start; border-bottom: 1px solid var(--border); }
+.notif-item:last-child { border-bottom: none; }
+.notif-item.unread { background: var(--bg-hover); }
+.notif-item-main {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;
+  padding: 9px 4px 9px 12px; border: none; background: none;
+  font: inherit; text-align: left; cursor: pointer; color: inherit;
+}
+.notif-item-main:hover .notif-item-title { color: var(--accent); }
+.notif-item-title { font-size: 12.5px; font-weight: 600; }
+.notif-item-body {
+  font-size: 12px; color: var(--text-muted); line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.notif-item-meta { font-size: 11px; color: var(--text-faint); }
+.notif-item-side { display: flex; align-items: center; gap: 3px; padding: 9px 8px 0 0; flex: 0 0 auto; }
+.notif-flag { width: 6px; height: 6px; border-radius: 50%; }
+.notif-flag.warn { background: var(--warn); }
+.notif-flag.danger { background: var(--danger); }
+
+.worklist { list-style: none; }
+.worklist-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 11px 16px; border-bottom: 1px solid var(--border);
+}
+.worklist-item:last-child { border-bottom: none; }
+.worklist-item:hover { background: var(--bg-hover); }
+.worklist-main { flex: 1; min-width: 0; }
+.worklist-title {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  font-size: 13px; font-weight: 600; color: inherit;
+}
+a.worklist-title:hover { color: var(--accent); }
+.worklist-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+.worklist-body {
+  font-size: 12px; color: var(--text); margin-top: 5px;
+  padding-inline-start: 9px; border-inline-start: 2px solid var(--border-strong);
+}
+.worklist-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; }

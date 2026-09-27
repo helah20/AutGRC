@@ -5,7 +5,7 @@ import { q } from '../db/index.js';
 import { authenticate } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errors.js';
 import { domainName, DOMAIN_META, DOMAIN_CATEGORIES } from '../knowledge/index.js';
-import { enrichDocuments, STATUS_LABEL } from './_shared.js';
+import { buildMyWork, enrichDocuments, STATUS_LABEL } from './_shared.js';
 import { DOC_TYPE_LABEL } from '../services/generator.js';
 
 const router = express.Router();
@@ -87,7 +87,10 @@ router.get('/', asyncHandler(async (req, res) => {
       reviewDue: reviewDue.length,
       overdue: overdue.length,
       openFindings: count("SELECT COUNT(*) AS n FROM findings WHERE status IN ('open','acknowledged')"),
-      criticalFindings: count("SELECT COUNT(*) AS n FROM findings WHERE status IN ('open','acknowledged') AND severity IN ('critical','high')")
+      criticalFindings: count("SELECT COUNT(*) AS n FROM findings WHERE status IN ('open','acknowledged') AND severity IN ('critical','high')"),
+      // Personal to the requesting user, so the sidebar badge reflects their
+      // own queue rather than the organisation's backlog.
+      myWork: buildMyWork(req.user).total
     },
     charts: {
       byStatus: q.all('SELECT status, COUNT(*) AS n FROM documents GROUP BY status')

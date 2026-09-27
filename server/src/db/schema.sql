@@ -358,6 +358,32 @@ CREATE TABLE IF NOT EXISTS evidence_files (
 );
 CREATE INDEX IF NOT EXISTS idx_evfile_evidence ON evidence_files(evidence_id, collected_at DESC);
 
+-- ---------------------------------------------------------- notifications --
+-- What is waiting on a named person. The dashboard already counted documents
+-- past their review date; nothing told the person who owns them.
+CREATE TABLE IF NOT EXISTS notifications (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL,   -- review_requested | approval_requested | ready_to_publish
+                               -- | approved | published | comment | finding | review_due
+                               -- | evidence_verification
+  title       TEXT NOT NULL,
+  body        TEXT,
+  entity_type TEXT,
+  entity_id   TEXT,
+  url         TEXT,            -- the client route that resolves it
+  severity    TEXT NOT NULL DEFAULT 'info' CHECK (severity IN ('info','warn','danger')),
+  actor_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  actor_name  TEXT,
+  -- Set on anything raised by a repeating sweep, so a review falling due does
+  -- not produce one notification per sweep for the rest of the year.
+  dedupe_key  TEXT,
+  read_at     TEXT,
+  created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_notif_inbox ON notifications(user_id, read_at, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notif_dedupe ON notifications(user_id, dedupe_key) WHERE dedupe_key IS NOT NULL;
+
 -- ---------------------------------------------------------------- mapping --
 CREATE TABLE IF NOT EXISTS control_mappings (
   id                TEXT PRIMARY KEY,

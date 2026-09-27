@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import { api } from '../lib/api.js';
-import { initials } from '../lib/format.js';
+import { initials, relativeTime } from '../lib/format.js';
 import {
   IconDashboard, IconDocument, IconWand, IconUsers, IconGrid, IconShield, IconLayers,
   IconLink, IconArchive, IconChart, IconSettings, IconSearch, IconUpload, IconAlert,
-  IconSun, IconMoon, IconLogout, IconMenu, IconBook, IconTarget, IconX, IconChevronRight
+  IconSun, IconMoon, IconLogout, IconMenu, IconBook, IconTarget, IconX, IconChevronRight,
+  IconBell, IconInbox, IconCheck, IconTrash
 } from './Icons.jsx';
 
 const NAV = [
@@ -16,6 +17,7 @@ const NAV = [
     label: 'Overview',
     items: [
       { to: '/dashboard', label: 'Dashboard', icon: IconDashboard },
+      { to: '/my-work', label: 'My Work', icon: IconInbox, countKey: 'myWork', tone: 'warn' },
       { to: '/generator', label: 'Generate', icon: IconWand, permission: 'generate:run' }
     ]
   },
@@ -155,6 +157,7 @@ export default function Shell({ children }) {
           </button>
 
           <div className="topbar-right">
+            <NotificationBell />
             <button className="btn btn-ghost btn-icon" onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
               aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} title="Toggle theme">
               {theme === 'dark' ? <IconSun /> : <IconMoon />}
@@ -175,6 +178,136 @@ export default function Shell({ children }) {
       </div>
 
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------- notifications -- */
+
+const SEVERITY_TONE = { danger: 'danger', warn: 'warn', info: 'info' };
+
+/**
+ * The inbox. Poll rather than push: one small count query every 60 seconds on
+ * a locally installed single-process application is cheaper in every sense
+ * than holding a socket open, and a minute-old badge is accurate enough for a
+ * review that falls due in 30 days.
+ */
+function NotificationBell() {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const [items, setItems] = useState(null);
+
+  const refreshCount = useCallback(async () => {
+    try {
+      const res = await api.get('/notifications/unread-count');
+      setUnread(res.unread || 0);
+    } catch { /* a failed poll is not worth reporting */ }
+  }, []);
+
+  useEffect(() => {
+    refreshCount();
+    const timer = setInterval(refreshCount, 60_000);
+    return () => clearInterval(timer);
+  }, [refreshCount]);
+
+  const loadItems = useCallback(async () => {
+    try {
+      const res = await api.get('/notifications?limit=20');
+      setItems(res.items || []);
+      setUnread(res.unread || 0);
+    } catch { setItems([]); }
+  }, []);
+
+  useEffect(() => { if (open) loadItems(); }, [open, loadItems]);
+
+  // Close on an outside click or Escape, the way the command palette does.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  async function openItem(item) {
+    setOpen(false);
+    if (!item.read_at) {
+      api.post(`/notifications/${item.id}/read`).then(refreshCount).catch(() => {});
+    }
+    if (item.url) navigate(item.url);
+  }
+
+  async function markAll() {
+    try {
+      await api.post('/notifications/read-all');
+      setUnread(0);
+      loadItems();
+    } catch { /* the badge will correct itself on the next poll */ }
+  }
+
+  async function dismiss(item) {
+    try {
+      await api.del(`/notifications/${item.id}`);
+      setItems((list) => list.filter((n) => n.id !== item.id));
+      refreshCount();
+    } catch { /* leave it in place */ }
+  }
+
+  return (
+    <div className="notif-wrap">
+      <button className="btn btn-ghost btn-icon" onClick={() => setOpen((o) => !o)}
+        aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+        aria-expanded={open} title="Notifications">
+        <IconBell />
+        {unread > 0 && <span className="notif-dot">{unread > 99 ? '99+' : unread}</span>}
+      </button>
+
+      {open && (
+        <>
+          <div className="notif-backdrop" onMouseDown={() => setOpen(false)} />
+          <div className="notif-panel" role="dialog" aria-label="Notifications">
+            <div className="notif-head">
+              <strong>Notifications</strong>
+              {unread > 0 && (
+                <button className="btn btn-ghost btn-sm" onClick={markAll}>
+                  <IconCheck width={12} height={12} />Mark all read
+                </button>
+              )}
+            </div>
+
+            <div className="notif-list">
+              {items === null && <div className="loading-block" style={{ padding: 20 }}><span className="spinner" />Loading…</div>}
+              {items?.length === 0 && (
+                <div className="empty" style={{ padding: 24 }}>
+                  <p>Nothing to report. Approvals, review dates and evidence checks appear here.</p>
+                </div>
+              )}
+              {items?.map((item) => (
+                <div key={item.id} className={`notif-item ${item.read_at ? '' : 'unread'}`}>
+                  <button type="button" className="notif-item-main" onClick={() => openItem(item)}>
+                    <span className="notif-item-title">{item.title}</span>
+                    {item.body && <span className="notif-item-body">{item.body}</span>}
+                    <span className="notif-item-meta">
+                      {item.actor_name ? `${item.actor_name} · ` : ''}{relativeTime(item.created_at)}
+                    </span>
+                  </button>
+                  <div className="notif-item-side">
+                    {item.severity !== 'info' && <span className={`notif-flag ${SEVERITY_TONE[item.severity]}`} aria-hidden="true" />}
+                    <button className="btn btn-ghost btn-sm btn-icon" onClick={() => dismiss(item)}
+                      aria-label="Dismiss" title="Dismiss"><IconTrash width={12} height={12} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="notif-foot">
+              <button className="btn btn-sm" onClick={() => { setOpen(false); navigate('/my-work'); }}>
+                Open My Work<IconChevronRight width={12} height={12} />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

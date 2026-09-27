@@ -8,6 +8,7 @@ import { authenticate, requirePermission, audit, can } from '../middleware/auth.
 import { asyncHandler, validate, HttpError, notFound } from '../middleware/errors.js';
 import { sanitiseHtml, htmlToText } from '../services/html.js';
 import { indexDocument, removeFromIndex } from '../services/search.js';
+import { notifyTransition, notifyComment } from '../services/notify.js';
 import { enrichDocument, enrichDocuments, listParam, paginate, STATUS_LABEL } from './_shared.js';
 import { DOC_TYPE_LABEL, DOC_TYPE_PREFIX } from '../services/generator.js';
 import { domainName, domainShort } from '../knowledge/index.js';
@@ -385,6 +386,9 @@ router.post('/:id/transition', requirePermission('document:read'), validate(z.ob
     summary: `${doc.reference} moved from ${STATUS_LABEL[doc.status]} to ${STATUS_LABEL[req.body.to]}`,
     detail: { comment: req.body.comment }
   });
+  // Tell whoever the transition now waits on. The document row is re-read
+  // above, so approver_id assigned during this transition is included.
+  notifyTransition({ document: updated, from: doc.status, to: req.body.to, actor: req.user });
   res.json({
     document: enrichDocument(updated),
     approvals: q.all('SELECT * FROM document_approvals WHERE document_id = ? ORDER BY created_at DESC', doc.id)
@@ -494,8 +498,10 @@ router.post('/:id/comments', requirePermission('comment:write'), validate(z.obje
     commentId, doc.id, req.body.section_id || null, req.user.id, req.user.name,
     req.body.body, req.body.quote || null, nowIso()
   );
+  const comment = q.get('SELECT * FROM comments WHERE id = ?', commentId);
+  notifyComment({ document: doc, comment, actor: req.user });
   audit(req, { action: 'comment:create', entityType: 'document', entityId: doc.id, summary: `Commented on ${doc.reference}` });
-  res.status(201).json({ comment: q.get('SELECT * FROM comments WHERE id = ?', commentId) });
+  res.status(201).json({ comment });
 }));
 
 router.patch('/:id/comments/:commentId', requirePermission('comment:write'), asyncHandler(async (req, res) => {

@@ -8,6 +8,7 @@ import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound } from '../middleware/errors.js';
 import { reviewDocument, reviewDomain, scoreOf } from '../services/review.js';
 import { aiReview, rewriteText, draftSection, providerInfo } from '../services/ai.js';
+import { notifyFindings } from '../services/notify.js';
 import { buildParameterSet, domainName } from '../knowledge/index.js';
 import { getOrgProfile, enrichDocument } from './_shared.js';
 
@@ -17,7 +18,7 @@ router.use(authenticate);
 router.get('/provider', asyncHandler(async (req, res) => res.json(providerInfo())));
 
 /** Persist engine and AI findings so they can be tracked and dispositioned. */
-function persistFindings(scopeType, scopeId, findings) {
+function persistFindings(scopeType, scopeId, findings, actor) {
   const at = nowIso();
   const existing = q.all(
     'SELECT id, category, title, location, status FROM findings WHERE scope_type = ? AND scope_id = ?',
@@ -52,10 +53,15 @@ function persistFindings(scopeType, scopeId, findings) {
     }
   }
 
-  return q.all(
+  const stored = q.all(
     "SELECT * FROM findings WHERE scope_type = ? AND scope_id = ? AND status != 'resolved' ORDER BY CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END, created_at DESC",
     scopeType, scopeId
   ).map((f) => ({ ...f, evidence: fromJson(f.evidence, null) }));
+
+  // Notifications are keyed on the finding id, so re-running a review tells
+  // nobody about findings they have already been told about.
+  notifyFindings({ findings: stored, actor });
+  return stored;
 }
 
 /** Full quality review of a document: engine checks plus the AI provider's. */
@@ -70,7 +76,7 @@ router.post('/review/document/:id', requirePermission('ai:use'), asyncHandler(as
   });
 
   const all = [...engine.findings, ...ai.findings];
-  const stored = persistFindings('document', req.params.id, all);
+  const stored = persistFindings('document', req.params.id, all, req.user);
 
   audit(req, {
     action: 'ai:review', entityType: 'document', entityId: req.params.id,
@@ -92,7 +98,7 @@ router.post('/review/document/:id', requirePermission('ai:use'), asyncHandler(as
 /** Domain-wide review: the consistency picture across every document. */
 router.post('/review/domain/:key', requirePermission('ai:use'), asyncHandler(async (req, res) => {
   const result = reviewDomain(req.params.key);
-  const stored = persistFindings('domain', req.params.key, result.findings);
+  const stored = persistFindings('domain', req.params.key, result.findings, req.user);
   audit(req, {
     action: 'ai:review_domain', entityType: 'domain', entityId: req.params.key,
     summary: `Reviewed ${domainName(req.params.key)}: ${result.findings.length} finding(s)`

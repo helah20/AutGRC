@@ -4,6 +4,7 @@ import { Loading } from './components/ui.jsx';
 import Shell from './components/Shell.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
+import MyWork from './pages/MyWork.jsx';
 import Generator from './pages/Generator.jsx';
 import Documents from './pages/Documents.jsx';
 import DocumentDetail from './pages/DocumentDetail.jsx';
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/my-work" element={<MyWork />} />
         <Route path="/generator" element={<Generator />} />
         <Route path="/documents" element={<Documents />} />
         <Route path="/documents/:id" element={<DocumentDetail />} />

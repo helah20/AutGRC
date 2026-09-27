@@ -19,6 +19,7 @@ import config from './config.js';
 import { db } from './db/index.js';
 import { errorHandler } from './middleware/errors.js';
 import { validateKnowledgeBase } from './knowledge/index.js';
+import { startSweepSchedule, stopSweepSchedule } from './services/notify.js';
 
 import authRoutes from './routes/auth.js';
 import documentRoutes from './routes/documents.js';
@@ -37,6 +38,7 @@ import exportRoutes from './routes/exports.js';
 import importRoutes from './routes/imports.js';
 import reportRoutes from './routes/reports.js';
 import adminRoutes from './routes/admin.js';
+import notificationRoutes from './routes/notifications.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -110,6 +112,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/imports', importRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use('/api', (req, res) => res.status(404).json({ error: `No API route for ${req.method} ${req.path}` }));
 
@@ -144,8 +147,13 @@ const server = app.listen(config.port, () => {
   console.log(`[AutGRC] AI provider: ${config.ai.provider}`);
 });
 
+// Review dates and unverified evidence are swept here rather than by a cron:
+// the platform runs as a single local process, so it sweeps for itself.
+startSweepSchedule();
+
 function shutdown(signal) {
   console.log(`[AutGRC] ${signal} received, shutting down.`);
+  stopSweepSchedule();
   server.close(() => {
     try { db.close(); } catch { /* already closed */ }
     process.exit(0);

@@ -1,6 +1,7 @@
 /** Helpers shared across route modules. */
 
 import { q, fromJson } from '../db/index.js';
+import { can } from '../middleware/auth.js';
 import { domainName, DOMAIN_META } from '../knowledge/index.js';
 import { DOC_TYPE_LABEL } from '../services/generator.js';
 
@@ -88,4 +89,144 @@ export function paginate(req, defaultLimit = 50, maxLimit = 500) {
   const limit = Math.min(Math.max(Number(req.query.limit) || defaultLimit, 1), maxLimit);
   const offset = Math.max(Number(req.query.offset) || 0, 0);
   return { limit, offset };
+}
+
+/**
+ * The My Work queue: everything outstanding for one person, derived from live
+ * state rather than from the notification table, so resolving the work clears
+ * the queue whether or not the notification was ever read. The dashboard reads
+ * the same function for its sidebar count, so the two cannot disagree.
+ */
+export function buildMyWork(user) {
+  const me = user.id;
+  const today = new Date().toISOString().slice(0, 10);
+  const groups = [];
+
+  // 1. Lifecycle actions available to this person right now.
+  if (can(user.role, 'document:approve')) {
+    // Segregation of duties excludes documents this person owns, so the queue
+    // never offers an action the transition route would refuse.
+    const rows = q.all(
+      `SELECT * FROM documents
+        WHERE status = 'under_review' AND (owner_id IS NULL OR owner_id != ?)
+        ORDER BY updated_at DESC LIMIT 50`,
+      me
+    );
+    groups.push({
+      key: 'awaiting_approval',
+      label: 'Awaiting your approval',
+      help: 'Submitted for approval. A document you own yourself is not listed: it has to be approved by someone else.',
+      action: 'Approve',
+      documents: enrichDocuments(rows)
+    });
+  }
+
+  if (can(user.role, 'document:publish')) {
+    const rows = q.all("SELECT * FROM documents WHERE status = 'approved' ORDER BY updated_at DESC LIMIT 50");
+    groups.push({
+      key: 'ready_to_publish',
+      label: 'Approved and ready to publish',
+      help: 'Approved but not yet effective.',
+      action: 'Publish',
+      documents: enrichDocuments(rows)
+    });
+  }
+
+  if (can(user.role, 'document:review')) {
+    const rows = q.all(
+      "SELECT * FROM documents WHERE status = 'under_review' AND reviewer_id = ? ORDER BY updated_at DESC LIMIT 50",
+      me
+    );
+    if (rows.length) {
+      groups.push({
+        key: 'named_reviewer',
+        label: 'You are the named reviewer',
+        help: 'These name you specifically, rather than your role.',
+        action: 'Review',
+        documents: enrichDocuments(rows)
+      });
+    }
+  }
+
+  // 2. Documents this person owns that have fallen due.
+  const reviewDue = q.all(
+    `SELECT * FROM documents
+      WHERE owner_id = ? AND review_date IS NOT NULL AND status NOT IN ('retired','draft')
+        AND review_date <= date('now','+30 day')
+      ORDER BY review_date LIMIT 50`,
+    me
+  );
+  groups.push({
+    key: 'review_due',
+    label: 'Your documents due for review',
+    help: 'A published document past its review date is a finding in most audits.',
+    action: 'Open',
+    documents: enrichDocuments(reviewDue).map((d) => ({ ...d, overdue: d.review_date < today }))
+  });
+
+  // 3. Drafts this person owns and has not submitted.
+  if (can(user.role, 'document:submit')) {
+    const drafts = q.all(
+      "SELECT * FROM documents WHERE owner_id = ? AND status IN ('draft','under_revision') ORDER BY updated_at DESC LIMIT 50",
+      me
+    );
+    groups.push({
+      key: 'your_drafts',
+      label: 'Your drafts',
+      help: 'Not yet submitted for approval.',
+      action: 'Open',
+      documents: enrichDocuments(drafts)
+    });
+  }
+
+  // 4. Evidence this person may verify, minus anything they collected.
+  const evidence = can(user.role, 'evidence:verify')
+    ? q.all(
+      `SELECT f.id AS file_id, f.filename, f.collected_at, f.period,
+              e.id AS evidence_row, e.evidence_id, e.name, u.name AS collected_by
+         FROM evidence_files f
+         JOIN evidence e ON e.id = f.evidence_id
+         LEFT JOIN users u ON u.id = f.uploaded_by
+        WHERE f.verified_at IS NULL AND (f.uploaded_by IS NULL OR f.uploaded_by != ?)
+        ORDER BY f.collected_at LIMIT 50`,
+      me
+    )
+    : [];
+
+  // 5. Open findings on documents this person owns.
+  const findings = q.all(
+    `SELECT f.id, f.title, f.severity, f.category, f.status, f.created_at,
+            d.id AS document_id, d.reference, d.title AS document_title
+       FROM findings f
+       JOIN documents d ON d.id = f.scope_id
+      WHERE f.scope_type = 'document' AND d.owner_id = ? AND f.status IN ('open','acknowledged')
+      ORDER BY CASE f.severity
+                 WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2
+                 WHEN 'low' THEN 3 ELSE 4 END, f.created_at DESC
+      LIMIT 50`,
+    me
+  );
+
+  // 6. Comments by other people on documents this person is accountable for.
+  const comments = q.all(
+    `SELECT c.id, c.body, c.created_at, c.author_name,
+            d.id AS document_id, d.reference, d.title AS document_title
+       FROM comments c
+       JOIN documents d ON d.id = c.document_id
+      WHERE c.resolved = 0
+        AND c.author_id != ?
+        AND (d.owner_id = ? OR d.approver_id = ? OR d.reviewer_id = ?)
+      ORDER BY c.created_at DESC LIMIT 50`,
+    me, me, me, me
+  );
+
+  const documentCount = groups.reduce((total, g) => total + g.documents.length, 0);
+  return {
+    groups: groups.filter((g) => g.documents.length),
+    evidence,
+    findings,
+    comments,
+    total: documentCount + evidence.length + findings.length + comments.length,
+    emptyBecauseNothingAssigned: documentCount + evidence.length + findings.length + comments.length === 0
+  };
 }
