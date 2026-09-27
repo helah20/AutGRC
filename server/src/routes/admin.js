@@ -2,11 +2,12 @@
 
 import express from 'express';
 import { z } from 'zod';
+import crypto from 'node:crypto';
 import { q, nowIso, toJson } from '../db/index.js';
 import { id } from '../utils/ids.js';
 import {
   authenticate, requirePermission, audit, hashPassword, validatePassword,
-  revokeAllSessions, ROLES, PERMISSIONS, permissionsFor
+  revokeAllSessions, ROLES, PERMISSIONS, permissionsFor, mfaRequiredRoles
 } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound, HttpError } from '../middleware/errors.js';
 import { getOrgProfile, listParam, paginate } from './_shared.js';
@@ -20,7 +21,8 @@ router.use(authenticate);
 
 router.get('/users', requirePermission('user:manage'), asyncHandler(async (req, res) => {
   const rows = q.all(
-    `SELECT id, email, name, role, job_title, status, last_login_at, failed_logins, locked_until, created_at
+    `SELECT id, email, name, role, job_title, status, last_login_at, failed_logins, locked_until, created_at,
+            mfa_enabled, mfa_enrolled_at, must_change_password
        FROM users ORDER BY name`
   );
   res.json({
@@ -108,6 +110,72 @@ router.post('/users/:id/unlock', requirePermission('user:manage'), asyncHandler(
   res.json({ ok: true });
 }));
 
+/**
+ * Reset a password an administrator cannot see.
+ *
+ * There is no self-service reset, because there is no mail transport to send a
+ * link through and a governance platform should not pretend to have one. The
+ * temporary password is returned once, to be passed on out of band, and the
+ * account can do nothing else until it is changed.
+ */
+router.post('/users/:id/reset-password', requirePermission('user:manage'), asyncHandler(async (req, res) => {
+  const user = q.get('SELECT * FROM users WHERE id = ?', req.params.id);
+  if (!user) throw notFound('User');
+
+  // Long enough that it is not worth guessing, and it lives for one sign-in.
+  const temporary = `${crypto.randomBytes(9).toString('base64url')}Aa1`;
+  q.run(
+    `UPDATE users SET password_hash = ?, must_change_password = 1,
+       failed_logins = 0, locked_until = NULL, updated_at = ? WHERE id = ?`,
+    hashPassword(temporary), nowIso(), user.id
+  );
+  // Whatever was signed in as this account no longer is.
+  revokeAllSessions(user.id);
+
+  audit(req, {
+    action: 'user:reset_password', entityType: 'user', entityId: user.id,
+    summary: `Reset the password for ${user.email}; all sessions revoked`
+  });
+
+  res.json({
+    ok: true,
+    temporaryPassword: temporary,
+    message: 'Give this to the account holder through a channel other than email. They must change it at next sign-in.'
+  });
+}));
+
+/**
+ * Turn off a second factor for someone who has lost both their authenticator
+ * and their recovery codes. Audited loudly: it is a way past a control.
+ */
+router.post('/users/:id/reset-mfa', requirePermission('user:manage'), asyncHandler(async (req, res) => {
+  const user = q.get('SELECT * FROM users WHERE id = ?', req.params.id);
+  if (!user) throw notFound('User');
+  if (!user.mfa_enabled) throw new HttpError(409, 'Multi-factor authentication is not enabled on this account.');
+
+  q.run(
+    `UPDATE users SET mfa_enabled = 0, mfa_secret = NULL, mfa_enrolled_at = NULL,
+       mfa_recovery_codes = NULL, updated_at = ? WHERE id = ?`,
+    nowIso(), user.id
+  );
+  revokeAllSessions(user.id);
+
+  const stillRequired = mfaRequiredRoles().includes(user.role);
+  audit(req, {
+    action: 'user:reset_mfa', entityType: 'user', entityId: user.id,
+    summary: `Removed the second factor for ${user.email}; all sessions revoked`,
+    detail: { role: user.role, mustReEnrol: stillRequired }
+  });
+
+  res.json({
+    ok: true,
+    mustReEnrol: stillRequired,
+    message: stillRequired
+      ? `${user.name} must enrol a new authenticator before they can use the platform again.`
+      : `${user.name} can sign in with a password alone until they enrol again.`
+  });
+}));
+
 /** Users the whole application needs for owner and approver pickers. */
 router.get('/directory', asyncHandler(async (req, res) => {
   res.json(q.all("SELECT id, name, email, role, job_title FROM users WHERE status = 'active' ORDER BY name"));
@@ -128,23 +196,26 @@ router.put('/org', requirePermission('settings:write'), validate(z.object({
   technology_env: z.array(z.string().max(120)).optional(),
   risk_appetite: z.string().max(100).nullable().optional(),
   business_requirements: z.string().max(4000).nullable().optional(),
-  data_classifications: z.array(z.string().max(60)).optional()
+  data_classifications: z.array(z.string().max(60)).optional(),
+  mfa_required_roles: z.array(z.enum(Object.keys(ROLES))).optional()
 })), asyncHandler(async (req, res) => {
   const b = req.body;
   const at = nowIso();
   q.run(
     `INSERT INTO org_profile (id, org_name, org_type, industry, size, country, regulators, operating_model,
-       technology_env, risk_appetite, business_requirements, data_classifications, updated_at)
-     VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?)
+       technology_env, risk_appetite, business_requirements, data_classifications, mfa_required_roles, updated_at)
+     VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(id) DO UPDATE SET
        org_name = excluded.org_name, org_type = excluded.org_type, industry = excluded.industry,
        size = excluded.size, country = excluded.country, regulators = excluded.regulators,
        operating_model = excluded.operating_model, technology_env = excluded.technology_env,
        risk_appetite = excluded.risk_appetite, business_requirements = excluded.business_requirements,
-       data_classifications = excluded.data_classifications, updated_at = excluded.updated_at`,
+       data_classifications = excluded.data_classifications,
+       mfa_required_roles = excluded.mfa_required_roles, updated_at = excluded.updated_at`,
     b.org_name, b.org_type || null, b.industry || null, b.size || null, b.country || null,
     toJson(b.regulators || []), b.operating_model || null, toJson(b.technology_env || []),
-    b.risk_appetite || null, b.business_requirements || null, toJson(b.data_classifications || []), at
+    b.risk_appetite || null, b.business_requirements || null, toJson(b.data_classifications || []),
+    b.mfa_required_roles ? b.mfa_required_roles.join(',') : mfaRequiredRoles().join(','), at
   );
   audit(req, { action: 'settings:org', entityType: 'org_profile', summary: `Updated the organisation profile for ${b.org_name}` });
   res.json(getOrgProfile());

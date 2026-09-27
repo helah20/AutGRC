@@ -167,6 +167,67 @@ function parseTtl(ttl) {
   return n * { s: 1000, m: 60000, h: 3600000, d: 86400000 }[m[2]];
 }
 
+// ------------------------------------------------------- account state -----
+
+/**
+ * Roles that may not sign in on a password alone.
+ *
+ * The platform's own IAM Standard requires multi-factor authentication for
+ * privileged access, and a governance tool that exempts itself from the control
+ * it writes is not evidence of anything. The enforcement is real — an account
+ * in a listed role can reach nothing but the enrolment screen until it enrols.
+ *
+ * It ships empty all the same. Turning it on by default would lock the seeded
+ * administrator out of a fresh installation until whoever cloned the repository
+ * found an authenticator app, and a control that arrives as an obstacle gets
+ * switched off rather than understood. Settings states plainly when no role
+ * requires it, which is the honest position: the control is one click away and
+ * the platform says so, rather than claiming a posture it does not have.
+ */
+export const DEFAULT_MFA_REQUIRED_ROLES = [];
+
+export function mfaRequiredRoles() {
+  const row = q.get('SELECT mfa_required_roles FROM org_profile WHERE id = 1');
+  if (!row || row.mfa_required_roles === null || row.mfa_required_roles === undefined) {
+    return DEFAULT_MFA_REQUIRED_ROLES;
+  }
+  return String(row.mfa_required_roles).split(',').map((r) => r.trim()).filter(Boolean);
+}
+
+export function mfaRequiredFor(role) {
+  return mfaRequiredRoles().includes(role);
+}
+
+/**
+ * A reason the account may do nothing but fix itself, or null. Returned as a
+ * machine-readable code so the client can route to the right screen rather
+ * than guess from the message.
+ */
+export function accountStateBlock(user) {
+  if (user.must_change_password) return 'password_change_required';
+  if (!user.mfa_enabled && mfaRequiredFor(user.role)) return 'mfa_enrolment_required';
+  return null;
+}
+
+const BLOCK_MESSAGE = {
+  password_change_required:
+    'Your password was reset by an administrator. Choose a new one before continuing.',
+  mfa_enrolment_required:
+    'Your role requires multi-factor authentication. Enrol an authenticator before continuing.'
+};
+
+/**
+ * The only routes a blocked account may reach: the ones that clear the block,
+ * plus the ones the client needs to render the screen that does it.
+ */
+const BLOCK_EXEMPT_PREFIXES = [
+  '/api/auth/me',
+  '/api/auth/logout',
+  '/api/auth/refresh',
+  '/api/auth/change-password',
+  '/api/auth/mfa'
+];
+
 // ----------------------------------------------------------- middleware ----
 
 export function authenticate(req, res, next) {
@@ -174,15 +235,28 @@ export function authenticate(req, res, next) {
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Authentication required' });
 
+  let payload;
   try {
-    const payload = jwt.verify(token, config.jwt.secret, { issuer: config.jwt.issuer });
-    const user = q.get('SELECT * FROM users WHERE id = ? AND status = ?', payload.sub, 'active');
-    if (!user) return res.status(401).json({ error: 'Account is not active' });
-    req.user = { id: user.id, email: user.email, name: user.name, role: user.role, jobTitle: user.job_title };
-    return next();
+    payload = jwt.verify(token, config.jwt.secret, { issuer: config.jwt.issuer });
   } catch {
     return res.status(401).json({ error: 'Session expired or invalid' });
   }
+
+  // A challenge token proves only that the password was right. It must never
+  // be accepted as a session token.
+  if (payload.purpose === 'mfa_challenge') {
+    return res.status(401).json({ error: 'Multi-factor authentication is not complete' });
+  }
+
+  const user = q.get('SELECT * FROM users WHERE id = ? AND status = ?', payload.sub, 'active');
+  if (!user) return res.status(401).json({ error: 'Account is not active' });
+  req.user = { id: user.id, email: user.email, name: user.name, role: user.role, jobTitle: user.job_title };
+
+  const block = accountStateBlock(user);
+  if (block && !BLOCK_EXEMPT_PREFIXES.some((prefix) => req.originalUrl.startsWith(prefix))) {
+    return res.status(403).json({ error: BLOCK_MESSAGE[block], code: block });
+  }
+  return next();
 }
 
 export function requirePermission(permission) {

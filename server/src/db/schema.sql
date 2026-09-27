@@ -19,6 +19,16 @@ CREATE TABLE IF NOT EXISTS users (
   failed_logins   INTEGER NOT NULL DEFAULT 0,
   locked_until    TEXT,
   last_login_at   TEXT,
+  -- The platform applies to itself the multi-factor requirement its own
+  -- policies mandate. The secret is the TOTP shared key; recovery codes are
+  -- stored hashed, never in the clear.
+  mfa_secret      TEXT,
+  mfa_enabled     INTEGER NOT NULL DEFAULT 0,
+  mfa_enrolled_at TEXT,
+  mfa_recovery_codes TEXT,
+  -- Set by an administrator's password reset; while set, the session may do
+  -- nothing but choose a new password.
+  must_change_password INTEGER NOT NULL DEFAULT 0,
   created_at      TEXT NOT NULL,
   updated_at      TEXT NOT NULL
 );
@@ -64,6 +74,8 @@ CREATE TABLE IF NOT EXISTS org_profile (
   operating_model       TEXT,
   technology_env        TEXT,      -- JSON array
   risk_appetite         TEXT,
+  -- Comma-separated roles that may not sign in without a second factor.
+  mfa_required_roles    TEXT,
   business_requirements TEXT,
   data_classifications  TEXT,      -- JSON array
   logo_data_url         TEXT,
@@ -83,6 +95,14 @@ CREATE TABLE IF NOT EXISTS frameworks (
   description   TEXT,
   source_note   TEXT,
   is_mandatory  INTEGER NOT NULL DEFAULT 0,
+  -- A framework is published in editions. When a new one arrives the old one
+  -- is superseded rather than replaced: an organisation stays certified
+  -- against the edition it was assessed under until it migrates.
+  edition_status TEXT NOT NULL DEFAULT 'current'
+                  CHECK (edition_status IN ('current','superseded','draft')),
+  supersedes_id TEXT REFERENCES frameworks(id) ON DELETE SET NULL,
+  published_on  TEXT,
+  retires_on    TEXT,
   created_at    TEXT NOT NULL
 );
 

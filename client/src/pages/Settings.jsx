@@ -8,9 +8,25 @@ import {
 } from '../components/ui.jsx';
 import {
   IconBuilding, IconUsers, IconShield, IconHistory, IconSparkles, IconPlus,
-  IconLock, IconCheck, IconAlert, IconX
+  IconLock, IconCheck, IconAlert, IconX, IconRefresh, IconTrash, IconCopy
 } from '../components/Icons.jsx';
 import { formatDate, relativeTime, titleCase } from '../lib/format.js';
+import { EnrolMfa } from './AccountAction.jsx';
+
+/**
+ * Roles as the server defines them. Kept here rather than fetched, because the
+ * organisation tab is open to settings:write holders who have no right to read
+ * the user directory.
+ */
+const ROLE_OPTIONS = [
+  { value: 'admin', label: 'Administrator' },
+  { value: 'grc_manager', label: 'GRC Manager' },
+  { value: 'cyber_user', label: 'Cybersecurity User' },
+  { value: 'reviewer', label: 'Reviewer' },
+  { value: 'approver', label: 'Approver' },
+  { value: 'auditor', label: 'Auditor' },
+  { value: 'read_only', label: 'Read Only' }
+];
 
 export default function Settings() {
   const { can, user } = useAuth();
@@ -129,6 +145,33 @@ function OrgSettings({ canEdit }) {
           onChange={(e) => setForm((f) => ({ ...f, business_requirements: e.target.value }))} />
       </Field>
 
+      <div className="divider" />
+      <h4>Platform access policy</h4>
+      <Field label="Roles that must use two-step verification"
+        hint="These accounts cannot sign in on a password alone, and cannot turn the second factor off themselves. The default mirrors the platform's own IAM Standard: privileged access carries a second factor.">
+        <div className="checkbox-row">
+          {ROLE_OPTIONS.map((role) => {
+            const selected = (form.mfa_required_roles || []).includes(role.value);
+            return (
+              <label key={role.value} className={`checkbox-chip ${selected ? 'on' : ''}`}>
+                <input type="checkbox" checked={selected} disabled={!canEdit}
+                  onChange={(e) => setForm((f) => {
+                    const current = new Set(f.mfa_required_roles || []);
+                    if (e.target.checked) current.add(role.value); else current.delete(role.value);
+                    return { ...f, mfa_required_roles: [...current] };
+                  })} />
+                {role.label}
+              </label>
+            );
+          })}
+        </div>
+      </Field>
+      {canEdit && (form.mfa_required_roles || []).length === 0 && (
+        <p className="tiny" style={{ color: 'var(--warn)' }}>
+          No role requires a second factor. Every account will be reachable with a password alone.
+        </p>
+      )}
+
       {canEdit && (
         <div>
           <button className="btn btn-primary" onClick={async () => {
@@ -153,6 +196,8 @@ function UserSettings() {
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', role: 'cyber_user', job_title: '', password: '' });
+  // Returned once by the reset endpoint; never stored anywhere it can be read again.
+  const [temporaryPassword, setTemporaryPassword] = useState(null);
 
   if (loading) return <Loading />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
@@ -182,10 +227,16 @@ function UserSettings() {
                 ? <Badge tone="danger"><IconLock width={11} height={11} />Locked</Badge>
                 : <Badge tone={u.status === 'active' ? 'ok' : 'neutral'}>{titleCase(u.status)}</Badge>
             },
+            {
+              key: 'mfa_enabled', header: 'Two-step', nowrap: true,
+              render: (u) => (u.mfa_enabled
+                ? <Badge tone="ok" dot title={`Enrolled ${formatDate(u.mfa_enrolled_at)}`}>On</Badge>
+                : <Badge tone="neutral">Off</Badge>)
+            },
             { key: 'last_login_at', header: 'Last sign-in', nowrap: true, render: (u) => u.last_login_at ? <span className="small">{relativeTime(u.last_login_at)}</span> : <span className="muted">Never</span> }
           ]}
           rows={data.items}
-          onRowClick={setEditing}
+          onRowClick={(u) => { setEditing(u); setTemporaryPassword(null); }}
         />
       </Card>
 
@@ -287,6 +338,25 @@ function UserSettings() {
         }>
         {editing && (
           <>
+            {temporaryPassword && (
+              <div className="callout" data-callout="warn" style={{ marginBottom: 14 }}>
+                <div className="row-tight">
+                  <IconAlert width={14} height={14} />
+                  <strong style={{ margin: 0 }}>Temporary password — shown once</strong>
+                </div>
+                <p style={{ marginTop: 6, marginBottom: 6 }}>
+                  Give this to {editing.name} through a channel other than email. Every session was signed
+                  out, and the account can do nothing until the password is changed.
+                </p>
+                <code className="temp-password">{temporaryPassword}</code>
+                <button className="btn btn-sm" style={{ marginTop: 8 }} onClick={() => {
+                  navigator.clipboard?.writeText(temporaryPassword)
+                    .then(() => toast.success('Copied'))
+                    .catch(() => toast.error('Could not copy', 'Select the password and copy it manually.'));
+                }}><IconCopy width={13} height={13} />Copy</button>
+              </div>
+            )}
+
             <div className="field-row">
               <Field label="Full name">
                 <input className="input" value={editing.name} onChange={(e) => setEditing((u) => ({ ...u, name: e.target.value }))} />
@@ -305,10 +375,45 @@ function UserSettings() {
                   options={[{ value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]} />
               </Field>
             </div>
-            <Field label="Reset password" hint="Leave blank to keep the current password. Resetting revokes every active session.">
+            <Field label="Set a password directly"
+              hint="Leave blank to keep the current one. Setting a password here revokes every active session but does not force a change at next sign-in.">
               <input className="input" type="text" value={editing.newPassword || ''}
                 onChange={(e) => setEditing((u) => ({ ...u, newPassword: e.target.value }))} />
             </Field>
+
+            <div className="divider" />
+            <h4>Recovery</h4>
+            <p className="small muted">
+              For someone who is locked out. There is no self-service reset: the platform has no mail
+              transport, and a governance tool should not pretend to have one.
+            </p>
+            <div className="row-tight" style={{ marginTop: 10, flexWrap: 'wrap' }}>
+              <button className="btn btn-sm" onClick={async () => {
+                try {
+                  const res = await api.post(`/admin/users/${editing.id}/reset-password`);
+                  setTemporaryPassword(res.temporaryPassword);
+                  toast.success('Password reset', 'Pass the temporary password on out of band.');
+                  reload();
+                } catch (err) { toast.error('Reset failed', err.message); }
+              }}><IconRefresh width={13} height={13} />Issue a temporary password</button>
+
+              {editing.mfa_enabled && (
+                <button className="btn btn-sm btn-danger-ghost" onClick={async () => {
+                  try {
+                    const res = await api.post(`/admin/users/${editing.id}/reset-mfa`);
+                    toast.success('Second factor removed', res.message);
+                    setEditing((u) => ({ ...u, mfa_enabled: 0 }));
+                    reload();
+                  } catch (err) { toast.error('Could not remove it', err.message); }
+                }}><IconShield width={13} height={13} />Remove their second factor</button>
+              )}
+            </div>
+            {editing.mfa_enabled && (
+              <p className="tiny muted" style={{ marginTop: 8 }}>
+                Removing a second factor is a way past a control, so it is recorded in the audit log
+                against your account.
+              </p>
+            )}
           </>
         )}
       </Modal>
@@ -317,6 +422,115 @@ function UserSettings() {
 }
 
 /* ------------------------------------------------------------------ account */
+
+/**
+ * Two-step verification for the signed-in account. A role the organisation has
+ * made mandatory cannot switch it off here: the server refuses, and so does
+ * this, rather than offering a button that returns a 403.
+ */
+function MfaPanel() {
+  const toast = useToast();
+  const { applySession } = useAuth();
+  const { data, loading, reload } = useFetch('/auth/mfa/status');
+  const [enrolling, setEnrolling] = useState(false);
+  const [password, setPassword] = useState('');
+  const [newCodes, setNewCodes] = useState(null);
+
+  if (loading || !data) return <Card title="Two-step verification"><Loading /></Card>;
+
+  if (enrolling) {
+    return (
+      <div>
+        <EnrolMfa embedded onDone={() => { setEnrolling(false); reload(); }} />
+        <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => { setEnrolling(false); reload(); }}>
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <Card title="Two-step verification"
+      subtitle="A six-digit code from your phone, in addition to your password."
+      actions={data.enabled
+        ? <Badge tone="ok" dot>On</Badge>
+        : <Badge tone={data.required ? 'danger' : 'warn'}>{data.required ? 'Required' : 'Off'}</Badge>}>
+
+      {!data.enabled && (
+        <>
+          <p className="small">
+            {data.required
+              ? `Your role is one of the roles this organisation requires a second factor for (${data.requiredRoles.map(titleCase).join(', ')}). You will not be able to use the platform until it is enrolled.`
+              : 'Not required for your role, but recommended. It is the control the platform\'s own IAM Standard mandates for privileged access.'}
+          </p>
+          <button className="btn btn-primary btn-sm" style={{ marginTop: 10 }} onClick={() => setEnrolling(true)}>
+            <IconShield width={13} height={13} />Set it up
+          </button>
+        </>
+      )}
+
+      {data.enabled && (
+        <div className="stack">
+          <div className="definition">
+            <dt>Enrolled</dt><dd>{formatDate(data.enrolledAt, { withTime: true })}</dd>
+            <dt>Recovery codes left</dt>
+            <dd>
+              <Badge tone={data.recoveryCodesRemaining > 2 ? 'neutral' : 'warn'}>
+                {data.recoveryCodesRemaining} of 10
+              </Badge>
+            </dd>
+            <dt>Mandatory for your role</dt><dd>{data.required ? 'Yes' : 'No'}</dd>
+          </div>
+
+          {newCodes && (
+            <div>
+              <div className="callout" data-callout="warn">
+                <div className="row-tight"><IconAlert width={14} height={14} /><strong style={{ margin: 0 }}>New recovery codes — the previous set no longer works</strong></div>
+              </div>
+              <ul className="recovery-codes" style={{ marginTop: 10 }}>{newCodes.map((c) => <li key={c}>{c}</li>)}</ul>
+              <button className="btn btn-sm" style={{ marginTop: 8 }} onClick={() => {
+                navigator.clipboard?.writeText(newCodes.join('\n')).then(() => toast.success('Copied')).catch(() => {});
+              }}><IconCopy width={13} height={13} />Copy all</button>
+            </div>
+          )}
+
+          <Field label="Password" hint="Needed to change either setting below, so a borrowed session cannot.">
+            <input className="input" type="password" autoComplete="current-password" value={password}
+              onChange={(e) => setPassword(e.target.value)} style={{ maxWidth: 320 }} />
+          </Field>
+          <div className="row-tight">
+            <button className="btn btn-sm" disabled={!password} onClick={async () => {
+              try {
+                const res = await api.post('/auth/mfa/recovery-codes', { password });
+                setNewCodes(res.recoveryCodes);
+                setPassword('');
+                reload();
+              } catch (err) { toast.error('Could not regenerate', err.message); }
+            }}><IconRefresh width={13} height={13} />New recovery codes</button>
+
+            {!data.required && (
+              <button className="btn btn-sm btn-danger-ghost" disabled={!password} onClick={async () => {
+                try {
+                  const res = await api.post('/auth/mfa/disable', { password });
+                  applySession(res);
+                  setPassword('');
+                  toast.success('Two-step verification turned off');
+                  reload();
+                } catch (err) { toast.error('Could not turn it off', err.message); }
+              }}>Turn it off</button>
+            )}
+          </div>
+          {data.required && (
+            <p className="tiny muted">
+              This organisation requires two-step verification for {data.requiredRoles.map(titleCase).join(', ')},
+              so it cannot be turned off from here. An administrator can reset it if you lose your device.
+            </p>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
 
 function AccountSettings({ user }) {
   const toast = useToast();
@@ -335,6 +549,8 @@ function AccountSettings({ user }) {
           <dt>Last sign-in</dt><dd>{user.lastLoginAt ? formatDate(user.lastLoginAt, { withTime: true }) : '—'}</dd>
         </div>
       </Card>
+
+      <MfaPanel />
 
       <Card title="Change password"
         subtitle="Changing your password signs you out of every device, including this one.">

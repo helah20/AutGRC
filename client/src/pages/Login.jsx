@@ -14,23 +14,47 @@ const DEMO_ACCOUNTS = [
 ];
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, completeMfa } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('grc@autgrc.demo');
   const [password, setPassword] = useState('Autgrc#2025');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [showAccounts, setShowAccounts] = useState(false);
+  // Set when the password was right but a second factor is still owed.
+  const [challenge, setChallenge] = useState(null);
+  const [code, setCode] = useState('');
 
   async function submit(e) {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      await login(email.trim(), password);
+      const result = await login(email.trim(), password);
+      if (result?.mfaRequired) {
+        setChallenge(result);
+        setCode('');
+        return;
+      }
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.message || 'Unable to sign in');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitCode(e) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      await completeMfa(challenge.mfaToken, code.trim());
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      setError(err.message || 'Unable to verify that code');
+      // An expired challenge cannot be retried; send them back to the password.
+      if (err.status === 401 && /expired/i.test(err.message || '')) setChallenge(null);
     } finally {
       setBusy(false);
     }
@@ -90,37 +114,62 @@ export default function Login() {
 
       <main className="auth-main">
         <div className="auth-card">
-          <h1 style={{ marginBottom: 4 }}>Sign in</h1>
-          <p className="muted small" style={{ marginBottom: 22 }}>Use your organisational account to access the governance library.</p>
+          <h1 style={{ marginBottom: 4 }}>{challenge ? 'Two-step verification' : 'Sign in'}</h1>
+          <p className="muted small" style={{ marginBottom: 22 }}>
+            {challenge
+              ? 'Your password was accepted. Enter the code from your authenticator to finish signing in.'
+              : 'Use your organisational account to access the governance library.'}
+          </p>
 
           {error && (
             <div className="callout" data-callout="danger" style={{ marginBottom: 16 }}>
-              <div className="row-tight"><IconAlert width={14} height={14} /><strong style={{ margin: 0 }}>Sign-in failed</strong></div>
+              <div className="row-tight"><IconAlert width={14} height={14} /><strong style={{ margin: 0 }}>{challenge ? 'Verification failed' : 'Sign-in failed'}</strong></div>
               <p style={{ marginTop: 4, marginBottom: 0 }}>{error}</p>
             </div>
           )}
 
-          <form onSubmit={submit}>
-            <Field label="Email address">
-              <input className="input" type="email" autoComplete="username" required
-                value={email} onChange={(e) => setEmail(e.target.value)} />
-            </Field>
-            <Field label="Password">
-              <input className="input" type="password" autoComplete="current-password" required
-                value={password} onChange={(e) => setPassword(e.target.value)} />
-            </Field>
-            <button className="btn btn-primary btn-lg btn-block" type="submit" disabled={busy}>
-              {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />Signing in…</> : <><IconLock width={15} height={15} />Sign in</>}
-            </button>
-          </form>
+          {challenge ? (
+            <form onSubmit={submitCode}>
+              <Field label="Verification code"
+                hint="The six-digit code from your authenticator, or one of your recovery codes.">
+                <input className="input" autoFocus required inputMode="text" autoComplete="one-time-code"
+                  placeholder="000000" value={code} onChange={(e) => setCode(e.target.value)}
+                  style={{ fontFamily: 'var(--mono)', fontSize: 17, letterSpacing: '.12em' }} />
+              </Field>
+              <button className="btn btn-primary btn-lg btn-block" type="submit" disabled={busy || code.trim().length < 6}>
+                {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />Verifying…</> : <><IconLock width={15} height={15} />Verify</>}
+              </button>
+              <button className="btn btn-ghost btn-sm btn-block" type="button" style={{ marginTop: 8 }}
+                onClick={() => { setChallenge(null); setError(null); }}>
+                Start again
+              </button>
+              <p className="tiny muted" style={{ marginTop: 10, textAlign: 'center' }}>
+                A recovery code works once and is then spent.
+              </p>
+            </form>
+          ) : (
+            <form onSubmit={submit}>
+              <Field label="Email address">
+                <input className="input" type="email" autoComplete="username" required
+                  value={email} onChange={(e) => setEmail(e.target.value)} />
+              </Field>
+              <Field label="Password">
+                <input className="input" type="password" autoComplete="current-password" required
+                  value={password} onChange={(e) => setPassword(e.target.value)} />
+              </Field>
+              <button className="btn btn-primary btn-lg btn-block" type="submit" disabled={busy}>
+                {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />Signing in…</> : <><IconLock width={15} height={15} />Sign in</>}
+              </button>
+            </form>
+          )}
 
-          <div className="divider" />
+          {!challenge && <div className="divider" />}
 
-          <button className="btn btn-ghost btn-sm btn-block" type="button" onClick={() => setShowAccounts((s) => !s)}>
+          {!challenge && <button className="btn btn-ghost btn-sm btn-block" type="button" onClick={() => setShowAccounts((s) => !s)}>
             {showAccounts ? 'Hide' : 'Show'} demonstration accounts
-          </button>
+          </button>}
 
-          {showAccounts && (
+          {!challenge && showAccounts && (
             <div style={{ marginTop: 10 }}>
               <p className="tiny muted" style={{ marginBottom: 8 }}>
                 Each account demonstrates a different access level. Selecting one fills the form.

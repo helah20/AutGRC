@@ -29,10 +29,29 @@ export function AuthProvider({ children }) {
 
   useEffect(() => onSessionLost(() => setSession(null)), []);
 
+  /**
+   * Returns the session, or an MFA challenge. A challenge is not a session:
+   * the token it carries cannot reach any route until a code completes it.
+   */
   const login = useCallback(async (email, password) => {
     const body = await api.post('/auth/login', { email, password });
+    if (body.mfaRequired) return body;
     setAccessToken(body.accessToken);
     setSession(body);
+    return body;
+  }, []);
+
+  const completeMfa = useCallback(async (mfaToken, code) => {
+    const body = await api.post('/auth/mfa/verify', { mfaToken, code });
+    setAccessToken(body.accessToken);
+    setSession(body);
+    return body;
+  }, []);
+
+  /** After enrolling or changing a password, the session state has moved on. */
+  const applySession = useCallback((body) => {
+    if (body?.accessToken) setAccessToken(body.accessToken);
+    setSession((s) => ({ ...s, ...body }));
     return body;
   }, []);
 
@@ -56,9 +75,13 @@ export function AuthProvider({ children }) {
     can: (permission) => (session?.permissions || []).includes(permission),
     loading,
     login,
+    completeMfa,
+    applySession,
     logout,
-    refreshOrg
-  }), [session, loading, login, logout, refreshOrg]);
+    refreshOrg,
+    // Non-null when the account may do nothing but clear this state.
+    accountBlock: session?.accountBlock || null
+  }), [session, loading, login, completeMfa, applySession, logout, refreshOrg]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

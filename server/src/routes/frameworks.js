@@ -25,15 +25,128 @@ router.get('/', asyncHandler(async (req, res) => {
             WHERE cm.coverage IN ('covered','partial')
             GROUP BY fr.framework_id`).map((r) => [r.framework_id, r.n])
   );
+  const byId = Object.fromEntries(rows.map((f) => [f.id, f]));
   res.json({
     sourceNote: SOURCE_NOTE,
     items: rows.map((f) => ({
       ...f,
       requirement_count: counts[f.id] || 0,
       mapped_count: mapped[f.id] || 0,
-      coverage: counts[f.id] ? Math.round(((mapped[f.id] || 0) / counts[f.id]) * 100) : 0
+      coverage: counts[f.id] ? Math.round(((mapped[f.id] || 0) / counts[f.id]) * 100) : 0,
+      // The edition this one replaced, and the one that replaced it.
+      supersedes: f.supersedes_id ? { id: f.supersedes_id, code: byId[f.supersedes_id]?.code || null } : null,
+      superseded_by: rows
+        .filter((other) => other.supersedes_id === f.id)
+        .map((other) => ({ id: other.id, code: other.code, version: other.version }))
     }))
   });
+}));
+
+// --------------------------------------------------------- editions -------
+
+/**
+ * Register a new edition of a framework already in the catalogue.
+ *
+ * A published standard does not change in place. When the NCA or ISO issues a
+ * new edition, an organisation stays assessed against the one it was certified
+ * under until it migrates, so both have to exist at once: the previous edition
+ * is marked superseded rather than overwritten, and its requirements and their
+ * mappings are left exactly as they were.
+ */
+router.post('/editions', requirePermission('settings:write'), validate(z.object({
+  supersedesCode: z.string().min(2).max(60),
+  code: z.string().min(2).max(60),
+  name: z.string().min(3).max(300),
+  version: z.string().min(1).max(60),
+  publishedOn: z.string().max(40).nullable().optional(),
+  retiresOn: z.string().max(40).nullable().optional(),
+  copyRequirements: z.boolean().default(true)
+})), asyncHandler(async (req, res) => {
+  const previous = q.get('SELECT * FROM frameworks WHERE code = ?', req.body.supersedesCode);
+  if (!previous) throw notFound(`Framework "${req.body.supersedesCode}"`);
+  if (q.get('SELECT id FROM frameworks WHERE code = ?', req.body.code)) {
+    throw new HttpError(409, `A framework with the code "${req.body.code}" already exists.`);
+  }
+
+  const at = nowIso();
+  const editionId = id('fwk');
+
+  db.transaction(() => {
+    q.run(
+      `INSERT INTO frameworks (id, code, name, publisher, version, kind, jurisdiction, description,
+         source_note, is_mandatory, edition_status, supersedes_id, published_on, retires_on, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      editionId, req.body.code, req.body.name, previous.publisher, req.body.version,
+      previous.kind, previous.jurisdiction, previous.description, previous.source_note,
+      previous.is_mandatory, 'current', previous.id,
+      req.body.publishedOn || null, req.body.retiresOn || null, at
+    );
+    q.run("UPDATE frameworks SET edition_status = 'superseded', retires_on = ? WHERE id = ?",
+      req.body.retiresOn || previous.retires_on || null, previous.id);
+
+    if (req.body.copyRequirements) {
+      // Copied, not moved. The old edition keeps its requirements and their
+      // control mappings, so an assessment against it stays readable.
+      const requirements = q.all('SELECT * FROM framework_requirements WHERE framework_id = ? ORDER BY ref', previous.id);
+      const idMap = new Map();
+      for (const r of requirements) {
+        const newId = id('req');
+        idMap.set(r.id, newId);
+        q.run(
+          `INSERT INTO framework_requirements
+             (id, framework_id, ref, parent_ref, title, statement, domain_key, level,
+              provenance, source_status, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+          newId, editionId, r.ref, r.parent_ref, r.title, r.statement, r.domain_key, r.level,
+          r.provenance, r.source_status, at
+        );
+      }
+      // Each requirement in the new edition is equivalent to its predecessor
+      // until somebody assesses the change, which is what a crosswalk says.
+      for (const r of requirements) {
+        q.run(
+          `INSERT INTO crosswalks (id, source_id, target_id, relation, note, created_at)
+           VALUES (?,?,?,?,?,?)`,
+          id('xwk'), r.id, idMap.get(r.id), 'equivalent',
+          `${`Carried forward from ${previous.code} ${previous.version || ''}`.trim()}. Not yet reassessed against the new edition.`,
+          at
+        );
+      }
+    }
+  })();
+
+  audit(req, {
+    action: 'framework:new_edition', entityType: 'framework', entityId: editionId,
+    summary: `Registered ${req.body.code} ${req.body.version} superseding ${previous.code}`,
+    detail: { copyRequirements: req.body.copyRequirements }
+  });
+
+  const created = q.get('SELECT * FROM frameworks WHERE id = ?', editionId);
+  res.status(201).json({
+    framework: created,
+    superseded: q.get('SELECT * FROM frameworks WHERE id = ?', previous.id),
+    requirementsCopied: q.get('SELECT COUNT(*) AS n FROM framework_requirements WHERE framework_id = ?', editionId).n,
+    note: 'Requirements were carried forward as equivalent crosswalks. Reassess each one against the new edition before relying on the mapping.'
+  });
+}));
+
+router.patch('/:code/edition', requirePermission('settings:write'), validate(z.object({
+  edition_status: z.enum(['current', 'superseded', 'draft']).optional(),
+  published_on: z.string().max(40).nullable().optional(),
+  retires_on: z.string().max(40).nullable().optional()
+})), asyncHandler(async (req, res) => {
+  const fw = q.get('SELECT * FROM frameworks WHERE code = ? OR id = ?', req.params.code, req.params.code);
+  if (!fw) throw notFound('Framework');
+  const entries = Object.entries(req.body).filter(([, v]) => v !== undefined);
+  if (entries.length) {
+    q.run(`UPDATE frameworks SET ${entries.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`,
+      ...entries.map(([, v]) => v), fw.id);
+  }
+  audit(req, {
+    action: 'framework:edition', entityType: 'framework', entityId: fw.id,
+    summary: `Updated the edition record for ${fw.code}`, detail: Object.fromEntries(entries)
+  });
+  res.json({ framework: q.get('SELECT * FROM frameworks WHERE id = ?', fw.id) });
 }));
 
 router.get('/:code/requirements', asyncHandler(async (req, res) => {

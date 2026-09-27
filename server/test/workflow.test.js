@@ -63,6 +63,19 @@ async function api(method, path, { as = 'grc@autgrc.demo', body, raw = false } =
   return { status: res.status, body: parsed };
 }
 
+/** A sign-in attempt whose result is inspected rather than stored. */
+async function rawLogin(email, password) {
+  const res = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const text = await res.text();
+  let body = null;
+  try { body = JSON.parse(text); } catch { body = text; }
+  return { status: res.status, body };
+}
+
 /** Multipart POST; the runtime sets the boundary from the FormData itself. */
 async function upload(path, form, { as = 'grc@autgrc.demo' } = {}) {
   const res = await fetch(`${BASE}${path}`, {
@@ -509,6 +522,220 @@ test('AutGRC end-to-end governance workflow', {
 
     const filtered = await api('GET', '/api/evidence?attached=yes&limit=5');
     assert.ok(filtered.body.total >= 1, 'the attachment filter finds the item');
+  });
+
+  await t.test('second factor: enrol, then sign in with a code and with a recovery code', async (t2) => {
+    const { generateCode } = await import('../src/services/totp.js');
+
+    // Enrol on an account no other case depends on being password-only.
+    const setup = await api('POST', '/api/auth/mfa/setup', { as: 'reviewer@autgrc.demo' });
+    assert.equal(setup.status, 200, JSON.stringify(setup.body));
+    assert.equal(setup.body.secret.length, 32);
+    assert.match(setup.body.otpauthUri, /^otpauth:\/\/totp\//);
+    assert.match(setup.body.qrDataUri, /^data:image\/png;base64,/);
+
+    const wrong = await api('POST', '/api/auth/mfa/enable', { as: 'reviewer@autgrc.demo', body: { code: '000000' } });
+    assert.equal(wrong.status, 400, 'an incorrect code does not enable it');
+
+    const enabled = await api('POST', '/api/auth/mfa/enable', {
+      as: 'reviewer@autgrc.demo', body: { code: generateCode(setup.body.secret) }
+    });
+    assert.equal(enabled.status, 200, JSON.stringify(enabled.body));
+    assert.equal(enabled.body.user.mfaEnabled, true);
+    assert.equal(enabled.body.recoveryCodes.length, 10);
+    const recoveryCode = enabled.body.recoveryCodes[0];
+
+    // The password alone now buys a challenge, not a session.
+    const challenge = await fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'reviewer@autgrc.demo', password: PASSWORD })
+    }).then((r) => r.json());
+    assert.equal(challenge.mfaRequired, true);
+    assert.equal(challenge.accessToken, undefined, 'no session token is issued before the second factor');
+    assert.ok(challenge.mfaToken);
+
+    // The challenge token must not work as a session token.
+    const misuse = await fetch(`${BASE}/api/documents`, {
+      headers: { authorization: `Bearer ${challenge.mfaToken}` }
+    });
+    assert.equal(misuse.status, 401, 'a challenge token cannot reach the API');
+
+    const badCode = await fetch(`${BASE}/api/auth/mfa/verify`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mfaToken: challenge.mfaToken, code: '000000' })
+    });
+    assert.equal(badCode.status, 401);
+
+    const verified = await fetch(`${BASE}/api/auth/mfa/verify`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mfaToken: challenge.mfaToken, code: generateCode(setup.body.secret) })
+    }).then((r) => r.json());
+    assert.ok(verified.accessToken, 'a correct code completes the sign-in');
+    assert.equal(verified.usedRecoveryCode, false);
+    state.tokens['reviewer@autgrc.demo'] = verified.accessToken;
+
+    await t2.test('a recovery code works once and is then spent', async () => {
+      const second = await fetch(`${BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'reviewer@autgrc.demo', password: PASSWORD })
+      }).then((r) => r.json());
+
+      const used = await fetch(`${BASE}/api/auth/mfa/verify`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mfaToken: second.mfaToken, code: recoveryCode })
+      }).then((r) => r.json());
+      assert.equal(used.usedRecoveryCode, true);
+      assert.equal(used.recoveryCodesRemaining, 9);
+
+      const third = await fetch(`${BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'reviewer@autgrc.demo', password: PASSWORD })
+      }).then((r) => r.json());
+      const reuse = await fetch(`${BASE}/api/auth/mfa/verify`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mfaToken: third.mfaToken, code: recoveryCode })
+      });
+      assert.equal(reuse.status, 401, 'a spent recovery code is refused');
+    });
+
+    // Put the account back the way the rest of the suite expects it.
+    const off = await api('POST', '/api/auth/mfa/disable', {
+      as: 'reviewer@autgrc.demo', body: { password: PASSWORD }
+    });
+    assert.equal(off.status, 200);
+    assert.equal(off.body.user.mfaEnabled, false);
+  });
+
+  await t.test('an administrator resets a password the platform cannot show them', async () => {
+    // A throwaway account, so a failure here cannot leave a seeded login broken
+    // for every later case and every later run.
+    const email = `reset-subject-${Date.now()}@autgrc.demo`;
+    const startingPassword = 'Muraqabah#Start1';
+    const created = await api('POST', '/api/admin/users', {
+      as: 'admin@autgrc.demo',
+      body: { email, name: 'Reset Subject', role: 'read_only', password: startingPassword }
+    });
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    const target = created.body.user;
+
+    const reset = await api('POST', `/api/admin/users/${target.id}/reset-password`, { as: 'admin@autgrc.demo' });
+    assert.equal(reset.status, 200);
+    const temporary = reset.body.temporaryPassword;
+    assert.ok(temporary && temporary.length >= 12, 'a temporary password is returned once');
+
+    // The password it replaced no longer works.
+    const old = await rawLogin(email, startingPassword);
+    assert.equal(old.status, 401);
+
+    // The temporary one signs in, and can do nothing else.
+    const session = await rawLogin(email, temporary);
+    assert.equal(session.status, 200);
+    assert.equal(session.body.accountBlock, 'password_change_required');
+    assert.equal(session.body.user.mustChangePassword, true);
+
+    const blocked = await fetch(`${BASE}/api/documents`, {
+      headers: { authorization: `Bearer ${session.body.accessToken}` }
+    });
+    assert.equal(blocked.status, 403, 'a reset account cannot read the library');
+    assert.equal((await blocked.json()).code, 'password_change_required');
+
+    // The enrolment and password screens stay reachable, or there is no way out.
+    const allowed = await fetch(`${BASE}/api/auth/me`, {
+      headers: { authorization: `Bearer ${session.body.accessToken}` }
+    });
+    assert.equal(allowed.status, 200);
+
+    // The replacement still has to meet the policy.
+    const weak = await fetch(`${BASE}/api/auth/change-password`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${session.body.accessToken}` },
+      body: JSON.stringify({ currentPassword: temporary, newPassword: 'password123' })
+    });
+    assert.equal(weak.status, 400);
+
+    const changed = await fetch(`${BASE}/api/auth/change-password`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${session.body.accessToken}` },
+      body: JSON.stringify({ currentPassword: temporary, newPassword: 'Muraqabah#Chosen1' })
+    });
+    assert.equal(changed.status, 200);
+
+    // Choosing their own password clears the block.
+    const restored = await rawLogin(email, 'Muraqabah#Chosen1');
+    assert.equal(restored.status, 200);
+    assert.equal(restored.body.accountBlock, null);
+
+    const unblocked = await fetch(`${BASE}/api/documents`, {
+      headers: { authorization: `Bearer ${restored.body.accessToken}` }
+    });
+    assert.equal(unblocked.status, 200);
+
+    // Only an administrator may reset.
+    const denied = await api('POST', `/api/admin/users/${target.id}/reset-password`, { as: 'grc@autgrc.demo' });
+    assert.equal(denied.status, 403);
+    assert.equal(denied.body.required, 'user:manage');
+
+    await api('PATCH', `/api/admin/users/${target.id}`, {
+      as: 'admin@autgrc.demo', body: { status: 'suspended' }
+    });
+  });
+
+  await t.test('a new framework edition supersedes the old one without disturbing it', async () => {
+    const before = await api('GET', '/api/frameworks', { as: 'admin@autgrc.demo' });
+    const source = before.body.items.find((f) => f.code === 'ISO-27005');
+    assert.ok(source, 'the catalogue holds ISO-27005');
+    const mappedBefore = source.mapped_count;
+
+    const code = `ISO-27005-TEST-${Date.now()}`;
+    const created = await api('POST', '/api/frameworks/editions', {
+      as: 'admin@autgrc.demo',
+      body: {
+        supersedesCode: 'ISO-27005',
+        code,
+        name: 'ISO/IEC 27005 test edition',
+        version: 'test',
+        retiresOn: '2032-01-01',
+        copyRequirements: true
+      }
+    });
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    assert.equal(created.body.framework.edition_status, 'current');
+    assert.equal(created.body.superseded.edition_status, 'superseded');
+    assert.ok(created.body.requirementsCopied > 0, 'requirements are carried forward');
+
+    const after = await api('GET', '/api/frameworks', { as: 'admin@autgrc.demo' });
+    const old = after.body.items.find((f) => f.code === 'ISO-27005');
+    const fresh = after.body.items.find((f) => f.code === code);
+
+    // The old edition keeps its requirements and its mappings: an organisation
+    // stays assessed against the edition it was certified under.
+    assert.equal(old.requirement_count, source.requirement_count);
+    assert.equal(old.mapped_count, mappedBefore);
+    // Editions accumulate: a framework superseded once may be superseded again,
+    // so check this one is among the successors rather than the only one.
+    assert.ok(old.superseded_by.some((e) => e.code === code), 'the new edition is recorded as a successor');
+    assert.equal(fresh.supersedes.code, 'ISO-27005');
+    // Nothing is assessed against the new edition until somebody does it.
+    assert.equal(fresh.mapped_count, 0, 'a new edition starts unmapped');
+
+    const duplicate = await api('POST', '/api/frameworks/editions', {
+      as: 'admin@autgrc.demo',
+      body: { supersedesCode: 'ISO-27005', code, name: 'Duplicate edition', version: 'test' }
+    });
+    assert.equal(duplicate.status, 409);
+
+    const denied = await api('POST', '/api/frameworks/editions', {
+      as: 'auditor@autgrc.demo',
+      body: { supersedesCode: 'ISO-27005', code: `${code}-B`, name: 'Unauthorised edition', version: 'test' }
+    });
+    assert.equal(denied.status, 403);
   });
 
   await t.test('audit log captures the workflow', async () => {

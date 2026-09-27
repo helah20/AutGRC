@@ -1,7 +1,7 @@
 /** Helpers shared across route modules. */
 
 import { q, fromJson } from '../db/index.js';
-import { can } from '../middleware/auth.js';
+import { can, mfaRequiredRoles } from '../middleware/auth.js';
 import { domainName, DOMAIN_META } from '../knowledge/index.js';
 import { DOC_TYPE_LABEL } from '../services/generator.js';
 
@@ -71,7 +71,8 @@ export function getOrgProfile() {
     ...row,
     regulators: fromJson(row.regulators, []),
     technology_env: fromJson(row.technology_env, []),
-    data_classifications: fromJson(row.data_classifications, [])
+    data_classifications: fromJson(row.data_classifications, []),
+    mfa_required_roles: mfaRequiredRoles()
   };
 }
 

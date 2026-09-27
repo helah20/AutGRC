@@ -5,6 +5,7 @@ import Shell from './components/Shell.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import MyWork from './pages/MyWork.jsx';
+import AccountAction from './pages/AccountAction.jsx';
 import Generator from './pages/Generator.jsx';
 import Documents from './pages/Documents.jsx';
 import DocumentDetail from './pages/DocumentDetail.jsx';
@@ -26,7 +27,7 @@ import SearchPage from './pages/SearchPage.jsx';
 import Settings from './pages/Settings.jsx';
 
 export default function App() {
-  const { session, loading } = useAuth();
+  const { session, loading, accountBlock } = useAuth();
 
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><Loading label="Starting AutGRC…" /></div>;
@@ -40,6 +41,10 @@ export default function App() {
       </Routes>
     );
   }
+
+  // The server refuses every other route while an account block stands, so the
+  // client shows the one screen that clears it rather than a wall of 403s.
+  if (accountBlock) return <AccountAction block={accountBlock} />;
 
   return (
     <Shell>

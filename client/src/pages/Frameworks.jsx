@@ -54,13 +54,21 @@ export default function Frameworks() {
             <button key={f.id} type="button" className="card" onClick={() => setActive(f.code)}
               style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit', padding: 0, border: '1px solid var(--border)' }}>
               <div className="card-body">
-                <div className="row-tight" style={{ marginBottom: 6 }}>
+                <div className="row-tight" style={{ marginBottom: 6, flexWrap: 'wrap' }}>
                   <span className="ref-tag">{f.code}</span>
                   {f.is_mandatory ? <Badge tone="critical">Regulatory</Badge> : <Badge tone="neutral">Framework</Badge>}
+                  {f.edition_status === 'superseded' && (
+                    <Badge tone="warn" title={f.superseded_by?.length
+                      ? `Replaced by ${f.superseded_by.map((e) => e.code).join(', ')}`
+                      : 'No longer the current edition'}>Superseded</Badge>
+                  )}
+                  {f.edition_status === 'draft' && <Badge tone="neutral">Draft edition</Badge>}
                 </div>
                 <div className="strong" style={{ marginBottom: 3 }}>{f.name}</div>
                 <div className="tiny muted" style={{ marginBottom: 10 }}>
                   {f.publisher}{f.version ? ` · ${f.version}` : ''}{f.jurisdiction ? ` · ${f.jurisdiction}` : ''}
+                  {f.supersedes?.code && <><br />Supersedes {f.supersedes.code}</>}
+                  {f.retires_on && <><br />Retires {f.retires_on}</>}
                 </div>
                 <p className="small muted clamp-3" style={{ marginBottom: 12 }}>{f.description}</p>
                 <CoverageBar value={f.coverage} label={`${f.mapped_count} of ${f.requirement_count} mapped`} />
