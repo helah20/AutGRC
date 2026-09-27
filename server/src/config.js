@@ -14,6 +14,10 @@ const dataDir = process.env.AUTGRC_DATA_DIR || path.join(SERVER_ROOT, 'data');
 fs.mkdirSync(dataDir, { recursive: true });
 const uploadDir = path.join(dataDir, 'uploads');
 fs.mkdirSync(uploadDir, { recursive: true });
+// Evidence artefacts are kept apart from imported source documents: they are
+// audit records with their own retention, not working material.
+const evidenceDir = path.join(dataDir, 'evidence');
+fs.mkdirSync(evidenceDir, { recursive: true });
 
 /**
  * JWT secret resolution. In production a secret MUST be supplied; in
@@ -38,6 +42,7 @@ export const config = {
   port: Number(process.env.PORT || 4000),
   dataDir,
   uploadDir,
+  evidenceDir,
   dbFile: process.env.AUTGRC_DB_FILE || path.join(dataDir, 'autgrc.db'),
   clientDist: path.join(ROOT, 'client', 'dist'),
   jwt: {

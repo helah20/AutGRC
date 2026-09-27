@@ -366,3 +366,30 @@ table.raci td.cell-assign { padding: 0; text-align: center; }
 .demo-account:hover { border-color: var(--accent); background: var(--bg-hover); }
 .demo-account-name { font-size: 12.5px; font-weight: 600; }
 .demo-account-role { font-size: 11px; color: var(--text-muted); }
+
+/* ============================================ evidence artefact list == */
+
+.attachment-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.attachment {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+.attachment-main { flex: 1; min-width: 0; }
+.attachment-name {
+  font-size: 12.5px; font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.attachment-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+.attachment-note { font-size: 12px; margin-top: 4px; color: var(--text); }
+.attachment-actions { display: flex; gap: 4px; align-items: center; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; }
+
+.attachment-upload {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius); padding: 12px; background: var(--bg-sunken);
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+/* A destructive action that still reads as secondary until hovered. */
+.btn-danger-ghost { color: var(--danger); }
+.btn-danger-ghost:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger); }

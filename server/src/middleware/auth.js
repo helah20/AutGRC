@@ -44,6 +44,9 @@ export const PERMISSIONS = {
   'raci:write': ['admin', 'grc_manager', 'cyber_user'],
   'mapping:write': ['admin', 'grc_manager', 'cyber_user'],
   'evidence:write': ['admin', 'grc_manager', 'cyber_user'],
+  // Whoever collected an artefact cannot be the one who attests to it;
+  // the route enforces that on top of this list.
+  'evidence:verify': ['admin', 'grc_manager', 'reviewer', 'auditor'],
   'gap:write': ['admin', 'grc_manager', 'cyber_user', 'auditor'],
   'import:write': ['admin', 'grc_manager', 'cyber_user'],
   'finding:write': ['admin', 'grc_manager', 'cyber_user', 'auditor'],

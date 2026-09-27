@@ -82,3 +82,15 @@ export const TONE_COLORS = {
   ok: '#1F7A4D', warn: '#A66A00', danger: '#B3261E',
   critical: '#7A1912', info: '#2E6F9E', neutral: '#5A6B7D'
 };
+
+/** File sizes for attachment lists: 1 decimal place, binary units. */
+export function formatBytes(bytes) {
+  const n = Number(bytes);
+  if (!Number.isFinite(n) || n < 0) return '—';
+  if (n < 1024) return `${n} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let value = n / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit += 1; }
+  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
+}

@@ -336,6 +336,28 @@ CREATE TABLE IF NOT EXISTS evidence (
 );
 CREATE INDEX IF NOT EXISTS idx_ev_control ON evidence(control_id);
 
+-- Collected evidence artefacts. An evidence item recurs (monthly access
+-- review, quarterly firewall rule review), so each collection is its own row:
+-- the register records what is required, this records what was actually
+-- produced, by whom, and who checked it.
+CREATE TABLE IF NOT EXISTS evidence_files (
+  id            TEXT PRIMARY KEY,
+  evidence_id   TEXT NOT NULL REFERENCES evidence(id) ON DELETE CASCADE,
+  filename      TEXT NOT NULL,
+  stored_name   TEXT NOT NULL,
+  mime          TEXT,
+  size_bytes    INTEGER,
+  sha256        TEXT,
+  note          TEXT,
+  period        TEXT,          -- the collection period this artefact covers
+  collected_at  TEXT NOT NULL,
+  uploaded_by   TEXT REFERENCES users(id) ON DELETE SET NULL,
+  verified_by   TEXT REFERENCES users(id) ON DELETE SET NULL,
+  verified_at   TEXT,
+  created_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_evfile_evidence ON evidence_files(evidence_id, collected_at DESC);
+
 -- ---------------------------------------------------------------- mapping --
 CREATE TABLE IF NOT EXISTS control_mappings (
   id                TEXT PRIMARY KEY,

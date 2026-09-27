@@ -63,6 +63,19 @@ async function api(method, path, { as = 'grc@autgrc.demo', body, raw = false } =
   return { status: res.status, body: parsed };
 }
 
+/** Multipart POST; the runtime sets the boundary from the FormData itself. */
+async function upload(path, form, { as = 'grc@autgrc.demo' } = {}) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${state.tokens[as]}` },
+    body: form
+  });
+  const text = await res.text();
+  let parsed = null;
+  try { parsed = JSON.parse(text); } catch { parsed = text; }
+  return { status: res.status, body: parsed };
+}
+
 test('AutGRC end-to-end governance workflow', {
   skip: reachable ? false : `No server responding at ${BASE}. Start one with "npm start" in another terminal, or set AUTGRC_TEST_URL.`
 }, async (t) => {
@@ -380,6 +393,54 @@ test('AutGRC end-to-end governance workflow', {
   const xlsx = await api('GET', '/api/reports/audit_readiness/export.xlsx', { raw: true });
   assert.equal(xlsx.status, 200);
 });
+
+  await t.test('evidence artefacts: attach, verify with segregation, download', async () => {
+    const list = await api('GET', '/api/evidence?limit=1');
+    assert.equal(list.status, 200);
+    const item = list.body.items[0];
+    assert.ok(item, 'the seed should define evidence requirements');
+
+    // A script-bearing document dressed as a picture is refused.
+    const svg = new FormData();
+    svg.append('file', new Blob(['<svg onload="alert(1)"/>'], { type: 'image/svg+xml' }), 'payload.svg');
+    const rejected = await upload(`/api/evidence/${item.id}/files`, svg);
+    assert.equal(rejected.status, 400, 'SVG should not be accepted as evidence');
+
+    const body = 'Privileged account review\nAccounts reviewed: 41\nRemoved: 3\n';
+    const form = new FormData();
+    form.append('file', new Blob([body], { type: 'text/plain' }), 'account-review.txt');
+    form.append('period', 'Q3 2026');
+    form.append('note', 'Export from the identity provider');
+    const attached = await upload(`/api/evidence/${item.id}/files`, form);
+    assert.equal(attached.status, 201, JSON.stringify(attached.body));
+    assert.equal(attached.body.evidence.status, 'collected', 'attaching an artefact marks the item collected');
+    const file = attached.body.files[0];
+    assert.equal(file.filename, 'account-review.txt');
+    assert.ok(file.sha256, 'the stored artefact is hashed');
+    assert.equal(file.verified_at, null, 'a fresh artefact is not yet verified');
+
+    // The same segregation the platform applies to document approval.
+    const selfVerify = await api('POST', `/api/evidence/${item.id}/files/${file.id}/verify`);
+    assert.equal(selfVerify.status, 403, 'the collector must not be able to verify their own artefact');
+
+    const verified = await api('POST', `/api/evidence/${item.id}/files/${file.id}/verify`, { as: 'auditor@autgrc.demo' });
+    assert.equal(verified.status, 200, JSON.stringify(verified.body));
+    assert.equal(verified.body.evidence.status, 'verified');
+    assert.ok(verified.body.files[0].verified_by_name, 'the verifier is recorded by name');
+
+    // What comes back is byte-for-byte what went in, as an attachment.
+    const download = await api('GET', `/api/evidence/${item.id}/files/${file.id}`, { as: 'auditor@autgrc.demo', raw: true });
+    assert.equal(download.status, 200);
+    assert.match(download.headers.get('content-disposition') || '', /^attachment;/);
+    assert.equal(await download.text(), body);
+
+    // A verified artefact is part of the audit record and cannot be dropped.
+    const removal = await api('DELETE', `/api/evidence/${item.id}/files/${file.id}`);
+    assert.equal(removal.status, 409);
+
+    const filtered = await api('GET', '/api/evidence?attached=yes&limit=5');
+    assert.ok(filtered.body.total >= 1, 'the attachment filter finds the item');
+  });
 
   await t.test('audit log captures the workflow', async () => {
   const res = await api('GET', '/api/admin/audit?limit=200', { as: 'auditor@autgrc.demo' });
