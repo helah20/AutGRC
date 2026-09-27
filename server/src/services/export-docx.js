@@ -28,6 +28,97 @@ const STATUS_LABEL = {
   published: 'Published', under_revision: 'Under Revision', retired: 'Retired'
 };
 
+/**
+ * Document furniture in both languages.
+ *
+ * Word does Arabic shaping and bidi reordering itself, so an RTL document from
+ * here is a real one rather than a mirrored picture: the reader can edit it,
+ * and the text stays joined. That is why Word carries the Arabic export and
+ * the PDF path does not.
+ */
+const FURNITURE = {
+  en: {
+    documentControl: 'Document Control',
+    title: 'Document title',
+    reference: 'Document reference',
+    docType: 'Document type',
+    domain: 'Domain',
+    version: 'Version',
+    status: 'Status',
+    classification: 'Classification',
+    owner: 'Document owner',
+    approver: 'Approver',
+    effective: 'Effective date',
+    nextReview: 'Next review date',
+    issuer: 'Issuing organisation',
+    notAssigned: 'Not assigned',
+    onApproval: 'On approval',
+    toBeSet: 'To be set',
+    approval: 'Approval',
+    action: 'Action',
+    name: 'Name',
+    role: 'Role',
+    date: 'Date',
+    prepared: 'Prepared',
+    reviewed: 'Reviewed',
+    approved: 'Approved',
+    documentOwner: 'Document Owner',
+    approverRole: 'Approver',
+    versionHistory: 'Version History',
+    author: 'Author',
+    change: 'Change',
+    generationEngine: 'Generation engine',
+    initialIssue: 'Initial issue',
+    contents: 'Contents',
+    organisation: 'Organisation',
+    statusLabel: STATUS_LABEL
+  },
+  ar: {
+    documentControl: 'ضبط الوثيقة',
+    title: 'عنوان الوثيقة',
+    reference: 'الرقم المرجعي',
+    docType: 'نوع الوثيقة',
+    domain: 'المجال',
+    version: 'الإصدار',
+    status: 'الحالة',
+    classification: 'التصنيف',
+    owner: 'مالك الوثيقة',
+    approver: 'المعتمِد',
+    effective: 'تاريخ السريان',
+    nextReview: 'تاريخ المراجعة القادمة',
+    issuer: 'الجهة المُصدِرة',
+    notAssigned: 'غير مُسنَد',
+    onApproval: 'عند الاعتماد',
+    toBeSet: 'يُحدَّد لاحقاً',
+    approval: 'الاعتماد',
+    action: 'الإجراء',
+    name: 'الاسم',
+    role: 'الدور',
+    date: 'التاريخ',
+    prepared: 'أُعدّت',
+    reviewed: 'رُوجعت',
+    approved: 'اعتُمدت',
+    documentOwner: 'مالك الوثيقة',
+    approverRole: 'المعتمِد',
+    versionHistory: 'سجل الإصدارات',
+    author: 'المُعِد',
+    change: 'التغيير',
+    generationEngine: 'محرّك التوليد',
+    initialIssue: 'الإصدار الأول',
+    contents: 'المحتويات',
+    organisation: 'المنظمة',
+    statusLabel: {
+      draft: 'مسودة', under_review: 'قيد المراجعة', approved: 'معتمدة',
+      published: 'منشورة', under_revision: 'قيد التنقيح', retired: 'مُلغاة'
+    }
+  }
+};
+
+const CLASSIFICATION_AR = {
+  public: 'عام', internal: 'داخلي', confidential: 'سري',
+  secret: 'سري للغاية', top_secret: 'سري للغاية — أعلى تصنيف'
+};
+
 const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: BORDER };
 const cellBorders = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
 
@@ -129,20 +220,31 @@ function blocksToDocx(blocks) {
   return out;
 }
 
-function coverPage({ doc, org, classification }) {
+function coverPage({ doc, org, classification, rtl = false, L }) {
+  // Letter-spacing an Arabic word breaks the joins between its letters, so the
+  // tracking that makes the English cover look considered is dropped in Arabic.
+  const tracking = (value) => (rtl ? undefined : value);
+  const caps = (text) => (rtl ? text : String(text).toUpperCase());
+  const run = (options) => new TextRun({ rightToLeft: rtl, ...options });
+  const centred = (children, spacing) => new Paragraph({
+    alignment: AlignmentType.CENTER, bidirectional: rtl, spacing, children
+  });
+
   return [
-    new Paragraph({ spacing: { before: 1800, after: 120 }, alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: (org?.org_name || 'Organisation').toUpperCase(), bold: true, size: 28, color: ACCENT, characterSpacing: 40 })] }),
-    new Paragraph({ spacing: { after: 600 }, alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'CYBERSECURITY GOVERNANCE', size: 20, color: '6B7C8F', characterSpacing: 60 })] }),
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 },
-      children: [new TextRun({ text: doc.title, bold: true, size: 52, color: BRAND })] }),
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 1200 },
-      children: [new TextRun({ text: `${doc.reference}  ·  Version ${doc.version}  ·  ${STATUS_LABEL[doc.status] || doc.status}`, size: 22, color: '6B7C8F' })] }),
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 240 },
-      children: [new TextRun({ text: `CLASSIFICATION: ${classification}`, bold: true, size: 20, color: BRAND })] }),
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 1600 },
-      children: [new TextRun({ text: `Effective ${doc.effective_date || 'on approval'}  ·  Next review ${doc.review_date || 'to be set'}`, size: 18, color: '8A97A6' })] }),
+    centred([run({ text: caps(org?.org_name || L.organisation), bold: true, size: 28, color: ACCENT, characterSpacing: tracking(40) })],
+      { before: 1800, after: 120 }),
+    centred([run({ text: rtl ? 'حوكمة الأمن السيبراني' : 'CYBERSECURITY GOVERNANCE', size: 20, color: '6B7C8F', characterSpacing: tracking(60) })],
+      { after: 600 }),
+    centred([run({ text: doc.title, bold: true, size: 52, color: BRAND })], { after: 160 }),
+    centred([run({
+      text: `${doc.reference}  ·  ${L.version} ${doc.version}  ·  ${L.statusLabel[doc.status] || doc.status}`,
+      size: 22, color: '6B7C8F'
+    })], { after: 1200 }),
+    centred([run({ text: `${caps(L.classification)}: ${classification}`, bold: true, size: 20, color: BRAND })], { after: 240 }),
+    centred([run({
+      text: `${L.effective} ${doc.effective_date || L.onApproval}  ·  ${L.nextReview} ${doc.review_date || L.toBeSet}`,
+      size: 18, color: '8A97A6'
+    })], { before: 1600 }),
     new Paragraph({ children: [new PageBreak()] })
   ];
 }
@@ -153,50 +255,57 @@ function coverPage({ doc, org, classification }) {
  */
 export async function buildDocx(data) {
   const { document: doc, sections, org, owner, approver, versions = [], approvals = [], frameworks = [] } = data;
-  const classification = CLASSIFICATION_LABEL[doc.classification] || 'INTERNAL';
+  // Arabic is a real RTL document, not a mirrored one: Word joins the letters
+  // and reorders the line itself, so the reader can edit what they receive.
+  const lang = data.lang === 'ar' ? 'ar' : 'en';
+  const rtl = lang === 'ar';
+  const L = FURNITURE[lang];
+  const classification = rtl
+    ? (CLASSIFICATION_AR[doc.classification] || CLASSIFICATION_AR.internal)
+    : (CLASSIFICATION_LABEL[doc.classification] || 'INTERNAL');
 
   const body = [
-    ...coverPage({ doc, org, classification }),
+    ...coverPage({ doc, org, classification, rtl, L }),
 
-    new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: 'Document Control', color: BRAND })] }),
+    new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.documentControl, color: BRAND, rightToLeft: rtl })] }),
     infoTable([
-      ['Document title', doc.title],
-      ['Document reference', doc.reference],
-      ['Document type', (doc.doc_type || '').replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())],
-      ['Domain', data.domainName || doc.domain_key],
-      ['Version', doc.version],
-      ['Status', STATUS_LABEL[doc.status] || doc.status],
-      ['Classification', classification],
-      ['Document owner', owner?.name ? `${owner.name}${owner.job_title ? `, ${owner.job_title}` : ''}` : 'Not assigned'],
-      ['Approver', approver?.name ? `${approver.name}${approver.job_title ? `, ${approver.job_title}` : ''}` : 'Not assigned'],
-      ['Effective date', doc.effective_date || 'On approval'],
-      ['Next review date', doc.review_date || 'To be set'],
-      ['Issuing organisation', org?.org_name || '—']
+      [L.title, doc.title],
+      [L.reference, doc.reference],
+      [L.docType, data.docTypeLabel || (doc.doc_type || '').replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())],
+      [L.domain, data.domainName || doc.domain_key],
+      [L.version, doc.version],
+      [L.status, L.statusLabel[doc.status] || doc.status],
+      [L.classification, classification],
+      [L.owner, owner?.name ? `${owner.name}${owner.job_title ? `, ${owner.job_title}` : ''}` : L.notAssigned],
+      [L.approver, approver?.name ? `${approver.name}${approver.job_title ? `, ${approver.job_title}` : ''}` : L.notAssigned],
+      [L.effective, doc.effective_date || L.onApproval],
+      [L.nextReview, doc.review_date || L.toBeSet],
+      [L.issuer, org?.org_name || '—']
     ]),
     new Paragraph({ spacing: { after: 300 }, children: [] }),
 
-    new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: 'Approval', color: BRAND })] }),
+    new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.approval, color: BRAND, rightToLeft: rtl })] }),
     gridTable(
-      [[[{ text: 'Action' }], [{ text: 'Name' }], [{ text: 'Role' }], [{ text: 'Date' }]]],
+      [[[{ text: L.action }], [{ text: L.name }], [{ text: L.role }], [{ text: L.date }]]],
       approvals.length
         ? approvals.map((a) => [a.action, a.actor_name || '—', a.actor_role || '—', (a.created_at || '').slice(0, 10)])
-        : [['Prepared', owner?.name || '—', owner?.job_title || 'Document Owner', (doc.created_at || '').slice(0, 10)],
-           ['Reviewed', '', '', ''],
-           ['Approved', approver?.name || '', approver?.job_title || 'Approver', '']]
+        : [[L.prepared, owner?.name || '—', owner?.job_title || L.documentOwner, (doc.created_at || '').slice(0, 10)],
+           [L.reviewed, '', '', ''],
+           [L.approved, approver?.name || '', approver?.job_title || L.approverRole, '']]
     ),
     new Paragraph({ spacing: { after: 300 }, children: [] }),
 
-    new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: 'Version History', color: BRAND })] }),
+    new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.versionHistory, color: BRAND, rightToLeft: rtl })] }),
     gridTable(
-      [[[{ text: 'Version' }], [{ text: 'Date' }], [{ text: 'Author' }], [{ text: 'Change' }]]],
+      [[[{ text: L.version }], [{ text: L.date }], [{ text: L.author }], [{ text: L.change }]]],
       versions.length
         ? versions.map((v) => [v.version, (v.created_at || '').slice(0, 10), v.author_name || '—', v.change_note || '—'])
-        : [[doc.version, (doc.created_at || '').slice(0, 10), 'Generation engine', 'Initial issue']]
+        : [[doc.version, (doc.created_at || '').slice(0, 10), L.generationEngine, L.initialIssue]]
     ),
     new Paragraph({ children: [new PageBreak()] }),
 
-    new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: 'Table of Contents', color: BRAND })] }),
-    new TableOfContents('Contents', { hyperlink: true, headingStyleRange: '1-3' }),
+    new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.contents, color: BRAND, rightToLeft: rtl })] }),
+    new TableOfContents(L.contents, { hyperlink: true, headingStyleRange: '1-3' }),
     new Paragraph({ children: [new PageBreak()] })
   ];
 
@@ -230,21 +339,41 @@ export async function buildDocx(data) {
       config: [{
         reference: 'ordered-list',
         levels: [
-          { level: 0, format: 'decimal', text: '%1.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
-          { level: 1, format: 'lowerLetter', text: '%2.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 1440, hanging: 360 } } } },
-          { level: 2, format: 'lowerRoman', text: '%3.', alignment: AlignmentType.START, style: { paragraph: { indent: { left: 2160, hanging: 360 } } } }
+          // AlignmentType.START already follows the paragraph direction; the
+          // indent is physical, so it is stated on the side the text starts.
+          { level: 0, format: 'decimal', text: '%1.', alignment: AlignmentType.START,
+            style: { paragraph: { indent: rtl ? { right: 720, hanging: 360 } : { left: 720, hanging: 360 } } } },
+          { level: 1, format: 'lowerLetter', text: '%2.', alignment: AlignmentType.START,
+            style: { paragraph: { indent: rtl ? { right: 1440, hanging: 360 } : { left: 1440, hanging: 360 } } } },
+          { level: 2, format: 'lowerRoman', text: '%3.', alignment: AlignmentType.START,
+            style: { paragraph: { indent: rtl ? { right: 2160, hanging: 360 } : { left: 2160, hanging: 360 } } } }
         ]
       }]
     },
     styles: {
-      default: { document: { run: { font: 'Calibri', size: 21, color: '1C2733' } } },
+      default: {
+        document: {
+          // Word shapes Arabic and reorders the line from these two flags, so
+          // the body inherits direction rather than each paragraph declaring it.
+          run: {
+            font: rtl ? 'Segoe UI' : 'Calibri',
+            size: rtl ? 22 : 21,
+            color: '1C2733',
+            rightToLeft: rtl
+          },
+          paragraph: { bidirectional: rtl }
+        }
+      },
       paragraphStyles: [
         { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-          run: { size: 30, bold: true, color: BRAND }, paragraph: { spacing: { before: 320, after: 160 } } },
+          run: { size: 30, bold: true, color: BRAND, rightToLeft: rtl },
+          paragraph: { spacing: { before: 320, after: 160 }, bidirectional: rtl } },
         { id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-          run: { size: 26, bold: true, color: BRAND }, paragraph: { spacing: { before: 260, after: 120 } } },
+          run: { size: 26, bold: true, color: BRAND, rightToLeft: rtl },
+          paragraph: { spacing: { before: 260, after: 120 }, bidirectional: rtl } },
         { id: 'Heading3', name: 'Heading 3', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-          run: { size: 23, bold: true, color: ACCENT }, paragraph: { spacing: { before: 220, after: 100 } } }
+          run: { size: 23, bold: true, color: ACCENT, rightToLeft: rtl },
+          paragraph: { spacing: { before: 220, after: 100 }, bidirectional: rtl } }
       ]
     },
     sections: [{
@@ -262,8 +391,8 @@ export async function buildDocx(data) {
             border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: BORDER } },
             tabStops: [{ type: 'right', position: 9360 }],
             children: [
-              new TextRun({ text: `${org?.org_name || 'Organisation'}  |  ${doc.title}`, size: 16, color: '6B7C8F' }),
-              new TextRun({ text: `\t${classification}`, size: 16, bold: true, color: BRAND })
+              new TextRun({ text: `${org?.org_name || L.organisation}  |  ${doc.title}`, size: 16, color: '6B7C8F', rightToLeft: rtl }),
+              new TextRun({ text: `\t${classification}`, size: 16, bold: true, color: BRAND, rightToLeft: rtl })
             ]
           })]
         })

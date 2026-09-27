@@ -16,9 +16,11 @@ import {
   IconTrash, IconFlow, IconShield, IconLink, IconChevronRight, IconRefresh, IconX, IconInfo
 } from '../components/Icons.jsx';
 import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 export default function DocumentDetail() {
   const labels = useLabels();
+  const { t, language } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -89,12 +91,13 @@ export default function DocumentDetail() {
     }
   }
 
-  async function exportAs(format) {
+  async function exportAs(format, exportLanguage = language) {
     try {
-      const name = await api.download(`/export/documents/${id}.${format}`);
-      toast.success('Export ready', name);
+      const query = exportLanguage === 'ar' ? '?lang=ar' : '';
+      const name = await api.download(`/export/documents/${id}.${format}${query}`);
+      toast.success(t('documents.exportReady'), name);
     } catch (err) {
-      toast.error('Export failed', err.message);
+      toast.error(t('common.exportFailed'), err.message);
     }
   }
 
@@ -162,7 +165,12 @@ export default function DocumentDetail() {
         <div className="page-actions">
           <div className="btn-group">
             <button className="btn" onClick={() => exportAs('docx')}><IconDownload />Word</button>
-            <button className="btn" onClick={() => exportAs('pdf')}>PDF</button>
+            {/* Arabic PDF would come out with its letters unjoined, so the
+                button says so rather than producing it. */}
+            <button className="btn" onClick={() => exportAs('pdf', 'en')}
+              title={language === 'ar' ? t('documents.pdfEnglishOnly') : undefined}>
+              PDF{language === 'ar' ? ' (EN)' : ''}
+            </button>
           </div>
           {can('ai:use') && (
             <button className="btn" onClick={runReview} disabled={reviewBusy}>

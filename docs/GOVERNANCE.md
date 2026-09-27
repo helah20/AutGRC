@@ -68,6 +68,25 @@ that presents them carries the notice:
 `source_status` accepts `verified_official` and `user_imported` for customers
 who replace the catalogue with their licensed copies.
 
+**6. Regulatory text is not translated.**
+The platform is bilingual, and the boundary sits in the same place as every
+other rule here. Its own words — interface, labels, document furniture, the
+structure of a generated package — exist in Arabic. A framework requirement
+does not: rendering an NCA ECC control into Arabic and presenting it as the
+framework's own wording would be writing regulatory text, which rule 1 forbids
+whatever the language.
+
+An organisation that needs the official Arabic publication imports it, the same
+way it replaces any reference catalogue entry with its licensed copy. Until
+then the English reference text is shown as English text, bidi-isolated so it
+reads correctly inside an Arabic page, and visibly not a translation.
+
+The same reasoning keeps Arabic out of the PDF export. The PDF engine cannot
+join Arabic letters, so an Arabic PDF would be a governance document nobody
+could read properly. The export refuses and names the format that works rather
+than producing something that looks like a deliverable and is not.
+
+
 ## Document hierarchy
 
 ```

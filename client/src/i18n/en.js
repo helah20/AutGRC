@@ -146,6 +146,13 @@ export default {
     your_draftsAction: 'Open'
   },
 
+  documents: {
+    exportReady: 'Export ready',
+    pdfEnglishOnly: 'The PDF engine cannot shape Arabic script, so a PDF is produced in English. Export to Word for an Arabic document — Word renders it correctly and can save as PDF itself.',
+    exportWord: 'Word',
+    exportPdf: 'PDF'
+  },
+
   evidence: {
     title: 'Evidence Register',
     subtitle: 'The artefacts that demonstrate each control operated. A control without evidence cannot be tested or audited.',

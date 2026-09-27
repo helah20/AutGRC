@@ -57,13 +57,27 @@ function documentPayload(documentId) {
 }
 
 router.get('/documents/:id.docx', asyncHandler(async (req, res) => {
+  const lang = req.query.lang === 'ar' ? 'ar' : 'en';
   const payload = documentPayload(req.params.id);
-  const buffer = await buildDocx(payload);
-  audit(req, { action: 'export:docx', entityType: 'document', entityId: req.params.id, summary: `Exported ${payload.document.reference} to Word` });
+  const buffer = await buildDocx({ ...payload, lang });
+  audit(req, {
+    action: 'export:docx', entityType: 'document', entityId: req.params.id,
+    summary: `Exported ${payload.document.reference} to Word${lang === 'ar' ? ' (Arabic layout)' : ''}`
+  });
   send(res, buffer, `${payload.document.reference} ${payload.document.title}.docx`, MIME.docx);
 }));
 
 router.get('/documents/:id.pdf', asyncHandler(async (req, res) => {
+  // PDFKit renders glyphs in code-point order with no Arabic shaping and no
+  // bidi reordering, so an Arabic PDF from here would come out as disconnected
+  // letters running the wrong way. Saying so is better than shipping that:
+  // Word does the shaping itself, and the Word file is what a governance team
+  // circulates and edits anyway.
+  if (req.query.lang === 'ar') {
+    throw new HttpError(501,
+      'Arabic PDF export is not supported. The PDF engine does not shape Arabic script, so the text would come out with its letters unjoined. Export to Word instead — Word renders Arabic correctly and can save as PDF.',
+      { supported: ['docx'], reason: 'no_arabic_shaping' });
+  }
   const payload = documentPayload(req.params.id);
   const buffer = await buildPdf(payload);
   audit(req, { action: 'export:pdf', entityType: 'document', entityId: req.params.id, summary: `Exported ${payload.document.reference} to PDF` });

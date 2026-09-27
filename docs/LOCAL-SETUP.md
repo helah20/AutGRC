@@ -66,6 +66,24 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 After editing anything under `client/src`, run `npm run build` before
 `npm start` picks it up. `npm run dev` reloads automatically.
 
+## Using it in Arabic
+
+Click the globe in the top bar, or pick العربية on the login screen before you
+sign in. The choice is remembered on that browser.
+
+The interface, navigation, table columns, statuses, domains and roles are
+Arabic, and the layout mirrors. Framework requirement text stays in the
+publisher's own wording and generated policy text stays in English; both are
+marked as such rather than machine-translated, and the reasoning is in the
+README under "Arabic and right-to-left support".
+
+Exporting a document to Word with Arabic selected produces a genuine
+right-to-left document that Word shapes and reorders correctly. PDF export
+stays in English — the PDF engine cannot join Arabic letters, so the platform
+refuses rather than producing something unreadable. Export to Word and save as
+PDF from there.
+
+
 ## Your data
 
 | Path | Contents |

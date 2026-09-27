@@ -939,6 +939,69 @@ test('AutGRC end-to-end governance workflow', {
     }
   });
 
+  await t.test('Word exports in Arabic with real right-to-left markup', async () => {
+    const docId = state.docs.policy.id;
+    // A declared devDependency, not a transitive one: these assertions are the
+    // only thing proving the Arabic export is a real RTL document rather than
+    // English text in a mirrored layout, so they must not quietly skip.
+    const { default: JSZip } = await import('jszip');
+
+    const english = await api('GET', `/api/export/documents/${docId}.docx`, { raw: true });
+    assert.equal(english.status, 200);
+    const arabic = await api('GET', `/api/export/documents/${docId}.docx?lang=ar`, { raw: true });
+    assert.equal(arabic.status, 200);
+
+    const englishBytes = Buffer.from(await english.arrayBuffer());
+    const arabicBytes = Buffer.from(await arabic.arrayBuffer());
+    assert.equal(englishBytes.subarray(0, 2).toString(), 'PK');
+    assert.equal(arabicBytes.subarray(0, 2).toString(), 'PK');
+    assert.notEqual(englishBytes.length, arabicBytes.length, 'the two languages produce different files');
+
+    const read = async (bytes) => {
+      const zip = await JSZip.loadAsync(bytes);
+      return {
+        document: await zip.file('word/document.xml').async('string'),
+        styles: await zip.file('word/styles.xml').async('string')
+      };
+    };
+    const en = await read(englishBytes);
+    const ar = await read(arabicBytes);
+
+    // Word does the shaping and the reordering from these two flags.
+    assert.ok(ar.document.includes('<w:bidi/>'), 'Arabic paragraphs carry the bidi flag');
+    assert.ok(ar.document.includes('<w:rtl/>'), 'Arabic runs carry the rtl flag');
+    assert.ok(ar.styles.includes('<w:bidi/>'), 'the paragraph default is bidirectional');
+    assert.ok(/Segoe UI/.test(ar.styles), 'an Arabic-capable font is set');
+
+    // English must not have acquired any of it.
+    assert.ok(!en.document.includes('<w:bidi/>'), 'English paragraphs are not bidirectional');
+    assert.ok(!en.document.includes('<w:rtl/>'), 'English runs are not right-to-left');
+
+    // The document furniture is actually in Arabic, not English mirrored.
+    const arabicRuns = ar.document.match(/[\u0600-\u06FF]{2,}/g) || [];
+    assert.ok(arabicRuns.length > 10, `expected Arabic text in the export, found ${arabicRuns.length} run(s)`);
+    assert.ok(!(en.document.match(/[\u0600-\u06FF]{2,}/g) || []).length, 'the English export has no Arabic');
+  });
+
+  await t.test('Arabic PDF is refused rather than produced unshaped', async () => {
+    const docId = state.docs.policy.id;
+
+    // PDFKit writes glyphs in code-point order with no Arabic shaping, so an
+    // Arabic PDF would come out with its letters unjoined. Refusing says so.
+    const refused = await api('GET', `/api/export/documents/${docId}.pdf?lang=ar`);
+    assert.equal(refused.status, 501);
+    assert.match(refused.body.error, /shape Arabic/i);
+    assert.match(refused.body.error, /Word/, 'the refusal names the format that does work');
+    assert.deepEqual(refused.body.detail.supported, ['docx']);
+
+    // A deliberate 5xx keeps the message it was given; only unexpected ones
+    // are masked, and this proves the distinction holds.
+    assert.notEqual(refused.body.error, 'An unexpected error occurred');
+
+    const english = await api('GET', `/api/export/documents/${docId}.pdf`, { raw: true });
+    assert.equal(english.status, 200, 'the English PDF still works');
+  });
+
   await t.test('audit log captures the workflow', async () => {
   const res = await api('GET', '/api/admin/audit?limit=200', { as: 'auditor@autgrc.demo' });
   assert.equal(res.status, 200);

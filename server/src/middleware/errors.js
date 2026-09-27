@@ -38,11 +38,16 @@ export function errorHandler(err, req, res, _next) {
     });
   }
   const status = err.status || 500;
+  // An HttpError was thrown deliberately, so its message was written for the
+  // caller and is safe to return whatever the status. Anything else reaching
+  // a 5xx is unexpected and could carry internals, so it is masked — but still
+  // logged in full.
+  const deliberate = err instanceof HttpError;
   if (status >= 500) {
     console.error(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`, err);
   }
   res.status(status).json({
-    error: status >= 500 ? 'An unexpected error occurred' : err.message,
+    error: status >= 500 && !deliberate ? 'An unexpected error occurred' : err.message,
     ...(err.detail ? { detail: err.detail } : {})
   });
 }

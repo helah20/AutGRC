@@ -37,6 +37,24 @@ set and reports disagreements with both statements quoted:
 control → policy clause → standard clause → procedure → evidence, rendered as
 a chain and exported for audit.
 
+**Holds a risk register, not a risk column.** Risks are projected from the
+same requirement model as the policies, scored on a 5×5 matrix, and treated by
+the controls generated from that same requirement. A residual rating nobody has
+assessed is reported as unassessed rather than as a reduction somebody
+achieved.
+
+**Closes the loop.** Evidence carries the artefact, not just the requirement
+for one. Findings, gaps and risks carry corrective actions with an owner and a
+date. Notifications tell the named person, and the My Work queue offers only
+actions they can actually take.
+
+**Works in Arabic.** The interface, navigation, labels, statuses and document
+furniture are available in Arabic, with the layout mirrored through logical CSS
+properties rather than a stylesheet of overrides. Numbers, dates and plurals
+follow the reader's locale. Latin strings inside Arabic prose — a control
+reference, a clause citation — are bidi-isolated so they stay readable. See
+[Arabic and right-to-left support](#arabic-and-right-to-left-support).
+
 **Separates source material from generated content.** Framework requirements
 are authoritative and read-only. Everything the platform produces is
 organisational content, labelled as such at the block level. The platform
@@ -166,7 +184,9 @@ than failing. Both paths label their output as an AI-generated recommendation.
 | Passwords | bcrypt, length-first policy, breached-pattern block list |
 | Brute force | Rate limiting plus account lockout after five failed attempts |
 | Authorisation | Permission matrix — routes name a permission, never a role |
-| Segregation of duties | A document cannot be approved by its own owner |
+| Second factor | TOTP (RFC 6238) with hashed single-use recovery codes; enforceable per role, and the password alone buys a challenge token the API refuses |
+| Account recovery | Administrator-issued temporary password, shown once; the account can do nothing but change it |
+| Segregation of duties | A document cannot be approved by its own owner, evidence cannot be verified by whoever collected it, a corrective action cannot be verified by whoever did it, and a risk cannot be accepted by its owner |
 | Audit | Every authentication, authorisation decision, document change, generation, export and administrative action, with actor and outcome |
 | Input | Zod validation on every write; strict allow-list HTML sanitiser on section bodies |
 | Uploads | Extension and MIME checks, size cap, client filename never used on disk |
@@ -180,17 +200,70 @@ development a secret is generated and persisted on first run.
 ## Testing
 
 ```bash
-npm test          # 9 engine tests standalone; 31 with a server on :4000
+npm test          # 26 offline tests (1 suite skipped); 62 with a server on :4000
+npm run check     # static checks the bundler does not catch
 ```
 
 The end-to-end suite needs a running server and reports itself as skipped
-without one.
+without one. Both run in CI on every push, against a server the workflow
+starts.
 
-`server/test/workflow.test.js` exercises the complete path the platform
-exists to support: generate → map controls → review → identify inconsistencies
-→ approve → export. `server/test/consistency.test.js` covers the quality
-engine against an isolated database, including the false-positive cases that
-made its earlier revisions unusable.
+`server/test/workflow.test.js` exercises the complete path the platform exists
+to support: generate → map controls → review → identify inconsistencies →
+approve → export, plus evidence collection, notifications, the second factor,
+the risk register and the bilingual export.
+
+`server/test/consistency.test.js` covers the quality engine against an isolated
+database, including the false-positive cases that made its earlier revisions
+unusable. `server/test/totp.test.js` checks the second factor against the
+RFC 6238 vectors — a home-grown implementation that disagrees with the
+published algorithm would refuse every real authenticator app.
+`server/test/risk.test.js` checks that a requirement the knowledge base calls
+medium risk produces a medium risk, because a register that inflates every
+entry by a band is one nobody believes.
+
+`npm run check` catches a React hook used without being imported or obtained.
+Vite compiles that happily and it only fails when the component renders, which
+is how a page that worked in English threw in Arabic.
+
+## Arabic and right-to-left support
+
+Switch language from the globe in the top bar, or from the login screen before
+signing in. The choice persists, and direction is applied before the first
+paint so a page never renders left-to-right and then flips.
+
+**What is in Arabic.** The whole interface: navigation, page headings, table
+columns, buttons, filters, empty states, toasts, form labels and help text.
+Also the values the API returns as enumerations — domains, lifecycle statuses,
+document types, roles, coverage, risk bands, treatments, finding categories —
+which are re-labelled on the client from the key the API sends, so no endpoint
+needs to know the reader's language.
+
+**What stays in English, and why.**
+
+- *Framework requirement text.* The catalogue holds each publisher's own
+  wording. Rendering an NCA ECC control into Arabic here and presenting it as
+  the framework's text would be inventing a regulatory requirement, which this
+  platform does not do. Import the official Arabic publication to replace the
+  reference entries.
+- *Generated document bodies.* Policy, standard and procedure text is produced
+  from the requirement model, which is currently English. The document
+  furniture around it — cover page, document control table, approval table,
+  version history, contents, headers and footers — is Arabic when you export
+  in Arabic.
+
+Both appear bidi-isolated inside Arabic pages, so English reads left-to-right
+in its own block instead of having its punctuation moved to the wrong end.
+
+**Word exports in Arabic. PDF does not.** Word does Arabic shaping and bidi
+reordering itself, so `?lang=ar` on a Word export produces a genuine RTL
+document — `<w:bidi/>` on paragraphs, `<w:rtl/>` on runs, an Arabic font — that
+the recipient can edit. The PDF engine writes glyphs in code-point order with
+no shaping, so an Arabic PDF would arrive with its letters unjoined; the export
+returns 501 and says so rather than producing it. Export to Word and let Word
+save the PDF.
+
+---
 
 ## Limitations
 
@@ -201,3 +274,8 @@ made its earlier revisions unusable.
 - SQLite suits a single-node deployment. A multi-node deployment needs
   PostgreSQL; the data access layer is confined to `server/src/db/`.
 - Imported PDFs must contain a text layer. Scanned documents need OCR first.
+- Arabic covers the interface and the exported document furniture. Generated
+  policy text and framework requirements remain in English, for the reasons in
+  [Arabic and right-to-left support](#arabic-and-right-to-left-support).
+- Arabic PDF export is not supported. The PDF engine cannot shape Arabic
+  script; Word export handles Arabic correctly and can save as PDF.

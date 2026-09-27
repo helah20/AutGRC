@@ -153,6 +153,13 @@ export default {
     your_draftsAction: 'فتح'
   },
 
+  documents: {
+    exportReady: 'التصدير جاهز',
+    pdfEnglishOnly: 'محرّك PDF لا يدعم تشكيل الحروف العربية، لذلك يُصدَّر ملف PDF بالإنجليزية. للحصول على وثيقة عربية صدّرها إلى Word — فهو يعرضها بشكل صحيح ويستطيع حفظها بصيغة PDF بنفسه.',
+    exportWord: 'Word',
+    exportPdf: 'PDF'
+  },
+
   evidence: {
     title: 'سجل الأدلة',
     subtitle: 'الشواهد التي تُثبت أن كل ضابط قد طُبّق فعلاً. الضابط بلا دليل لا يمكن اختباره ولا تدقيقه.',
