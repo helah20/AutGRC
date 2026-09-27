@@ -19,7 +19,8 @@ import { TECH_DOMAINS } from './req-tech.js';
 import { RESILIENCE_DOMAINS } from './req-resilience.js';
 import {
   AR_DOMAINS, LANGUAGES, isTranslated, translatedDomains,
-  arText, arParameters, arObjectives, arDomainName, arFrequency, AR_ROLES
+  arText, arParameters, arObjectives, arDomainName, arFrequency, AR_ROLES,
+  AR_PROCEDURES, arProcedure
 } from './ar/index.js';
 
 const SOURCES = [ACCESS_DOMAINS, OPERATE_DOMAINS, DATA_DOMAINS, GOVERN_DOMAINS, TECH_DOMAINS, RESILIENCE_DOMAINS];
@@ -212,6 +213,77 @@ export function validateKnowledgeBase() {
     }
   }
 
+  // ------------------------------------------------- translated procedures --
+  // Position carries meaning here: the flow diagram numbers the steps, the
+  // decisions table pairs a question with its branches, and the RACI matrix
+  // pairs an activity name with an assignment row keyed on role codes. A list
+  // of the wrong length would shift a name onto the wrong row.
+  for (const domainKey of Object.keys(AR_PROCEDURES)) {
+    if (!DOMAIN_MODELS[domainKey]) problems.push(`Arabic procedure exists for unknown domain "${domainKey}"`);
+  }
+  for (const [domainKey, arabic] of Object.entries(AR_PROCEDURES)) {
+    const model = DOMAIN_MODELS[domainKey];
+    if (!model) continue;
+    const proc = model.procedure;
+    if (!arabic.purpose) problems.push(`${domainKey}: Arabic procedure has no purpose`);
+    for (const field of ['preconditions', 'inputs', 'outputs', 'escalation', 'records', 'kpis', 'steps']) {
+      const list = arabic[field];
+      if (!Array.isArray(list)) { problems.push(`${domainKey}: Arabic procedure "${field}" is missing`); continue; }
+      if (list.length !== proc[field].length) {
+        problems.push(`${domainKey}: Arabic procedure "${field}" has ${list.length} entries where the English has ${proc[field].length}`);
+      }
+    }
+    if (!Array.isArray(arabic.raciActivities)) {
+      problems.push(`${domainKey}: Arabic RACI activity names are missing`);
+    } else if (arabic.raciActivities.length !== model.raciActivities.length) {
+      problems.push(`${domainKey}: ${arabic.raciActivities.length} Arabic RACI activity names for ${model.raciActivities.length} activities`);
+    }
+
+    const placeholderPairs = [[`${domainKey}: procedure purpose`, arabic.purpose, proc.purpose]];
+    for (const field of ['preconditions', 'inputs', 'outputs', 'escalation', 'records']) {
+      (arabic[field] || []).forEach((text, i) => {
+        if (proc[field][i] !== undefined) placeholderPairs.push([`${domainKey}: procedure ${field} ${i + 1}`, text, proc[field][i]]);
+      });
+    }
+    (arabic.kpis || []).forEach((kpi, i) => {
+      const english = proc.kpis[i];
+      if (!english) return;
+      if (!kpi?.name || !kpi?.target) problems.push(`${domainKey}: Arabic procedure KPI ${i + 1} is incomplete`);
+      placeholderPairs.push([`${domainKey}: procedure KPI ${i + 1} target`, kpi?.target, english.target]);
+    });
+    (arabic.steps || []).forEach((step, i) => {
+      const english = proc.steps[i];
+      if (!english) return;
+      for (const field of ['name', 'actor', 'detail']) {
+        if (!step?.[field]) problems.push(`${domainKey}: Arabic procedure step ${i + 1} has no "${field}"`);
+      }
+      placeholderPairs.push([`${domainKey}: procedure step ${i + 1} detail`, step?.detail, english.detail]);
+      if (Boolean(english.decision) !== Boolean(step?.decision)) {
+        problems.push(`${domainKey}: Arabic procedure step ${i + 1} ${step?.decision ? 'adds a decision the English does not have' : 'drops the English decision'}`);
+      } else if (english.decision && step.decision) {
+        for (const field of ['question', 'yes', 'no']) {
+          if (!step.decision[field]) problems.push(`${domainKey}: Arabic procedure step ${i + 1} decision has no "${field}"`);
+          placeholderPairs.push([`${domainKey}: procedure step ${i + 1} decision ${field}`, step.decision[field], english.decision[field]]);
+        }
+      }
+    });
+    for (const [label, translated, english] of placeholderPairs) {
+      if (!translated || !english) continue;
+      const before = new Set(unresolvedPlaceholders(english));
+      const after = new Set(unresolvedPlaceholders(translated));
+      for (const name of before) {
+        if (!after.has(name)) problems.push(`${label}: Arabic drops the {{${name}}} placeholder`);
+      }
+      for (const name of after) {
+        if (!before.has(name)) problems.push(`${label}: Arabic adds a {{${name}}} placeholder the English does not have`);
+      }
+    }
+    const known = new Set(['purpose', 'preconditions', 'inputs', 'outputs', 'escalation', 'records', 'kpis', 'steps', 'raciActivities']);
+    for (const field of Object.keys(arabic)) {
+      if (!known.has(field)) problems.push(`${domainKey}: Arabic procedure has unknown field "${field}"`);
+    }
+  }
+
   // ------------------------------------------------------ translated roles --
   // The Roles document pairs each list against the role's RACI assignments by
   // position, so a translated list of a different length would misalign the
@@ -336,9 +408,56 @@ export function localisedModel(domainKey, language = 'en') {
     return out;
   });
 
+  // The procedure block and the RACI activity names are the organisation's own
+  // process, so they are translated as content. Both are structural: the flow
+  // diagram numbers the steps and the RACI matrix pairs each activity name with
+  // an assignment row, so a translation of a different length would misalign
+  // the document rather than merely read oddly. validateKnowledgeBase enforces
+  // the shape; here an incomplete block is simply not used.
+  const arabicProcedure = arProcedure(domainKey);
+  let procedure = model.procedure;
+  let raciActivities = model.raciActivities;
+  if (arabicProcedure) {
+    totalFields += 1;
+    const sameShape =
+      arabicProcedure.steps?.length === model.procedure.steps.length &&
+      arabicProcedure.raciActivities?.length === model.raciActivities.length;
+    if (sameShape) {
+      procedure = {
+        ...model.procedure,
+        purpose: arabicProcedure.purpose || model.procedure.purpose,
+        preconditions: arabicProcedure.preconditions || model.procedure.preconditions,
+        inputs: arabicProcedure.inputs || model.procedure.inputs,
+        outputs: arabicProcedure.outputs || model.procedure.outputs,
+        escalation: arabicProcedure.escalation || model.procedure.escalation,
+        records: arabicProcedure.records || model.procedure.records,
+        kpis: arabicProcedure.kpis || model.procedure.kpis,
+        steps: model.procedure.steps.map((step, i) => {
+          const arabicStep = arabicProcedure.steps[i];
+          if (!arabicStep) return step;
+          return {
+            ...step,
+            name: arabicStep.name || step.name,
+            actor: arabicStep.actor || step.actor,
+            detail: arabicStep.detail || step.detail,
+            ...(step.decision && arabicStep.decision ? { decision: arabicStep.decision } : {})
+          };
+        })
+      };
+      // The assignment map is keyed on role codes, so only the name changes.
+      raciActivities = model.raciActivities.map((activity, i) => ({
+        ...activity,
+        activity: arabicProcedure.raciActivities[i] || activity.activity
+      }));
+      translatedFields += 1;
+    }
+  }
+
   return {
     ...model,
     requirements,
+    procedure,
+    raciActivities,
     // Arabic parameter wording for the same commitment, never a different one.
     parameters: { ...model.parameters, ...(arParameters(domainKey) || {}) },
     objectives: arObjectives(domainKey) || model.objectives,
