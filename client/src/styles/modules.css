@@ -511,3 +511,37 @@ a.worklist-title:hover { color: var(--accent); }
 .checkbox-chip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .checkbox-chip:has(input:disabled) { cursor: default; opacity: .7; }
 .checkbox-chip input { accent-color: var(--accent); }
+
+/* ================================================================= risk == */
+
+.risk-matrix { display: flex; flex-direction: column; gap: 6px; }
+.risk-matrix-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px;
+  /* Impact runs top to bottom, so the severe corner sits top-right where
+     people look for it. */
+}
+.risk-cell {
+  aspect-ratio: 1 / 1; border: 1px solid var(--border); border-radius: 4px;
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  display: grid; place-items: center; cursor: default; color: var(--text);
+}
+.risk-cell.has-risks { cursor: pointer; }
+.risk-cell.has-risks:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
+.risk-cell.tone-low      { background: var(--ok-soft); }
+.risk-cell.tone-medium   { background: var(--warn-soft); }
+.risk-cell.tone-high     { background: var(--danger-soft); }
+.risk-cell.tone-critical { background: var(--danger); color: #fff; border-color: var(--danger); }
+.risk-matrix-axes { display: flex; justify-content: space-between; }
+
+.risk-band { display: flex; align-items: center; gap: 9px; }
+.risk-band-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden; }
+.risk-band-fill { display: block; height: 100%; background: var(--accent); }
+
+.position-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 11px 13px; background: var(--bg-sunken);
+}
+.position-score {
+  display: flex; align-items: baseline; gap: 8px; margin: 5px 0 3px;
+  font-size: 19px; font-weight: 700;
+}

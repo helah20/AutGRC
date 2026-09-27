@@ -50,6 +50,15 @@ export const PERMISSIONS = {
   'gap:write': ['admin', 'grc_manager', 'cyber_user', 'auditor'],
   'import:write': ['admin', 'grc_manager', 'cyber_user'],
   'finding:write': ['admin', 'grc_manager', 'cyber_user', 'auditor'],
+  'risk:read': ['admin', 'grc_manager', 'cyber_user', 'reviewer', 'approver', 'auditor', 'read_only'],
+  'risk:write': ['admin', 'grc_manager', 'cyber_user'],
+  // Accepting a risk commits the organisation to living with it, so it sits
+  // with the roles that can already approve governance, not with the authors.
+  'risk:accept': ['admin', 'approver'],
+  'action:write': ['admin', 'grc_manager', 'cyber_user'],
+  // Closing your own corrective action is not verification.
+  'action:verify': ['admin', 'grc_manager', 'reviewer', 'auditor'],
+  'soa:write': ['admin', 'grc_manager', 'cyber_user'],
   'export:run': ['admin', 'grc_manager', 'cyber_user', 'reviewer', 'approver', 'auditor', 'read_only'],
   'settings:write': ['admin', 'grc_manager'],
   'user:manage': ['admin'],

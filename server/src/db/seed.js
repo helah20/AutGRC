@@ -10,13 +10,14 @@
  */
 
 import { db, q, nowIso, toJson } from './index.js';
-import { id } from '../utils/ids.js';
+import { id, padNumber } from '../utils/ids.js';
 import config from '../config.js';
 import { hashPassword } from '../middleware/auth.js';
 import {
   FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE,
-  DOMAIN_MODELS, validateKnowledgeBase
+  DOMAIN_MODELS, domainShort, validateKnowledgeBase
 } from '../knowledge/index.js';
+import { startingPosition } from '../services/risk.js';
 import { generatePackage } from '../services/generator.js';
 import { indexFrameworkRequirement } from '../services/search.js';
 import { reviewDomain } from '../services/review.js';
@@ -315,6 +316,145 @@ export function seedAssessment(users) {
 
 // ------------------------------------------------------------------ run ---
 
+/**
+ * Seed the risk register from the canonical requirement model.
+ *
+ * Every canonical requirement already states the risk it exists to address and
+ * how serious it is; the register is that, made into rows, with the controls
+ * generated from the same requirement linked as its treatment. One model, one
+ * set of facts, projected into another view.
+ *
+ * The likelihood and impact figures are a starting position derived from the
+ * model's qualitative rating, not an assessment of this organisation. Every row
+ * is marked ai_recommendation with residual_assessed = 0, so the register says
+ * as much rather than letting a default read as somebody's considered judgement.
+ */
+export function seedRisks(users) {
+  const at = nowIso();
+  const owner = users.grc_manager || users.admin || null;
+  let created = 0;
+  let linked = 0;
+
+  // Only domains that actually have controls, so every risk has a treatment.
+  const domains = q.all('SELECT DISTINCT domain_key FROM controls').map((r) => r.domain_key);
+
+  for (const domainKey of domains) {
+    const model = DOMAIN_MODELS[domainKey];
+    if (!model) continue;
+    let sequence = 0;
+
+    for (const requirement of model.requirements) {
+      if (!requirement.risk) continue;
+      sequence += 1;
+
+      const control = q.get(
+        'SELECT * FROM controls WHERE domain_key = ? AND requirement_key = ?',
+        domainKey, requirement.key
+      );
+      const position = startingPosition(requirement.riskRating);
+      const reference = `RSK-${domainShort(domainKey)}-${padNumber(sequence, 3)}`;
+      if (q.get('SELECT id FROM risks WHERE risk_id = ?', reference)) continue;
+
+      const riskId = id('rsk');
+      q.run(
+        `INSERT INTO risks (id, risk_id, title, description, domain_key, requirement_key, category,
+           inherent_likelihood, inherent_impact, residual_likelihood, residual_impact, residual_assessed,
+           treatment, treatment_summary, owner_id, owner_role, status, review_date,
+           provenance, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        riskId, reference,
+        requirement.title,
+        requirement.risk,
+        domainKey,
+        requirement.key,
+        riskCategoryFor(domainKey, requirement),
+        position.likelihood, position.impact,
+        // Residual starts at inherent and is flagged unassessed: a reduction
+        // nobody has worked out must not read as one somebody achieved.
+        position.likelihood, position.impact, 0,
+        'mitigate',
+        control
+          ? `Treated by control ${control.control_id} (${control.name}).`
+          : 'No control is yet recorded against this risk.',
+        owner?.id || null,
+        control?.accountable_role || null,
+        'identified',
+        new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10),
+        'ai_recommendation', at, at
+      );
+      created += 1;
+
+      if (control) {
+        q.run(
+          `INSERT INTO risk_controls (id, risk_id, control_id, effect, note, provenance, created_at)
+           VALUES (?,?,?,?,?,?,?)`,
+          id('rkc'), riskId, control.id,
+          control.control_type === 'detective' ? 'detects'
+            : control.control_type === 'corrective' ? 'reduces_impact' : 'reduces_likelihood',
+          'Generated from the same canonical requirement as this risk.',
+          'organizational_policy', at
+        );
+        linked += 1;
+      }
+    }
+  }
+  return { created, linked };
+}
+
+/** A rough categorisation from the domain, so the register is filterable. */
+function riskCategoryFor(domainKey, requirement) {
+  if (domainKey === 'third_party') return 'third_party';
+  if (domainKey === 'data_protection' || domainKey === 'cryptography') return 'confidentiality';
+  if (domainKey === 'business_continuity' || domainKey === 'backup') return 'availability';
+  if (domainKey === 'compliance' || domainKey === 'governance') return 'compliance';
+  if (/integrity|change|configuration/i.test(requirement.title)) return 'integrity';
+  if (/availability|continuity|capacity/i.test(requirement.title)) return 'availability';
+  if (/confidential|disclosure|leak/i.test(requirement.risk || '')) return 'confidentiality';
+  return 'operational';
+}
+
+/**
+ * Raise corrective actions against the most severe findings, so the demo shows
+ * the loop closing rather than a list of findings nobody owns.
+ */
+export function seedCorrectiveActions(users) {
+  const at = nowIso();
+  const owners = [users.cyber_user, users.grc_manager, users.reviewer].filter(Boolean);
+  if (!owners.length) return 0;
+
+  const findings = q.all(
+    "SELECT * FROM findings WHERE severity IN ('critical','high') AND status = 'open' ORDER BY created_at LIMIT 6"
+  );
+  let created = 0;
+
+  findings.forEach((finding, index) => {
+    const owner = owners[index % owners.length];
+    // One of these lands in the past, so the overdue filter has something real.
+    const due = new Date(Date.now() + (index - 1) * 21 * 86400000).toISOString().slice(0, 10);
+    const reference = `CA-${padNumber(q.get('SELECT COUNT(*) AS n FROM corrective_actions').n + 1, 4)}`;
+    const rowId = id('act');
+    q.run(
+      `INSERT INTO corrective_actions (id, action_id, title, description, source_type, source_id,
+         domain_key, owner_id, priority, due_date, status, progress, blocked_reason, created_by, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      rowId, reference,
+      (finding.recommendation || `Resolve: ${finding.title}`).slice(0, 280),
+      `Raised against the finding "${finding.title}".`,
+      'finding', finding.id,
+      finding.scope_type === 'domain' ? finding.scope_id : null,
+      owner.id,
+      finding.severity === 'critical' ? 'critical' : 'high',
+      due,
+      index === 0 ? 'in_progress' : index === 1 ? 'blocked' : 'open',
+      index === 0 ? 40 : 0,
+      index === 1 ? 'Waiting on the identity platform upgrade scheduled for next quarter.' : null,
+      users.grc_manager?.id || null, at, at
+    );
+    created += 1;
+  });
+  return created;
+}
+
 export function runSeed({ quiet = false } = {}) {
   const log = quiet ? () => {} : (...a) => console.log(...a);
   const problems = validateKnowledgeBase();
@@ -350,6 +490,10 @@ export function runSeed({ quiet = false } = {}) {
   const assessmentId = seedAssessment(users);
   if (assessmentId) log(`  ${q.get('SELECT COUNT(*) AS n FROM gap_items WHERE assessment_id = ?', assessmentId).n} gap items`);
 
+  log('Building the risk register from the canonical requirement model…');
+  const risks = seedRisks(users);
+  log(`  ${risks.created} risks, ${risks.linked} linked to a treating control`);
+
   log('Running the quality engine over the seeded domains…');
   let findingCount = 0;
   for (const domainKey of [...new Set(DEMO_PACKAGES.map((p) => p.domain))]) {
@@ -367,12 +511,18 @@ export function runSeed({ quiet = false } = {}) {
   }
   log(`  ${findingCount} findings recorded`);
 
+  log('Raising corrective actions against the most severe findings…');
+  const actions = seedCorrectiveActions(users);
+  log(`  ${actions} corrective actions`);
+
   return {
     frameworks: q.get('SELECT COUNT(*) AS n FROM frameworks').n,
     documents: q.get('SELECT COUNT(*) AS n FROM documents').n,
     controls: q.get('SELECT COUNT(*) AS n FROM controls').n,
     evidence: q.get('SELECT COUNT(*) AS n FROM evidence').n,
     findings: findingCount,
+    risks: q.get('SELECT COUNT(*) AS n FROM risks').n,
+    actions: q.get('SELECT COUNT(*) AS n FROM corrective_actions').n,
     users: q.get('SELECT COUNT(*) AS n FROM users').n
   };
 }

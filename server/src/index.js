@@ -39,6 +39,9 @@ import importRoutes from './routes/imports.js';
 import reportRoutes from './routes/reports.js';
 import adminRoutes from './routes/admin.js';
 import notificationRoutes from './routes/notifications.js';
+import riskRoutes from './routes/risks.js';
+import actionRoutes from './routes/actions.js';
+import soaRoutes from './routes/soa.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -113,6 +116,9 @@ app.use('/api/imports', importRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/risks', riskRoutes);
+app.use('/api/actions', actionRoutes);
+app.use('/api/soa', soaRoutes);
 
 app.use('/api', (req, res) => res.status(404).json({ error: `No API route for ${req.method} ${req.path}` }));
 

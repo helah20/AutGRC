@@ -18,7 +18,9 @@ const RISK_FILL = {
 const STATUS_FILL = {
   compliant: 'FFE0F0DC', partially_compliant: 'FFFDF3D3',
   non_compliant: 'FFF6D5D5', not_applicable: 'FFECEFF3',
-  covered: 'FFE0F0DC', partial: 'FFFDF3D3', not_covered: 'FFF6D5D5'
+  covered: 'FFE0F0DC', partial: 'FFFDF3D3', not_covered: 'FFF6D5D5',
+  // Statement of Applicability implementation states.
+  implemented: 'FFE0F0DC', planned: 'FFE7F0F9', not_implemented: 'FFF6D5D5', excluded: 'FFECEFF3'
 };
 
 function styleSheet(sheet, headers, widths) {
@@ -294,5 +296,127 @@ export async function buildGenericWorkbook({ title, subtitle, headers, rows, org
   styleSheet(sheet, headers, widths);
   rows.forEach((r) => sheet.addRow(r));
   finishSheet(sheet, headers.length);
+  return wb.xlsx.writeBuffer();
+}
+
+/**
+ * Statement of Applicability.
+ *
+ * Applicability comes from the recorded decision; implementation comes from
+ * the control library. The workbook keeps them in separate columns for the
+ * same reason the API does — one is a judgement, the other is a fact about
+ * what has been built.
+ */
+export async function buildSoaWorkbook({ framework, rows, summary, orgName }) {
+  const wb = newWorkbook(orgName);
+  coverSheet(wb, {
+    orgName,
+    title: `Statement of Applicability — ${framework.code}`,
+    subtitle: `${framework.name}${framework.version ? ` (${framework.version})` : ''}`,
+    note: SOURCE_NOTE
+  });
+
+  const headers = ['Reference', 'Control', 'Applicable', 'Justification', 'Implementation',
+    'Mapped Controls', 'Decision Recorded By', 'Decision Date'];
+  const sheet = wb.addWorksheet('Statement of Applicability');
+  styleSheet(sheet, headers, [14, 52, 12, 52, 18, 26, 24, 14]);
+  rows.forEach((r) => {
+    const row = sheet.addRow([
+      r.ref,
+      r.title,
+      r.applicable ? 'Yes' : 'No',
+      r.justification || (r.applicable ? '' : 'NOT JUSTIFIED'),
+      r.implementation.replace(/_/g, ' '),
+      r.controls.map((c) => c.control_id).join(', '),
+      r.decided_by_name || '',
+      r.decided_at ? String(r.decided_at).slice(0, 10) : ''
+    ]);
+    tint(sheet, row.number, 5, STATUS_FILL[r.implementation] || null);
+    // An unjustified exclusion is the first thing an auditor looks for.
+    if (!r.applicable && !r.justification) tint(sheet, row.number, 4, RISK_FILL.critical);
+  });
+  finishSheet(sheet, headers.length);
+
+  const s = wb.addWorksheet('Summary');
+  styleSheet(s, ['Measure', 'Count'], [42, 12]);
+  for (const [label, value] of [
+    ['Controls in the framework', summary.total],
+    ['Applicable', summary.applicable],
+    ['Excluded', summary.excluded],
+    ['Exclusions without a justification', summary.exclusionsWithoutJustification],
+    ['Implemented', summary.implemented],
+    ['Partially implemented', summary.partial],
+    ['Planned', summary.planned],
+    ['Applicable but not implemented', summary.notImplemented],
+    ['Explicit decisions recorded', summary.decisionsRecorded]
+  ]) {
+    const row = s.addRow([label, value]);
+    if (label.includes('without a justification') && value > 0) tint(s, row.number, 2, RISK_FILL.critical);
+  }
+  finishSheet(s, 2);
+
+  return wb.xlsx.writeBuffer();
+}
+
+/**
+ * Risk treatment plan. ISO/IEC 27001 asks for the plan alongside the SoA, and
+ * an auditor reads the two together.
+ *
+ * Risks whose residual position nobody has assessed are marked as such rather
+ * than printed with a residual figure equal to the inherent one, which would
+ * read as a reduction somebody achieved.
+ */
+export async function buildRiskTreatmentWorkbook({ risks, orgName }) {
+  const wb = newWorkbook(orgName);
+  coverSheet(wb, {
+    orgName, title: 'Risk Treatment Plan', subtitle: 'Risk register, treatment decisions and corrective actions',
+    note: SOURCE_NOTE
+  });
+
+  const headers = ['Risk ID', 'Risk', 'Domain', 'Category', 'Inherent L', 'Inherent I', 'Inherent Score',
+    'Inherent Rating', 'Treatment', 'Treatment Summary', 'Residual L', 'Residual I', 'Residual Score',
+    'Residual Rating', 'Owner', 'Status', 'Controls', 'Open Actions', 'Accepted By', 'Acceptance Expires'];
+  const sheet = wb.addWorksheet('Risk Treatment Plan');
+  styleSheet(sheet, headers, [14, 46, 22, 16, 11, 11, 13, 14, 13, 46, 11, 11, 13, 14, 22, 14, 24, 12, 22, 18]);
+
+  risks.forEach((r) => {
+    const assessed = r.residual_assessed;
+    const row = sheet.addRow([
+      r.risk_id, r.title, r.domain_label, r.category,
+      r.inherent.likelihood, r.inherent.impact, r.inherent.score, r.inherent.rating,
+      r.treatment, r.treatment_summary || '',
+      assessed ? r.residual.likelihood : 'Not assessed',
+      assessed ? r.residual.impact : '',
+      assessed ? r.residual.score : '',
+      assessed ? r.residual.rating : 'Not assessed',
+      r.owner_name || r.owner_role || '', r.status,
+      (r.controls || []).map((c) => c.control_id).join(', '),
+      r.open_actions ?? 0,
+      r.accepted_by_name || '', r.acceptance_expires || ''
+    ]);
+    tint(sheet, row.number, 8, RISK_FILL[r.inherent.rating]);
+    if (assessed) tint(sheet, row.number, 14, RISK_FILL[r.residual.rating]);
+  });
+  finishSheet(sheet, headers.length);
+
+  const unassessed = risks.filter((r) => !r.residual_assessed).length;
+  const s = wb.addWorksheet('Summary');
+  styleSheet(s, ['Measure', 'Count'], [46, 12]);
+  for (const [label, value] of [
+    ['Risks in the register', risks.length],
+    ['Residual position assessed', risks.length - unassessed],
+    ['Residual position NOT assessed', unassessed],
+    ['Formally accepted', risks.filter((r) => r.accepted).length],
+    ['Acceptances expired', risks.filter((r) => r.acceptanceExpired).length],
+    ...['critical', 'high', 'medium', 'low'].map((band) => [
+      `Inherent ${band}`, risks.filter((r) => r.inherent.rating === band).length
+    ])
+  ]) {
+    const row = s.addRow([label, value]);
+    if (label.includes('NOT assessed') && value > 0) tint(s, row.number, 2, RISK_FILL.high);
+    if (label.includes('Acceptances expired') && value > 0) tint(s, row.number, 2, RISK_FILL.critical);
+  }
+  finishSheet(s, 2);
+
   return wb.xlsx.writeBuffer();
 }

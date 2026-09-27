@@ -48,9 +48,17 @@ const NAV = [
     ]
   },
   {
+    label: 'Risk',
+    items: [
+      { to: '/risks', label: 'Risk Register', icon: IconTarget, countKey: 'risks', permission: 'risk:read' },
+      { to: '/actions', label: 'Corrective Actions', icon: IconCheck, countKey: 'openActions', tone: 'warn' }
+    ]
+  },
+  {
     label: 'Assurance',
     items: [
       { to: '/gap-assessment', label: 'Gap Assessment', icon: IconTarget },
+      { to: '/soa', label: 'Statement of Applicability', icon: IconLayers },
       { to: '/findings', label: 'Findings', icon: IconAlert, countKey: 'openFindings', tone: 'danger' },
       { to: '/imports', label: 'Import & Analyse', icon: IconUpload, permission: 'import:write' },
       { to: '/reports', label: 'Reports', icon: IconChart }

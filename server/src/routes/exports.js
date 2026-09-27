@@ -8,8 +8,9 @@ import { buildDocx } from '../services/export-docx.js';
 import { buildPdf } from '../services/export-pdf.js';
 import {
   buildControlWorkbook, buildRaciWorkbook, buildMappingWorkbook,
-  buildGapWorkbook, buildRegisterWorkbook
+  buildGapWorkbook, buildRegisterWorkbook, buildSoaWorkbook, buildRiskTreatmentWorkbook
 } from '../services/export-xlsx.js';
+import { enrichRisk } from '../services/risk.js';
 import { validateMatrix } from '../services/review.js';
 import { domainName } from '../knowledge/index.js';
 import { getOrgProfile, listParam, enrichDocuments } from './_shared.js';
@@ -173,6 +174,91 @@ router.get('/register.xlsx', asyncHandler(async (req, res) => {
   const buffer = await buildRegisterWorkbook({ documents, orgName: getOrgProfile().org_name });
   audit(req, { action: 'export:xlsx', entityType: 'document', summary: `Exported the document register (${documents.length} documents)` });
   send(res, buffer, 'Document Register.xlsx', MIME.xlsx);
+}));
+
+/**
+ * Statement of Applicability. Built from the same derivation the API uses, so
+ * the spreadsheet an auditor receives says what the screen says.
+ */
+router.get('/soa.xlsx', asyncHandler(async (req, res) => {
+  const code = req.query.framework || 'ISO-27001';
+  const framework = q.get('SELECT * FROM frameworks WHERE code = ? OR id = ?', code, code);
+  if (!framework) throw notFound(`Framework "${code}"`);
+
+  const decisions = Object.fromEntries(
+    q.all('SELECT * FROM soa_decisions WHERE framework_id = ?', framework.id).map((d) => [d.requirement_id, d])
+  );
+  const rows = q.all('SELECT * FROM framework_requirements WHERE framework_id = ? ORDER BY ref', framework.id)
+    .map((requirement) => {
+      const controls = q.all(
+        `SELECT c.id, c.control_id, c.status FROM control_mappings cm
+           JOIN controls c ON c.id = cm.control_id
+          WHERE cm.requirement_id = ? ORDER BY c.control_id`,
+        requirement.id
+      );
+      const decision = decisions[requirement.id];
+      const applicable = decision ? Boolean(decision.applicable) : true;
+      const implemented = controls.filter((c) => c.status === 'implemented').length;
+      return {
+        ref: requirement.ref,
+        title: requirement.title,
+        applicable,
+        justification: decision?.justification || null,
+        decided_by_name: decision?.decided_by_name || null,
+        decided_at: decision?.decided_at || null,
+        controls,
+        implementation: !applicable ? 'excluded'
+          : !controls.length ? 'not_implemented'
+            : implemented === controls.length ? 'implemented'
+              : implemented > 0 || controls.some((c) => c.status === 'approved') ? 'partial' : 'planned'
+      };
+    });
+
+  const applicable = rows.filter((r) => r.applicable);
+  const summary = {
+    total: rows.length,
+    applicable: applicable.length,
+    excluded: rows.length - applicable.length,
+    implemented: applicable.filter((r) => r.implementation === 'implemented').length,
+    partial: applicable.filter((r) => r.implementation === 'partial').length,
+    planned: applicable.filter((r) => r.implementation === 'planned').length,
+    notImplemented: applicable.filter((r) => r.implementation === 'not_implemented').length,
+    exclusionsWithoutJustification: rows.filter((r) => !r.applicable && !r.justification).length,
+    decisionsRecorded: Object.keys(decisions).length
+  };
+
+  const buffer = await buildSoaWorkbook({ framework, rows, summary, orgName: getOrgProfile().org_name });
+  audit(req, {
+    action: 'export:xlsx', entityType: 'framework', entityId: framework.id,
+    summary: `Exported the Statement of Applicability for ${framework.code}`
+  });
+  send(res, buffer, `Statement of Applicability - ${framework.code}.xlsx`, MIME.xlsx);
+}));
+
+router.get('/risk-treatment.xlsx', asyncHandler(async (req, res) => {
+  const risks = q.all('SELECT * FROM risks ORDER BY risk_id').map((row) => {
+    const risk = enrichRisk(row);
+    return {
+      ...risk,
+      domain_label: domainName(risk.domain_key),
+      owner_name: row.owner_id ? q.get('SELECT name FROM users WHERE id = ?', row.owner_id)?.name : null,
+      controls: q.all(
+        `SELECT c.control_id FROM risk_controls rc JOIN controls c ON c.id = rc.control_id
+          WHERE rc.risk_id = ? ORDER BY c.control_id`, row.id
+      ),
+      open_actions: q.get(
+        "SELECT COUNT(*) AS n FROM corrective_actions WHERE source_type = 'risk' AND source_id = ? AND status IN ('open','in_progress','blocked')",
+        row.id
+      ).n
+    };
+  });
+
+  const buffer = await buildRiskTreatmentWorkbook({ risks, orgName: getOrgProfile().org_name });
+  audit(req, {
+    action: 'export:xlsx', entityType: 'risk',
+    summary: `Exported the risk treatment plan (${risks.length} risks)`
+  });
+  send(res, buffer, 'Risk Treatment Plan.xlsx', MIME.xlsx);
 }));
 
 export default router;

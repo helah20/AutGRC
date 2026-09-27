@@ -21,6 +21,9 @@ import GapAssessments from './pages/GapAssessments.jsx';
 import GapAssessmentDetail from './pages/GapAssessmentDetail.jsx';
 import Hierarchy from './pages/Hierarchy.jsx';
 import Findings from './pages/Findings.jsx';
+import Risks from './pages/Risks.jsx';
+import Actions from './pages/Actions.jsx';
+import Soa from './pages/Soa.jsx';
 import Imports from './pages/Imports.jsx';
 import Reports from './pages/Reports.jsx';
 import SearchPage from './pages/SearchPage.jsx';
@@ -72,6 +75,9 @@ export default function App() {
         <Route path="/gap-assessment/:id" element={<GapAssessmentDetail />} />
         <Route path="/hierarchy" element={<Hierarchy />} />
         <Route path="/findings" element={<Findings />} />
+        <Route path="/risks" element={<Risks />} />
+        <Route path="/actions" element={<Actions />} />
+        <Route path="/soa" element={<Soa />} />
         <Route path="/imports" element={<Imports />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/search" element={<SearchPage />} />

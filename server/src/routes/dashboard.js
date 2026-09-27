@@ -90,7 +90,11 @@ router.get('/', asyncHandler(async (req, res) => {
       criticalFindings: count("SELECT COUNT(*) AS n FROM findings WHERE status IN ('open','acknowledged') AND severity IN ('critical','high')"),
       // Personal to the requesting user, so the sidebar badge reflects their
       // own queue rather than the organisation's backlog.
-      myWork: buildMyWork(req.user).total
+      myWork: buildMyWork(req.user).total,
+      risks: count('SELECT COUNT(*) AS n FROM risks'),
+      risksUnassessed: count('SELECT COUNT(*) AS n FROM risks WHERE residual_assessed = 0'),
+      openActions: count("SELECT COUNT(*) AS n FROM corrective_actions WHERE status IN ('open','in_progress','blocked')"),
+      overdueActions: count("SELECT COUNT(*) AS n FROM corrective_actions WHERE status IN ('open','in_progress','blocked') AND due_date < date('now')")
     },
     charts: {
       byStatus: q.all('SELECT status, COUNT(*) AS n FROM documents GROUP BY status')

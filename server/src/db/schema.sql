@@ -378,6 +378,118 @@ CREATE TABLE IF NOT EXISTS evidence_files (
 );
 CREATE INDEX IF NOT EXISTS idx_evfile_evidence ON evidence_files(evidence_id, collected_at DESC);
 
+-- ------------------------------------------------------------ risk -------
+-- The risk register is a projection of the same canonical requirement model
+-- the policies come from: each canonical requirement already states the risk
+-- it exists to address, so a risk and the controls that treat it share an
+-- origin rather than being maintained as two separate truths.
+CREATE TABLE IF NOT EXISTS risks (
+  id                 TEXT PRIMARY KEY,
+  risk_id            TEXT NOT NULL UNIQUE,     -- e.g. RSK-IAM-004
+  title              TEXT NOT NULL,
+  description        TEXT,
+  domain_key         TEXT NOT NULL,
+  requirement_key    TEXT,                     -- back to the canonical requirement
+  category           TEXT NOT NULL DEFAULT 'operational'
+                       CHECK (category IN ('confidentiality','integrity','availability',
+                                           'compliance','operational','third_party','financial','reputational')),
+  threat             TEXT,
+  vulnerability      TEXT,
+  affected_asset     TEXT,
+
+  -- Inherent: before any control. 1-5 each, scored as the product.
+  inherent_likelihood INTEGER NOT NULL DEFAULT 3 CHECK (inherent_likelihood BETWEEN 1 AND 5),
+  inherent_impact     INTEGER NOT NULL DEFAULT 3 CHECK (inherent_impact BETWEEN 1 AND 5),
+
+  -- Residual: after the controls actually in place. Seeded equal to inherent
+  -- and flagged unassessed, because a residual rating nobody has worked out
+  -- must not read as an improvement somebody achieved.
+  residual_likelihood INTEGER NOT NULL DEFAULT 3 CHECK (residual_likelihood BETWEEN 1 AND 5),
+  residual_impact     INTEGER NOT NULL DEFAULT 3 CHECK (residual_impact BETWEEN 1 AND 5),
+  residual_assessed   INTEGER NOT NULL DEFAULT 0,
+
+  treatment          TEXT NOT NULL DEFAULT 'mitigate'
+                       CHECK (treatment IN ('mitigate','accept','transfer','avoid')),
+  treatment_summary  TEXT,
+  owner_id           TEXT REFERENCES users(id) ON DELETE SET NULL,
+  owner_role         TEXT,
+  status             TEXT NOT NULL DEFAULT 'identified'
+                       CHECK (status IN ('identified','assessed','treated','accepted','closed')),
+  review_date        TEXT,
+
+  -- Accepting a risk is a decision with a name on it, not a status change.
+  accepted_by        TEXT REFERENCES users(id) ON DELETE SET NULL,
+  accepted_by_name   TEXT,
+  accepted_at        TEXT,
+  acceptance_rationale TEXT,
+  acceptance_expires TEXT,
+
+  provenance         TEXT NOT NULL DEFAULT 'ai_recommendation',
+  created_at         TEXT NOT NULL,
+  updated_at         TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_risk_domain ON risks(domain_key, status);
+
+-- Which controls treat which risk. A control generated from the same canonical
+-- requirement is linked automatically; anything else is a human judgement.
+CREATE TABLE IF NOT EXISTS risk_controls (
+  id           TEXT PRIMARY KEY,
+  risk_id      TEXT NOT NULL REFERENCES risks(id) ON DELETE CASCADE,
+  control_id   TEXT NOT NULL REFERENCES controls(id) ON DELETE CASCADE,
+  effect       TEXT NOT NULL DEFAULT 'reduces_likelihood'
+                 CHECK (effect IN ('reduces_likelihood','reduces_impact','both','detects')),
+  note         TEXT,
+  provenance   TEXT NOT NULL DEFAULT 'organizational_policy',
+  created_at   TEXT NOT NULL,
+  UNIQUE (risk_id, control_id)
+);
+
+-- --------------------------------------------------- corrective actions ---
+-- What somebody is actually going to do about a finding, a gap or a risk, by
+-- when. Findings were raised and then nothing held them.
+CREATE TABLE IF NOT EXISTS corrective_actions (
+  id            TEXT PRIMARY KEY,
+  action_id     TEXT NOT NULL UNIQUE,          -- e.g. CA-0007
+  title         TEXT NOT NULL,
+  description   TEXT,
+  source_type   TEXT NOT NULL CHECK (source_type IN ('finding','gap_item','risk','assessment','manual')),
+  source_id     TEXT,
+  domain_key    TEXT,
+  owner_id      TEXT REFERENCES users(id) ON DELETE SET NULL,
+  priority      TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high','critical')),
+  due_date      TEXT,
+  status        TEXT NOT NULL DEFAULT 'open'
+                  CHECK (status IN ('open','in_progress','blocked','completed','cancelled')),
+  progress      INTEGER NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
+  blocked_reason TEXT,
+  completed_at  TEXT,
+  -- Closing your own action is not verification; the route enforces that too.
+  verified_by   TEXT REFERENCES users(id) ON DELETE SET NULL,
+  verified_at   TEXT,
+  created_by    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TEXT NOT NULL,
+  updated_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_action_owner ON corrective_actions(owner_id, status, due_date);
+CREATE INDEX IF NOT EXISTS idx_action_source ON corrective_actions(source_type, source_id);
+
+-- ------------------------------------------- statement of applicability ---
+-- ISO/IEC 27001 requires a reasoned decision per Annex A control, including
+-- for the ones excluded. Coverage is derived from the mappings; only the
+-- decision and its justification are stored, so the two cannot disagree.
+CREATE TABLE IF NOT EXISTS soa_decisions (
+  id             TEXT PRIMARY KEY,
+  requirement_id TEXT NOT NULL UNIQUE REFERENCES framework_requirements(id) ON DELETE CASCADE,
+  framework_id   TEXT NOT NULL REFERENCES frameworks(id) ON DELETE CASCADE,
+  applicable     INTEGER NOT NULL DEFAULT 1,
+  justification  TEXT,
+  decided_by     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  decided_by_name TEXT,
+  decided_at     TEXT NOT NULL,
+  created_at     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_soa_framework ON soa_decisions(framework_id);
+
 -- ---------------------------------------------------------- notifications --
 -- What is waiting on a named person. The dashboard already counted documents
 -- past their review date; nothing told the person who owns them.

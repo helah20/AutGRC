@@ -738,6 +738,207 @@ test('AutGRC end-to-end governance workflow', {
     assert.equal(denied.status, 403);
   });
 
+  await t.test('risk register projects the canonical model and holds its own honesty', async () => {
+    const list = await api('GET', '/api/risks?limit=500');
+    assert.equal(list.status, 200);
+    assert.ok(list.body.total > 0, 'the seed builds a register');
+
+    // Every seeded risk starts unassessed and says so, rather than reporting a
+    // residual reduction nobody worked out.
+    const seeded = list.body.items.filter((r) => r.provenance === 'ai_recommendation');
+    assert.ok(seeded.length > 0);
+    assert.ok(
+      seeded.every((r) => r.residual_assessed || r.reduction === null),
+      'an unassessed residual claims no reduction'
+    );
+
+    const risk = list.body.items.find((r) => !r.residual_assessed && !r.accepted);
+    const detail = await api('GET', `/api/risks/${risk.id}`);
+    assert.equal(detail.status, 200);
+    assert.ok(detail.body.controls.length > 0, 'the risk is linked to the control from the same requirement');
+
+    // Assessing the residual position is what marks it assessed.
+    const assessed = await api('PATCH', `/api/risks/${risk.id}`, {
+      body: { residual_likelihood: 2, residual_impact: 2 }
+    });
+    assert.equal(assessed.status, 200);
+    assert.equal(assessed.body.risk.residual_assessed, true);
+    assert.equal(assessed.body.risk.reduction, assessed.body.risk.inherent.score - 4);
+
+    // Acceptance: a decision with a name, a reason and an expiry on it.
+    const noExpiry = await api('POST', `/api/risks/${risk.id}/accept`, {
+      as: 'ciso@autgrc.demo',
+      body: { rationale: 'A compensating control at the network boundary covers this adequately.' }
+    });
+    assert.equal(noExpiry.status, 400, 'an acceptance with no expiry is refused');
+
+    const pastExpiry = await api('POST', `/api/risks/${risk.id}/accept`, {
+      as: 'ciso@autgrc.demo',
+      body: { rationale: 'A compensating control at the network boundary covers this adequately.', expires: '2020-01-01' }
+    });
+    assert.equal(pastExpiry.status, 400);
+
+    const wrongRole = await api('POST', `/api/risks/${risk.id}/accept`, {
+      body: { rationale: 'A compensating control at the network boundary covers this adequately.', expires: '2099-01-01' }
+    });
+    assert.equal(wrongRole.status, 403, 'accepting a risk is not the author\'s decision');
+    assert.equal(wrongRole.body.required, 'risk:accept');
+
+    const accepted = await api('POST', `/api/risks/${risk.id}/accept`, {
+      as: 'ciso@autgrc.demo',
+      body: { rationale: 'A compensating control at the network boundary covers this adequately.', expires: '2099-01-01' }
+    });
+    assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
+    assert.equal(accepted.body.risk.status, 'accepted');
+    assert.ok(accepted.body.risk.accepted_by_name);
+
+    // An accepted risk is part of the record until the acceptance is withdrawn.
+    const frozen = await api('PATCH', `/api/risks/${risk.id}`, { body: { inherent_impact: 1 } });
+    assert.equal(frozen.status, 409);
+    const undeletable = await api('DELETE', `/api/risks/${risk.id}`);
+    assert.equal(undeletable.status, 409);
+
+    const withdrawn = await api('POST', `/api/risks/${risk.id}/withdraw-acceptance`, { as: 'ciso@autgrc.demo' });
+    assert.equal(withdrawn.status, 200);
+    assert.equal(withdrawn.body.risk.accepted, false);
+  });
+
+  await t.test('corrective actions carry a finding through to a verified close', async () => {
+    const directory = await api('GET', '/api/admin/directory');
+    const analyst = directory.body.find((u) => u.email === 'analyst@autgrc.demo');
+
+    const findings = await api('GET', '/api/findings?limit=5');
+    const findingRows = findings.body.items || findings.body;
+    const finding = (Array.isArray(findingRows) ? findingRows : []).find((f) => f.status === 'open');
+    assert.ok(finding, 'the seed leaves open findings');
+
+    const missingOwner = await api('POST', '/api/actions', {
+      body: { title: 'An action with nobody accountable', due_date: '2099-01-01', owner_id: 'usr_nobody' }
+    });
+    assert.equal(missingOwner.status, 400);
+
+    const created = await api('POST', '/api/actions', {
+      body: {
+        title: 'Reconcile the privileged account inventory to the leaver feed',
+        source_type: 'finding', source_id: finding.id,
+        owner_id: analyst.id, priority: 'high', due_date: '2099-01-01'
+      }
+    });
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    const action = created.body.action;
+    assert.match(action.action_id, /^CA-\d{4}$/);
+
+    // The owner is told, and told once.
+    const inbox = await api('GET', '/api/notifications?limit=20', { as: 'analyst@autgrc.demo' });
+    assert.ok(
+      inbox.body.items.some((n) => n.kind === 'action_assigned' && n.entity_id === action.id),
+      'the owner is notified of an action assigned to them'
+    );
+
+    // "Blocked" with no reason tells the next reader nothing.
+    const bare = await api('PATCH', `/api/actions/${action.id}`, { body: { status: 'blocked' } });
+    assert.equal(bare.status, 400);
+    const blocked = await api('PATCH', `/api/actions/${action.id}`, {
+      body: { status: 'blocked', blocked_reason: 'Waiting on the HR leaver feed.' }
+    });
+    assert.equal(blocked.status, 200);
+
+    const early = await api('POST', `/api/actions/${action.id}/verify`, { as: 'auditor@autgrc.demo', body: {} });
+    assert.equal(early.status, 409, 'only a completed action can be verified');
+
+    const completed = await api('PATCH', `/api/actions/${action.id}`, { body: { status: 'completed' } });
+    assert.equal(completed.status, 200);
+    assert.equal(completed.body.action.progress, 100, 'completing implies finished');
+
+    // The GRC manager holds action:verify and owns nothing here, so the only
+    // thing that can stop a self-verification is the segregation rule.
+    const reassigned = await api('PATCH', `/api/actions/${action.id}`, { body: { owner_id: state.tokens.self || analyst.id } });
+    assert.equal(reassigned.status, 200);
+
+    const verified = await api('POST', `/api/actions/${action.id}/verify`, {
+      as: 'auditor@autgrc.demo', body: { note: 'Reconciliation report reviewed.' }
+    });
+    assert.equal(verified.status, 200, JSON.stringify(verified.body));
+    assert.ok(verified.body.action.verified_by_name);
+
+    const reopened = await api('PATCH', `/api/actions/${action.id}`, { body: { status: 'open' } });
+    assert.equal(reopened.status, 409, 'a verified action is closed for good');
+  });
+
+  await t.test('an action cannot be verified by the person who carried it out', async () => {
+    const me = await api('GET', '/api/auth/me');
+    const mine = await api('POST', '/api/actions', {
+      body: {
+        title: 'Self-verification segregation probe',
+        owner_id: me.body.user.id, due_date: '2099-01-01'
+      }
+    });
+    assert.equal(mine.status, 201);
+    await api('PATCH', `/api/actions/${mine.body.action.id}`, { body: { status: 'completed' } });
+
+    // The GRC manager holds action:verify, so only segregation can refuse this.
+    const self = await api('POST', `/api/actions/${mine.body.action.id}/verify`, { body: {} });
+    assert.equal(self.status, 403);
+    assert.match(self.body.error, /Segregation of duties/);
+
+    const other = await api('POST', `/api/actions/${mine.body.action.id}/verify`, { as: 'auditor@autgrc.demo', body: {} });
+    assert.equal(other.status, 200);
+  });
+
+  await t.test('the Statement of Applicability insists on a reason for every exclusion', async () => {
+    const soa = await api('GET', '/api/soa/ISO-27001');
+    assert.equal(soa.status, 200);
+    assert.ok(soa.body.rows.length > 0);
+    // Absent a decision, a control is applicable: excluding is the deliberate act.
+    assert.ok(soa.body.rows.every((r) => r.applicable || r.decision_recorded));
+
+    const mapped = soa.body.rows.find((r) => r.controls.length > 0);
+    assert.ok(mapped, 'some requirements have controls mapped to them');
+    assert.notEqual(mapped.implementation, 'excluded');
+
+    const bare = await api('PUT', `/api/soa/ISO-27001/decisions/${mapped.requirement_id}`, {
+      body: { applicable: false }
+    });
+    assert.equal(bare.status, 400, 'an exclusion with no justification is refused');
+
+    const excluded = await api('PUT', `/api/soa/ISO-27001/decisions/${mapped.requirement_id}`, {
+      body: { applicable: false, justification: 'The organisation operates no industrial control systems.' }
+    });
+    assert.equal(excluded.status, 200);
+
+    const after = await api('GET', '/api/soa/ISO-27001');
+    const row = after.body.rows.find((r) => r.requirement_id === mapped.requirement_id);
+    assert.equal(row.applicable, false);
+    assert.equal(row.implementation, 'excluded');
+    assert.equal(after.body.summary.exclusionsWithoutJustification, 0);
+    assert.equal(after.body.summary.excluded, soa.body.summary.excluded + 1);
+
+    // Put it back so the suite is repeatable.
+    await api('PUT', `/api/soa/ISO-27001/decisions/${mapped.requirement_id}`, {
+      body: { applicable: true, justification: 'In scope across the corporate estate.' }
+    });
+
+    const denied = await api('PUT', `/api/soa/ISO-27001/decisions/${mapped.requirement_id}`, {
+      as: 'viewer@autgrc.demo', body: { applicable: true }
+    });
+    assert.equal(denied.status, 403);
+  });
+
+  await t.test('exports the Statement of Applicability and the risk treatment plan', async () => {
+    for (const [path, name] of [
+      ['/api/export/soa.xlsx?framework=ISO-27001', 'Statement of Applicability'],
+      ['/api/export/risk-treatment.xlsx', 'Risk Treatment Plan']
+    ]) {
+      const res = await api('GET', path, { raw: true });
+      assert.equal(res.status, 200, `${name} export failed`);
+      assert.match(res.headers.get('content-type') || '', /spreadsheetml/);
+      const bytes = Buffer.from(await res.arrayBuffer());
+      assert.ok(bytes.length > 5000, `${name} looks empty at ${bytes.length} bytes`);
+      // A real xlsx is a zip; "PK" is its signature.
+      assert.equal(bytes.subarray(0, 2).toString(), 'PK', `${name} is not a zip container`);
+    }
+  });
+
   await t.test('audit log captures the workflow', async () => {
   const res = await api('GET', '/api/admin/audit?limit=200', { as: 'auditor@autgrc.demo' });
   assert.equal(res.status, 200);
