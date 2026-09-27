@@ -40,7 +40,11 @@ const ADDED_COLUMNS = [
     "TEXT NOT NULL DEFAULT 'current' CHECK (edition_status IN ('current','superseded','draft'))"],
   ['frameworks', 'supersedes_id', 'TEXT'],
   ['frameworks', 'published_on', 'TEXT'],
-  ['frameworks', 'retires_on', 'TEXT']
+  ['frameworks', 'retires_on', 'TEXT'],
+  // A document is approved in a language; a translation is a separate
+  // controlled document that points back at its source.
+  ['documents', 'language', "TEXT NOT NULL DEFAULT 'en' CHECK (language IN ('en','ar'))"],
+  ['documents', 'translation_of', 'TEXT']
 ];
 
 function applyColumnMigrations() {

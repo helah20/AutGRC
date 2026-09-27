@@ -31,6 +31,7 @@ export default function Documents({ fixedType }) {
   const [type, setType] = useState(fixedType || params.get('type') || '');
   const [domain, setDomain] = useState(params.get('domain') || '');
   const [status, setStatus] = useState(params.get('status') || '');
+  const [docLanguage, setDocLanguage] = useState('');
   const [reviewDue, setReviewDue] = useState(params.get('reviewDue') === 'true');
   const [sort, setSort] = useState('updated_at');
 
@@ -38,8 +39,7 @@ export default function Documents({ fixedType }) {
 
   const query = qs({
     search: debounced, type: fixedType || type, domain, status,
-    reviewDue: reviewDue ? 'true' : '', sort, limit: 200
-  });
+    reviewDue: reviewDue ? 'true' : '', sort, limit: 200, language: docLanguage || undefined });
 
   const { data, loading, error, reload } = useFetch(`/documents${query}`);
   const { data: meta } = useFetch('/documents/meta/options');
@@ -74,6 +74,12 @@ export default function Documents({ fixedType }) {
       )
     },
     { key: 'doc_type', header: 'Type', nowrap: true, render: (d) => <Badge tone="neutral">{d.doc_type_label}</Badge> },
+    {
+      key: 'language', header: t('documents.language'), nowrap: true, width: 84,
+      render: (d) => (d.language === 'ar'
+        ? <Badge tone="info" lang="ar">العربية</Badge>
+        : <span className="small muted">English</span>)
+    },
     { key: 'status', header: 'Status', nowrap: true, render: (d) => <StatusBadge status={d.status} /> },
     { key: 'owner_name', header: 'Owner', nowrap: true, render: (d) => d.owner_name || <span className="muted">Unassigned</span> },
     {
@@ -127,12 +133,14 @@ export default function Documents({ fixedType }) {
           <Select value={domain} onChange={setDomain} placeholder="All domains" options={domainOptions} />
           <Select value={status} onChange={setStatus} placeholder="All statuses"
             options={['draft', 'under_review', 'approved', 'published', 'under_revision', 'retired'].map((v) => ({ value: v, label: titleCase(v) }))} />
+          <Select value={docLanguage} onChange={setDocLanguage} placeholder={t('documents.allLanguages')}
+            options={[{ value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }]} />
           <button className={`btn btn-sm ${reviewDue ? 'btn-primary' : ''}`} onClick={() => setReviewDue((r) => !r)}>
             <IconFilter width={13} height={13} />Review due
           </button>
           {activeFilters > 0 && (
             <button className="btn btn-ghost btn-sm" onClick={() => {
-              setSearch(''); if (!fixedType) setType(''); setDomain(''); setStatus(''); setReviewDue(false);
+              setSearch(''); if (!fixedType) setType(''); setDomain(''); setStatus(''); setDocLanguage(''); setReviewDue(false);
             }}><IconX width={13} height={13} />Clear</button>
           )}
           <span className="table-count">{data ? `${formatNumber(data.items.length)} ${t('common.of')} ${formatNumber(data.total)}` : '—'}</span>

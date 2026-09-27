@@ -14,12 +14,12 @@
 import { db, q, nowIso, toJson, fromJson } from '../db/index.js';
 import { id, padNumber } from '../utils/ids.js';
 import {
-  DOMAIN_MODELS, FRAMEWORKS, ROLE_LIBRARY, ROLE_INDEX,
+  DOMAIN_MODELS, localisedModel, FRAMEWORKS, ROLE_LIBRARY, ROLE_INDEX,
   buildParameterSet, resolveText, domainShort, roleName
 } from '../knowledge/index.js';
 import {
   buildPolicy, buildStandard, buildProcedureDoc, buildGuideline,
-  buildRolesDoc, buildRaciDoc, buildControlMatrix, buildFrameworkDoc,
+  buildRolesDoc, buildRaciDoc, buildControlMatrix, buildFrameworkDoc, withLanguage,
   applicableRefs, defaultResponsible, defaultAccountable, PROVENANCE
 } from './doc-builders.js';
 import { indexDocument, indexControl, indexRole, indexEvidence, indexRaciActivity } from './search.js';
@@ -34,6 +34,12 @@ export const DOC_TYPE_LABEL = {
   policy: 'Policy', standard: 'Standard', procedure: 'Procedure', guideline: 'Guideline',
   framework: 'Framework', roles: 'Roles & Responsibilities', raci: 'RACI / RASCI',
   control_matrix: 'Control Matrix', work_instruction: 'Work Instruction'
+};
+
+export const DOC_TYPE_LABEL_AR = {
+  policy: 'سياسة', standard: 'معيار', procedure: 'إجراء', guideline: 'دليل إرشادي',
+  framework: 'إطار', roles: 'الأدوار والمسؤوليات', raci: 'مصفوفة RACI / RASCI',
+  control_matrix: 'مصفوفة ضوابط', work_instruction: 'تعليمات عمل'
 };
 
 /** Next free reference in a series such as POL-IAM-001. */
@@ -125,14 +131,20 @@ export function generatePackage(opts) {
     ownerId = null,
     approverId = null,
     classification = 'internal',
-    aiSections = null
+    aiSections = null,
+    language = 'en',
+    translationOf = null
   } = opts;
 
-  const model = DOMAIN_MODELS[domainKey];
+  // The Arabic model is the same record in Arabic wording; an untranslated
+  // domain falls back to English and says so in fullyTranslated, so the
+  // document can record what it actually is rather than what was asked for.
+  const model = localisedModel(domainKey, language);
   if (!model) throw Object.assign(new Error(`Unknown domain "${domainKey}"`), { status: 400 });
+  const documentLanguage = model.language;
 
   const selectedFrameworks = FRAMEWORKS.filter((f) => frameworkCodes.includes(f.code));
-  const params = buildParameterSet(domainKey, org, parameterOverrides);
+  const params = buildParameterSet(domainKey, org, parameterOverrides, documentLanguage);
   const assumptions = collectAssumptions(org, model, params);
   const packageId = id('pkg');
   const at = nowIso();
@@ -185,7 +197,8 @@ export function generatePackage(opts) {
   const ordered = ['policy', 'standard', 'procedure', 'guideline', 'framework', 'roles', 'raci', 'control_matrix']
     .filter((t) => docTypes.includes(t));
 
-  const built = ordered.map((t) => ({ type: t, doc: builders[t]() }));
+  // One language is in effect for the whole synchronous build.
+  const built = withLanguage(documentLanguage, () => ordered.map((t) => ({ type: t, doc: builders[t]() })));
 
   // ------------------------------------------------------------- persist --
   const run = db.transaction(() => {
@@ -198,6 +211,10 @@ export function generatePackage(opts) {
         provider,
         generatedAt: at,
         domain: domainKey,
+        language: documentLanguage,
+        // False when a domain has no Arabic model and the body fell back to
+        // English; the library shows that rather than claiming a translation.
+        fullyTranslated: model.fullyTranslated !== false,
         frameworks: frameworkCodes,
         parameters: params,
         assumptions,
@@ -208,12 +225,16 @@ export function generatePackage(opts) {
         `INSERT INTO documents
            (id, reference, title, doc_type, domain_key, status, classification, version,
             owner_id, approver_id, effective_date, review_date, summary, package_id,
-            generation_meta, provenance, created_by, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            generation_meta, provenance, created_by, created_at, updated_at,
+            language, translation_of)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         docId, reference, doc.title, type, domainKey, 'draft', classification, '0.1',
         ownerId, approverId, null, addMonths(at, 12),
-        `${model.name} — ${DOC_TYPE_LABEL[type]}. Generated from the ${model.name} requirement model against ${frameworkCodes.join(', ') || 'no selected framework'}.`,
-        packageId, toJson(genMeta), doc.provenance, userId, at, at
+        documentLanguage === 'ar'
+          ? `${model.name} — ${DOC_TYPE_LABEL_AR[type] || DOC_TYPE_LABEL[type]}. مُولَّدة من نموذج متطلبات ${model.name} مقابل ${frameworkCodes.join('، ') || 'لا إطار محدد'}.`
+          : `${model.name} — ${DOC_TYPE_LABEL[type]}. Generated from the ${model.name} requirement model against ${frameworkCodes.join(', ') || 'no selected framework'}.`,
+        packageId, toJson(genMeta), doc.provenance, userId, at, at,
+        documentLanguage, translationOf
       );
 
       doc.sections.forEach((s, i) => {
@@ -426,10 +447,12 @@ function classifyEvidence(text) {
 }
 
 /** Preview a package without persisting it — used by the wizard. */
-export function previewPackage({ domainKey, docTypes, frameworkCodes = [], org = {}, parameterOverrides = {} }) {
-  const model = DOMAIN_MODELS[domainKey];
+export function previewPackage({
+  domainKey, docTypes, frameworkCodes = [], org = {}, parameterOverrides = {}, language = 'en'
+}) {
+  const model = localisedModel(domainKey, language);
   if (!model) throw Object.assign(new Error(`Unknown domain "${domainKey}"`), { status: 400 });
-  const params = buildParameterSet(domainKey, org, parameterOverrides);
+  const params = buildParameterSet(domainKey, org, parameterOverrides, model.language);
   const selectedFrameworks = FRAMEWORKS.filter((f) => frameworkCodes.includes(f.code));
   const roles = model.roles.map((c) => ROLE_INDEX[c]).filter(Boolean);
 
@@ -463,7 +486,11 @@ export function previewPackage({ domainKey, docTypes, frameworkCodes = [], org =
     parameters: params,
     assumptions: collectAssumptions(org, model, params),
     controls: controlDrafts,
-    documents: (docTypes || []).filter((t) => builders[t]).map((t) => {
+    language: model.language,
+    // False when the domain has no Arabic model: the preview shows English and
+    // says so, rather than letting the wizard imply a translation exists.
+    fullyTranslated: model.fullyTranslated !== false,
+    documents: withLanguage(model.language, () => (docTypes || []).filter((t) => builders[t]).map((t) => {
       const d = builders[t]();
       return {
         docType: t,
@@ -472,6 +499,6 @@ export function previewPackage({ domainKey, docTypes, frameworkCodes = [], org =
         sections: d.sections.map((s) => ({ key: s.key, heading: s.heading, body: s.body, provenance: s.provenance })),
         flow: d.flow || null
       };
-    })
+    }))
   };
 }

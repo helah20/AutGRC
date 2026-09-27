@@ -91,6 +91,59 @@ const FREQUENCY_CANON = {
 const DURATION_RE = /\b(\d+)\s+(minutes?|hours?|business days?|days?|weeks?|months?|years?)\b/gi;
 
 /**
+ * The same vocabulary in Arabic.
+ *
+ * Without it the engine would read an Arabic document, find none of the terms
+ * it knows, and report no findings — which reads as "these documents agree"
+ * when it means "nothing was checked". That is the worst answer a consistency
+ * engine can give, so Arabic frequencies and durations are recognised and
+ * mapped to the same canonical values as their English equivalents.
+ */
+const AR_FREQUENCY_TERMS = {
+  'مستمر': 'continuous', 'بشكل مستمر': 'continuous', 'آني': 'continuous', 'الوقت الفعلي': 'continuous',
+  'كل ساعة': 'hourly', 'ساعي': 'hourly',
+  'يومي': 'daily', 'يومياً': 'daily', 'كل يوم': 'daily',
+  'أسبوعي': 'weekly', 'أسبوعياً': 'weekly', 'كل أسبوع': 'weekly',
+  'نصف شهري': 'fortnightly', 'كل أسبوعين': 'fortnightly',
+  'شهري': 'monthly', 'شهرياً': 'monthly', 'كل شهر': 'monthly',
+  'كل شهرين': 'bi-monthly',
+  'ربع سنوي': 'quarterly', 'ربع سنوياً': 'quarterly', 'كل ثلاثة أشهر': 'quarterly', 'فصلي': 'quarterly',
+  'نصف سنوي': 'semi-annually', 'نصف سنوياً': 'semi-annually', 'كل ستة أشهر': 'semi-annually',
+  'سنوي': 'annually', 'سنوياً': 'annually', 'كل سنة': 'annually', 'كل عام': 'annually',
+  'كل سنتين': 'biennially',
+  'كل وردية': 'every shift', 'عند الطلب': 'per request', 'لكل طلب': 'per request',
+  'عند كل حدث': 'per event', 'لكل حدث': 'per event'
+};
+
+/** Arabic-Indic digits, so "٩٠ يوماً" is read as ninety days. */
+const AR_DIGITS = { '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' };
+
+const AR_DURATION_UNITS = {
+  'دقيقة': 'minute', 'دقائق': 'minute',
+  'ساعة': 'hour', 'ساعات': 'hour',
+  'يوم عمل': 'business day', 'أيام عمل': 'business day',
+  'يوم': 'day', 'يوماً': 'day', 'أيام': 'day',
+  'أسبوع': 'week', 'أسابيع': 'week',
+  'شهر': 'month', 'شهراً': 'month', 'أشهر': 'month', 'شهور': 'month',
+  'سنة': 'year', 'سنوات': 'year', 'عام': 'year', 'أعوام': 'year'
+};
+
+// Longest first, so "يوم عمل" is matched before "يوم".
+const AR_DURATION_RE = new RegExp(
+  `([0-9٠-٩]+)\\s*(${Object.keys(AR_DURATION_UNITS).sort((a, b) => b.length - a.length).join('|')})`,
+  'g'
+);
+
+function arabicDigitsToLatin(text) {
+  return String(text).replace(/[٠-٩]/g, (d) => AR_DIGITS[d] ?? d);
+}
+
+/** True when a string carries Arabic script, used to pick the vocabulary. */
+export function hasArabic(text) {
+  return /[\u0600-\u06FF]/.test(String(text || ''));
+}
+
+/**
  * Words that only ever describe the shape of a parameter, never its subject.
  * Stripping these leaves the topic; stripping subject words as well (policy,
  * committee, retention) would reduce a parameter to a single generic term
@@ -130,7 +183,7 @@ function splitSentences(text) {
     .filter((s) => s.length > 15 && !s.includes('\t'));
 }
 
-function frequenciesIn(sentence) {
+export function frequenciesIn(sentence) {
   const lower = sentence.toLowerCase();
   const found = new Set();
   for (const term of FREQUENCY_TERMS) {
@@ -139,16 +192,46 @@ function frequenciesIn(sentence) {
     const re = new RegExp(`(?<![\\w-])${term.replace(/[-\s]/g, '[-\\s]')}\\b`, 'i');
     if (re.test(lower)) found.add(FREQUENCY_CANON[term]);
   }
+
+  if (hasArabic(sentence)) {
+    // "نصف سنوي" contains "سنوي", so matching the shorter term inside the
+    // longer one would turn a correct semi-annual commitment into an apparent
+    // annual contradiction. The English path avoids that with a lookbehind,
+    // which is positional; this does the same by consuming each match from the
+    // text, longest first. Suppressing the short term globally instead would
+    // lose a genuine second frequency in a sentence that states both — the
+    // opposite error, and a worse one, because a missed contradiction is a
+    // contradiction the reader never hears about.
+    let remaining = sentence;
+    for (const term of Object.keys(AR_FREQUENCY_TERMS).sort((a, b) => b.length - a.length)) {
+      if (!remaining.includes(term)) continue;
+      found.add(AR_FREQUENCY_TERMS[term]);
+      // Blank out only the occurrences of this term, leaving everything else
+      // available to the shorter terms that follow.
+      remaining = remaining.split(term).join(' '.repeat(term.length));
+    }
+  }
   return [...found];
 }
 
-function durationsIn(sentence) {
+export function durationsIn(sentence) {
   const out = [];
   let m;
   const re = new RegExp(DURATION_RE.source, 'gi');
   while ((m = re.exec(sentence))) {
     const unit = m[2].toLowerCase().replace(/s$/, '');
     out.push({ value: Number(m[1]), unit: unit.replace(/^business day$/, 'business day'), text: m[0] });
+  }
+
+  if (hasArabic(sentence)) {
+    const arabic = new RegExp(AR_DURATION_RE.source, 'g');
+    while ((m = arabic.exec(sentence))) {
+      out.push({
+        value: Number(arabicDigitsToLatin(m[1])),
+        unit: AR_DURATION_UNITS[m[2]],
+        text: m[0]
+      });
+    }
   }
   return out;
 }

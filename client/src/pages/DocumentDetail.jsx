@@ -120,7 +120,7 @@ export default function DocumentDetail() {
     }
   }
 
-  if (loading) return <Loading label="Loading document…" />;
+  if (loading) return <Loading label={t('documentDetail.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
   if (!doc) return <Empty title="Document not found" />;
 
@@ -128,12 +128,12 @@ export default function DocumentDetail() {
   const openFindings = review?.findings || data.findings || [];
 
   const tabs = [
-    { key: 'content', label: 'Content', count: data.sections.length },
-    ...(data.flow ? [{ key: 'flow', label: 'Process flow' }] : []),
-    { key: 'review', label: 'Quality review', count: openFindings.length || undefined },
-    { key: 'traceability', label: 'Traceability', count: data.controls.length || undefined },
-    { key: 'history', label: 'History', count: data.versions.length },
-    { key: 'comments', label: 'Comments', count: data.comments.length || undefined }
+    { key: 'content', label: t('documentDetail.tabContent'), count: data.sections.length },
+    ...(data.flow ? [{ key: 'flow', label: t('documentDetail.processFlow') }] : []),
+    { key: 'review', label: t('documentDetail.tabQuality'), count: openFindings.length || undefined },
+    { key: 'traceability', label: t('documentDetail.tabTraceability'), count: data.controls.length || undefined },
+    { key: 'history', label: t('documentDetail.tabHistory'), count: data.versions.length },
+    { key: 'comments', label: t('documentDetail.tabComments'), count: data.comments.length || undefined }
   ];
 
   return (
@@ -164,7 +164,7 @@ export default function DocumentDetail() {
         </div>
         <div className="page-actions">
           <div className="btn-group">
-            <button className="btn" onClick={() => exportAs('docx')}><IconDownload />Word</button>
+            <button className="btn" onClick={() => exportAs('docx')}><IconDownload />{t('documentDetail.word')}</button>
             {/* Arabic PDF would come out with its letters unjoined, so the
                 button says so rather than producing it. */}
             <button className="btn" onClick={() => exportAs('pdf', 'en')}
@@ -178,7 +178,7 @@ export default function DocumentDetail() {
               Review with AI
             </button>
           )}
-          {can('document:update') && <button className="btn" onClick={() => setPropsOpen(true)}><IconEdit />Properties</button>}
+          {can('document:update') && <button className="btn" onClick={() => setPropsOpen(true)}><IconEdit />{t('documentDetail.properties')}</button>}
           {transitions.filter((t) => t.allowed).map((t) => (
             <button key={t.to} className={`btn ${t.to === 'published' || t.to === 'approved' ? 'btn-primary' : ''}`}
               onClick={() => setTransitionTarget(t)}>
@@ -190,7 +190,7 @@ export default function DocumentDetail() {
 
       {doc.status === 'published' && reviewDays !== null && reviewDays < 0 && (
         <div className="callout" data-callout="warning">
-          <strong>Overdue for review</strong>
+          <strong>{t('documentDetail.overdue')}</strong>
           <p style={{ marginBottom: 0 }}>
             This document was due for review {Math.abs(reviewDays)} days ago on {formatDate(doc.review_date)} and
             remains published. Move it to Under Revision to bring it up to date.
@@ -200,7 +200,7 @@ export default function DocumentDetail() {
 
       {doc.status === 'published' && can('document:update') && (
         <div className="callout" data-callout="note">
-          <strong>Published documents are read-only</strong>
+          <strong>{t('documentDetail.readOnly')}</strong>
           <p style={{ marginBottom: 0 }}>Move this document to Under Revision to edit its content. The published version stays in force until a new version is published.</p>
         </div>
       )}
@@ -262,8 +262,8 @@ export default function DocumentDetail() {
               ))}
             </div>
 
-            <nav className="doc-toc" aria-label="Section navigation">
-              <div className="nav-group-label" style={{ color: 'var(--text-faint)', padding: '0 0 6px' }}>On this page</div>
+            <nav className="doc-toc" aria-label={t('documentDetail.sectionNavigation')}>
+              <div className="nav-group-label" style={{ color: 'var(--text-faint)', padding: '0 0 6px' }}>{t('documentDetail.onThisPage')}</div>
               {data.sections.map((s, i) => (
                 <a key={s.id} href={`#section-${s.section_key}`}>{i + 1}. {s.heading}</a>
               ))}
@@ -283,7 +283,7 @@ export default function DocumentDetail() {
               </div>
               <FlowDiagram steps={data.flow.steps} params={params} />
               <div>
-                <h4 style={{ marginBottom: 8 }}>Decision points</h4>
+                <h4 style={{ marginBottom: 8 }}>{t('documentDetail.decisionPoints')}</h4>
                 <DecisionList steps={data.flow.steps} params={params} />
               </div>
             </div>
@@ -294,7 +294,7 @@ export default function DocumentDetail() {
           <div style={{ padding: 18 }}>
             {!review && !openFindings.length && (
               <Empty icon={IconSparkles} title="No review has been run"
-                action={can('ai:use') ? <button className="btn btn-primary" onClick={runReview} disabled={reviewBusy}><IconSparkles />Review with AI</button> : null}>
+                action={can('ai:use') ? <button className="btn btn-primary" onClick={runReview} disabled={reviewBusy}><IconSparkles />{t('documentDetail.reviewWithAi')}</button> : null}>
                 The quality engine checks completeness, cross-document consistency, accountability,
                 auditability, compliance coverage and ambiguous wording.
               </Empty>
@@ -306,7 +306,7 @@ export default function DocumentDetail() {
                   <div className="between" style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 9 }}>
                     <ScoreRing score={review.score.score} />
                     <div style={{ flex: 1, minWidth: 220 }}>
-                      <div className="strong">Readiness score</div>
+                      <div className="strong">{t('documentDetail.readinessScore')}</div>
                       <p className="small muted" style={{ marginBottom: 6 }}>{review.summary}</p>
                       <div className="row-tight">
                         {Object.entries(review.score.bySeverity || {}).map(([sev, n]) => (
@@ -318,7 +318,7 @@ export default function DocumentDetail() {
                     </div>
                     <div className="stack-sm" style={{ alignItems: 'flex-end' }}>
                       <span className="tiny muted">Engine: {review.provider === 'anthropic' ? `Claude (${review.model})` : 'built-in knowledge engine'}</span>
-                      <button className="btn btn-sm" onClick={runReview} disabled={reviewBusy}><IconRefresh width={13} height={13} />Re-run</button>
+                      <button className="btn btn-sm" onClick={runReview} disabled={reviewBusy}><IconRefresh width={13} height={13} />{t('documentDetail.rerun')}</button>
                     </div>
                   </div>
                 )}
@@ -351,11 +351,11 @@ export default function DocumentDetail() {
               {data.links.length || data.backlinks.length ? (
                 <div className="table-wrap">
                   <table className="data">
-                    <thead><tr><th>Direction</th><th>Relationship</th><th>Document</th><th>Status</th></tr></thead>
+                    <thead><tr><th>{t('documentDetail.direction')}</th><th>{t('documentDetail.relationship')}</th><th>Document</th><th>Status</th></tr></thead>
                     <tbody>
                       {data.links.map((l) => (
                         <tr key={`o-${l.id}`}>
-                          <td><Badge tone="neutral">Outbound</Badge></td>
+                          <td><Badge tone="neutral">{t('documentDetail.outbound')}</Badge></td>
                           <td className="small">{titleCase(l.link_type)}</td>
                           <td><Link to={`/documents/${l.to_id}`}><span className="ref-tag">{l.reference}</span> {l.title}</Link></td>
                           <td><StatusBadge status={l.status} /></td>
@@ -363,7 +363,7 @@ export default function DocumentDetail() {
                       ))}
                       {data.backlinks.map((l) => (
                         <tr key={`i-${l.id}`}>
-                          <td><Badge tone="info">Inbound</Badge></td>
+                          <td><Badge tone="info">{t('documentDetail.inbound')}</Badge></td>
                           <td className="small">{titleCase(l.link_type)}</td>
                           <td><Link to={`/documents/${l.from_id}`}><span className="ref-tag">{l.reference}</span> {l.title}</Link></td>
                           <td><StatusBadge status={l.status} /></td>
@@ -394,12 +394,12 @@ export default function DocumentDetail() {
                 <div className="definition">
                   <dt>Engine</dt><dd>{doc.generation_meta.provider === 'anthropic' ? 'Claude' : doc.generation_meta.provider === 'import' ? 'Imported document' : 'Built-in knowledge engine'}</dd>
                   <dt>Generated</dt><dd>{formatDate(doc.generation_meta.generatedAt || doc.created_at, { withTime: true })}</dd>
-                  <dt>Sources</dt><dd>{doc.generation_meta.frameworks?.length ? doc.generation_meta.frameworks.join(', ') : <span className="muted">None selected</span>}</dd>
+                  <dt>{t('documentDetail.sources')}</dt><dd>{doc.generation_meta.frameworks?.length ? doc.generation_meta.frameworks.join(', ') : <span className="muted">{t('documentDetail.noneSelected')}</span>}</dd>
                 </div>
                 {doc.generation_meta.assumptions?.length > 0 && (
                   <>
                     <div className="divider" />
-                    <h4 style={{ marginBottom: 8 }}>Assumptions recorded at generation</h4>
+                    <h4 style={{ marginBottom: 8 }}>{t('documentDetail.assumptions')}</h4>
                     <div className="stack-sm">
                       {doc.generation_meta.assumptions.map((a, i) => (
                         <div key={i} className="evidence-quote">
@@ -414,7 +414,7 @@ export default function DocumentDetail() {
                 {doc.generation_meta.parameters && (
                   <>
                     <div className="divider" />
-                    <h4 style={{ marginBottom: 8 }}>Agreed values used</h4>
+                    <h4 style={{ marginBottom: 8 }}>{t('documentDetail.agreedValues')}</h4>
                     <div className="definition">
                       {Object.entries(doc.generation_meta.parameters)
                         .filter(([k]) => k !== 'orgName')
@@ -462,7 +462,7 @@ export default function DocumentDetail() {
                         e.stopPropagation();
                         try { setCompare(await api.get(`/documents/${id}/compare?from=${v.id}`)); }
                         catch (err) { toast.error('Comparison failed', err.message); }
-                      }}>Compare</button>
+                      }}>{t('documentDetail.compare')}</button>
                     )
                   }
                 ]}
@@ -477,7 +477,7 @@ export default function DocumentDetail() {
           <div style={{ padding: 18 }} className="stack">
             {can('comment:write') && (
               <Card>
-                <Field label="Add a comment">
+                <Field label={t('documentDetail.addComment')}>
                   <textarea className="textarea" value={comment} onChange={(e) => setComment(e.target.value)}
                     placeholder="Raise a question, note a required change, or record a review observation…" />
                 </Field>
@@ -488,7 +488,7 @@ export default function DocumentDetail() {
                     toast.success('Comment added');
                     reload();
                   } catch (err) { toast.error('Could not add comment', err.message); }
-                }}><IconComment width={13} height={13} />Post comment</button>
+                }}><IconComment width={13} height={13} />{t('documentDetail.postComment')}</button>
               </Card>
             )}
             {data.comments.length ? (
@@ -502,13 +502,13 @@ export default function DocumentDetail() {
                         </span>
                         <span className="strong small">{c.author_name}</span>
                         <span className="tiny muted">{relativeTime(c.created_at)}</span>
-                        {c.resolved ? <Badge tone="ok">Resolved</Badge> : null}
+                        {c.resolved ? <Badge tone="ok">{t('documentDetail.resolved')}</Badge> : null}
                       </div>
                       {can('comment:write') && !c.resolved && (
                         <button className="btn btn-ghost btn-sm" onClick={async () => {
                           await api.patch(`/documents/${id}/comments/${c.id}`, { resolved: true });
                           reload();
-                        }}><IconCheck width={12} height={12} />Resolve</button>
+                        }}><IconCheck width={12} height={12} />{t('documentDetail.resolve')}</button>
                       )}
                     </div>
                     <p style={{ marginTop: 6, marginBottom: 0 }}>{c.body}</p>
@@ -538,7 +538,7 @@ export default function DocumentDetail() {
           {transitionTarget?.to === 'under_revision' && 'The published version stays in force while you revise.'}
           {transitionTarget?.to === 'draft' && 'Returning to draft sends the document back to its author.'}
         </p>
-        <Field label="Comment" hint="Recorded in the approval history.">
+        <Field label={t('documentDetail.addComment')} hint="Recorded in the approval history.">
           <textarea className="textarea" value={transitionNote} onChange={(e) => setTransitionNote(e.target.value)} />
         </Field>
       </Modal>
@@ -596,6 +596,7 @@ export default function DocumentDetail() {
 }
 
 function PropertiesModal({ open, onClose, doc, directory, onSaved, onDelete, canDelete }) {
+  const { t } = useI18n();
   const labels = useLabels();
   const toast = useToast();
   const [form, setForm] = useState({});
@@ -630,34 +631,34 @@ function PropertiesModal({ open, onClose, doc, directory, onSaved, onDelete, can
               toast.success('Properties updated');
               onSaved();
             } catch (err) { toast.error('Update failed', err.message); }
-          }}>Save changes</button>
+          }}>{t('documentDetail.saveChanges')}</button>
         </>
       }>
-      <Field label="Title" required>
+      <Field label={t('documentDetail.docTitle')} required>
         <input className="input" value={form.title || ''} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
       </Field>
-      <Field label="Summary">
+      <Field label={t('documentDetail.summary')}>
         <textarea className="textarea" value={form.summary || ''} onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))} />
       </Field>
       <div className="field-row">
-        <Field label="Document owner" hint="Accountable for content and review.">
+        <Field label={t('documentDetail.documentOwner')} hint="Accountable for content and review.">
           <Select value={form.owner_id} onChange={(v) => setForm((f) => ({ ...f, owner_id: v }))} placeholder="Unassigned"
             options={directory.map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
         </Field>
-        <Field label="Approver">
+        <Field label={t('documentDetail.approver')}>
           <Select value={form.approver_id} onChange={(v) => setForm((f) => ({ ...f, approver_id: v }))} placeholder="Unassigned"
             options={directory.filter((u) => ['approver', 'admin'].includes(u.role)).map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
         </Field>
       </div>
       <div className="field-row">
-        <Field label="Classification">
+        <Field label={t('documentDetail.classification')}>
           <Select value={form.classification} onChange={(v) => setForm((f) => ({ ...f, classification: v }))}
             options={['public', 'internal', 'confidential', 'secret', 'top_secret'].map((v) => ({ value: v, label: titleCase(v) }))} />
         </Field>
-        <Field label="Effective date">
+        <Field label={t('documentDetail.effectiveDate')}>
           <input className="input" type="date" value={form.effective_date || ''} onChange={(e) => setForm((f) => ({ ...f, effective_date: e.target.value }))} />
         </Field>
-        <Field label="Review date">
+        <Field label={t('documentDetail.reviewDate')}>
           <input className="input" type="date" value={form.review_date || ''} onChange={(e) => setForm((f) => ({ ...f, review_date: e.target.value }))} />
         </Field>
       </div>

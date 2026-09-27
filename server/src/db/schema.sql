@@ -145,6 +145,12 @@ CREATE TABLE IF NOT EXISTS documents (
   reviewer_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
   effective_date  TEXT,
   review_date     TEXT,
+  -- A policy is approved in a language. Two language versions are two
+  -- controlled documents with their own lifecycles, linked by translation_of,
+  -- rather than one document rendered differently per reader: an approver
+  -- must have seen the words they approved.
+  language        TEXT NOT NULL DEFAULT 'en' CHECK (language IN ('en','ar')),
+  translation_of  TEXT REFERENCES documents(id) ON DELETE SET NULL,
   retired_date    TEXT,
   summary         TEXT,
   parent_id       TEXT REFERENCES documents(id) ON DELETE SET NULL,

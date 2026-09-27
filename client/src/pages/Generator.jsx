@@ -19,6 +19,7 @@ import {
 } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 const STEPS = ['Document types', 'Domain', 'Frameworks', 'Context', 'Review & generate'];
 
@@ -26,6 +27,7 @@ const DEFAULT_TYPES = ['policy', 'standard', 'procedure', 'roles', 'raci', 'cont
 
 export default function Generator() {
   const labels = useLabels();
+  const { t, language } = useI18n();
   const { data: options, loading, error, reload } = useFetch('/generator/options');
   const navigate = useNavigate();
   const toast = useToast();
@@ -36,6 +38,8 @@ export default function Generator() {
   const [domainKey, setDomainKey] = useState('');
   const [frameworkCodes, setFrameworkCodes] = useState([]);
   const [classification, setClassification] = useState('internal');
+  // Generated in whichever language the reader is working in by default.
+  const [docLanguage, setDocLanguage] = useState(language);
   const [ownerId, setOwnerId] = useState('');
   const [approverId, setApproverId] = useState('');
   const [overrides, setOverrides] = useState({});
@@ -92,7 +96,8 @@ export default function Generator() {
     setBusy(true);
     try {
       const res = await api.post('/generator/preview', {
-        domainKey, docTypes, frameworkCodes, parameterOverrides: overrides, classification
+        domainKey, docTypes, frameworkCodes, parameterOverrides: overrides, classification,
+        language: docLanguage
       });
       setPreview(res);
       setPreviewTab(res.documents[0]?.docType || 'policy');
@@ -109,7 +114,8 @@ export default function Generator() {
     try {
       const res = await api.post('/generator/generate', {
         domainKey, docTypes, frameworkCodes, parameterOverrides: overrides,
-        classification, ownerId: ownerId || null, approverId: approverId || null
+        classification, ownerId: ownerId || null, approverId: approverId || null,
+        language: docLanguage
       });
       toast.success(
         `Generated ${res.documents.length} documents`,
@@ -251,6 +257,27 @@ export default function Generator() {
               <dt>Regulators</dt><dd>{options.org.regulators?.join(', ') || <span className="muted">Not set</span>}</dd>
               <dt>Technology</dt><dd>{options.org.technology_env?.join(', ') || <span className="muted">Not set</span>}</dd>
             </div>
+          </Card>
+
+          <Card title={t('generator.languageTitle')} subtitle={t('generator.languageSubtitle')}>
+            <div className="checkbox-row">
+              {[{ code: 'en', label: 'English' }, { code: 'ar', label: 'العربية' }].map((opt) => (
+                <label key={opt.code} lang={opt.code}
+                  className={`checkbox-chip ${docLanguage === opt.code ? 'on' : ''}`}>
+                  <input type="radio" name="doc-language" checked={docLanguage === opt.code}
+                    onChange={() => setDocLanguage(opt.code)} />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            {/* An untranslated domain would silently produce English, so the
+                wizard says so before the package is built rather than after. */}
+            {docLanguage === 'ar' && domainDetail && preview && preview.fullyTranslated === false && (
+              <div className="callout" data-callout="warning" style={{ marginTop: 10 }}>
+                <strong>{t('generator.noArabicModel')}</strong>
+                <p style={{ marginBottom: 0 }}>{t('generator.noArabicModelBody')}</p>
+              </div>
+            )}
           </Card>
 
           <Card title="Agreed values"

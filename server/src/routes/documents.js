@@ -70,7 +70,8 @@ router.get('/', asyncHandler(async (req, res) => {
     ['doc_type', listParam(req.query.type)],
     ['domain_key', listParam(req.query.domain)],
     ['status', listParam(req.query.status)],
-    ['classification', listParam(req.query.classification)]
+    ['classification', listParam(req.query.classification)],
+    ['language', listParam(req.query.language)]
   ]) {
     if (value.length) {
       filters.push(`${column} IN (${value.map(() => '?').join(',')})`);

@@ -73,7 +73,11 @@ const generateSchema = z.object({
   parameterOverrides: z.record(z.string()).default({}),
   classification: z.enum(['public', 'internal', 'confidential', 'secret', 'top_secret']).default('internal'),
   ownerId: z.string().nullable().optional(),
-  approverId: z.string().nullable().optional()
+  approverId: z.string().nullable().optional(),
+  language: z.enum(['en', 'ar']).default('en'),
+  // Set when generating the other language version of an existing package, so
+  // the two are linked rather than looking like unrelated documents.
+  translationOf: z.string().nullable().optional()
 });
 
 router.post('/preview', requirePermission('generate:run'), validate(generateSchema), asyncHandler(async (req, res) => {
@@ -82,7 +86,8 @@ router.post('/preview', requirePermission('generate:run'), validate(generateSche
     docTypes: req.body.docTypes,
     frameworkCodes: req.body.frameworkCodes,
     org: getOrgProfile(),
-    parameterOverrides: req.body.parameterOverrides
+    parameterOverrides: req.body.parameterOverrides,
+    language: req.body.language
   });
   res.json({ ...preview, ai: providerInfo() });
 }));
@@ -99,13 +104,18 @@ router.post('/generate', requirePermission('generate:run'), validate(generateSch
     ownerId: req.body.ownerId || req.user.id,
     approverId: req.body.approverId || null,
     classification: req.body.classification,
-    provider: providerInfo().provider
+    provider: providerInfo().provider,
+    language: req.body.language,
+    translationOf: req.body.translationOf || null
   });
 
   audit(req, {
     action: 'generate:package', entityType: 'package', entityId: result.packageId,
-    summary: `Generated ${result.documents.length} document(s) for ${req.body.domainKey}`,
-    detail: { domain: req.body.domainKey, docTypes: req.body.docTypes, frameworks: req.body.frameworkCodes, controls: result.controls }
+    summary: `Generated ${result.documents.length} ${req.body.language === 'ar' ? 'Arabic ' : ''}document(s) for ${req.body.domainKey}`,
+    detail: {
+      domain: req.body.domainKey, docTypes: req.body.docTypes, frameworks: req.body.frameworkCodes,
+      controls: result.controls, language: req.body.language
+    }
   });
 
   const rows = q.all('SELECT * FROM documents WHERE package_id = ? ORDER BY created_at', result.packageId);
