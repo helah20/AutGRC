@@ -8,6 +8,7 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "seed": "node src/db/seed.js --force",
+    "verify:knowledge": "node scripts/verify-knowledge.js",
     "test": "node --test \"test/*.test.js\""
   },
   "dependencies": {

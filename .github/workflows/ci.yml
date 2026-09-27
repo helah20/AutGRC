@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # A throwaway secret: the database and the server both live and die with
+      # this job, so nothing signed here outlives it.
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789abcdef
+      # bcrypt at 12 rounds hashes seven demonstration users on every seed,
+      # which is the slowest part of the run and buys nothing in CI.
+      BCRYPT_ROUNDS: 4
+      PORT: 4000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check the knowledge base for integrity problems
+        run: npm --workspace server run verify:knowledge
+
+      - name: Seed the database
+        run: npm run seed
+
+      - name: Start the API
+        run: |
+          npm start > "$RUNNER_TEMP/server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/server.pid"
+          for i in $(seq 1 40); do
+            if curl -fsS "http://localhost:$PORT/api/health" > /dev/null; then
+              echo "API is up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::The API did not become healthy within 40s"
+          cat "$RUNNER_TEMP/server.log"
+          exit 1
+
+      - name: Run the test suite
+        run: npm test
+
+      - name: Build the client
+        run: npm run build
+
+      - name: Server log
+        if: always()
+        run: cat "$RUNNER_TEMP/server.log" || true
+
+      - name: Stop the API
+        if: always()
+        run: kill "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || true
