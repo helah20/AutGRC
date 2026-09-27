@@ -9,9 +9,11 @@ import TraceChain from '../components/TraceChain.jsx';
 import { IconLayers, IconDownload, IconX, IconInfo } from '../components/Icons.jsx';
 import { titleCase, COVERAGE_TONE } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 export default function Frameworks() {
   const labels = useLabels();
+  const { t, formatNumber } = useI18n();
   const toast = useToast();
   const { data, loading, error, reload } = useFetch('/frameworks');
   const [active, setActive] = useState(null);
@@ -73,7 +75,7 @@ export default function Frameworks() {
                   {f.retires_on && <><br />Retires {f.retires_on}</>}
                 </div>
                 <p className="small muted clamp-3" style={{ marginBottom: 12 }}>{f.description}</p>
-                <CoverageBar value={f.coverage} label={`${f.mapped_count} of ${f.requirement_count} mapped`} />
+                <CoverageBar value={f.coverage} label={t('counts.mapped', { mapped: formatNumber(f.mapped_count), total: formatNumber(f.requirement_count) })} />
               </div>
             </button>
           ))}
@@ -88,7 +90,7 @@ export default function Frameworks() {
             <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder="Search requirements…" /></div>
             <Select value={domain} onChange={setDomain} placeholder="All domains"
               options={(detail?.domains || []).map((d) => ({ value: d.key, label: d.name }))} />
-            <span className="table-count">{detail ? `${detail.requirements.length} requirements` : '—'}</span>
+            <span className="table-count">{detail ? t('counts.requirements', { count: formatNumber(detail.requirements.length) }) : '—'}</span>
           </div>
 
           {detailLoading && <Loading />}

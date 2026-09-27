@@ -123,7 +123,7 @@ export default function Soa() {
               <IconX width={13} height={13} />{t('common.clear')}
             </button>
           )}
-          <span className="table-count">{data ? `${rows.length} of ${data.rows.length}` : '—'}</span>
+          <span className="table-count">{data ? `${formatNumber(rows.length)} ${t('common.of')} ${formatNumber(data.rows.length)}` : '—'}</span>
         </div>
 
         {!loading && !error && (
@@ -145,7 +145,7 @@ export default function Soa() {
               },
               {
                 key: 'implementation', header: t('soa.columnImplementation'), nowrap: true,
-                render: (r) => <Badge tone={IMPLEMENTATION_TONE[r.implementation]}>{titleCase(r.implementation.replace(/_/g, ' '))}</Badge>
+                render: (r) => <Badge tone={IMPLEMENTATION_TONE[r.implementation]}>{labels.implementation(r.implementation)}</Badge>
               },
               {
                 key: 'controls', header: t('soa.columnControls'),

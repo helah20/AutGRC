@@ -11,9 +11,11 @@ import FindingCard from '../components/FindingCard.jsx';
 import { IconUpload, IconCheck, IconX, IconAlert, IconDocument } from '../components/Icons.jsx';
 import { formatDate, titleCase, relativeTime } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 export default function Imports() {
   const labels = useLabels();
+  const { t, formatNumber } = useI18n();
   const toast = useToast();
   const navigate = useNavigate();
   const { can } = useAuth();
@@ -133,6 +135,7 @@ export default function Imports() {
 }
 
 function AnalysisReport({ analysis, onPromote, onDismiss, embedded }) {
+  const { t, formatNumber } = useI18n();
   const stats = analysis.statistics;
   const bySeverity = analysis.findings.reduce((acc, f) => ({ ...acc, [f.severity]: (acc[f.severity] || 0) + 1 }), {});
 
@@ -149,7 +152,7 @@ function AnalysisReport({ analysis, onPromote, onDismiss, embedded }) {
       <div className="grid grid-kpi" style={{ marginBottom: 14 }}>
         <Kpi label="Requirement coverage" value={`${stats.coverage}%`} progress={stats.coverage}
           tone={stats.coverage >= 70 ? 'ok' : stats.coverage >= 40 ? 'warn' : 'danger'}
-          meta={`${stats.requirementsCovered} of ${stats.requirementsExpected}`} />
+          meta={t('counts.covered', { covered: formatNumber(stats.requirementsCovered), total: formatNumber(stats.requirementsExpected) })} />
         <Kpi label="Findings" value={analysis.findings.length} tone={bySeverity.high ? 'danger' : bySeverity.medium ? 'warn' : undefined}
           meta={`${bySeverity.high || 0} high · ${bySeverity.medium || 0} medium`} />
         <Kpi label="Words" value={stats.words.toLocaleString()} meta={`${stats.sentences} sentences`} />

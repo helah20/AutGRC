@@ -11,6 +11,7 @@ import {
   IconPlus, IconDownload, IconTrash, IconAlert, IconCheck, IconChevronRight, IconX
 } from '../components/Icons.jsx';
 import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 const VALUES = ['', 'R', 'A', 'S', 'C', 'I'];
 const LEGEND = {
@@ -23,6 +24,7 @@ const LEGEND = {
 
 export default function RaciBuilder() {
   const labels = useLabels();
+  const { t, formatNumber } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -124,7 +126,7 @@ export default function RaciBuilder() {
                 </span>
               ))}
           </div>
-          <span className="table-count">{activities.length} activities · {columns.length} roles</span>
+          <span className="table-count">{t('counts.raci', { activities: formatNumber(activities.length), roles: formatNumber(columns.length) })}</span>
         </div>
 
         {activities.length && columns.length ? (

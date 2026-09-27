@@ -10,11 +10,13 @@ import {
 import { IconTarget, IconDownload, IconChevronRight, IconCheck } from '../components/Icons.jsx';
 import { formatDate, titleCase, GAP_TONE, RISK_TONE } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 const STATUSES = ['compliant', 'partially_compliant', 'non_compliant', 'not_applicable'];
 
 export default function GapAssessmentDetail() {
   const labels = useLabels();
+  const { t, formatNumber } = useI18n();
   const { id } = useParams();
   const toast = useToast();
   const { can } = useAuth();
@@ -88,7 +90,7 @@ export default function GapAssessmentDetail() {
               </button>
             ))}
           </div>
-          <span className="table-count">{filtered.length} rows</span>
+          <span className="table-count">{t('counts.rows', { count: formatNumber(filtered.length) })}</span>
         </div>
 
         <DataTable

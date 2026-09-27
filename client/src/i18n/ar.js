@@ -101,6 +101,15 @@ export default {
     couldNotLoad: 'تعذّر التحميل'
   },
 
+  counts: {
+    findings: '{count} ملاحظة',
+    requirements: '{count} متطلب',
+    mapped: '{mapped} من {total} مربوط',
+    covered: '{covered} من {total}',
+    raci: '{activities} نشاط · {roles} دور',
+    rows: '{count} صف'
+  },
+
   search: {
     placeholder: 'ابحث في السياسات والضوابط والمتطلبات والأدوار…',
     full: 'ابحث في السياسات والمعايير والإجراءات والضوابط والمتطلبات والأدوار والأدلة…',
@@ -526,6 +535,14 @@ export default {
     approver: 'معتمِد',
     auditor: 'مدقق',
     read_only: 'اطّلاع فقط'
+  },
+
+  implementation: {
+    implemented: 'مُطبَّق',
+    partial: 'مُطبَّق جزئياً',
+    planned: 'مخطط له',
+    not_implemented: 'غير مُطبَّق',
+    excluded: 'مستثنى'
   },
 
   coverage: {

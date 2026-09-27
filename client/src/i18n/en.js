@@ -94,6 +94,15 @@ export default {
     couldNotLoad: 'Could not load'
   },
 
+  counts: {
+    findings: '{count} findings',
+    requirements: '{count} requirements',
+    mapped: '{mapped} of {total} mapped',
+    covered: '{covered} of {total}',
+    raci: '{activities} activities · {roles} roles',
+    rows: '{count} rows'
+  },
+
   search: {
     placeholder: 'Search policies, controls, requirements, roles…',
     full: 'Search policies, standards, procedures, controls, requirements, roles, evidence…',
@@ -519,6 +528,14 @@ export default {
     approver: 'Approver',
     auditor: 'Auditor',
     read_only: 'Read Only'
+  },
+
+  implementation: {
+    implemented: 'Implemented',
+    partial: 'Partial',
+    planned: 'Planned',
+    not_implemented: 'Not Implemented',
+    excluded: 'Excluded'
   },
 
   coverage: {

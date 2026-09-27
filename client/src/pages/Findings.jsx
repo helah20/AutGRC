@@ -7,9 +7,11 @@ import FindingCard from '../components/FindingCard.jsx';
 import { IconAlert, IconCheck } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useI18n } from '../i18n/index.jsx';
 
 export default function Findings() {
   const labels = useLabels();
+  const { t, formatNumber } = useI18n();
   const toast = useToast();
   const { can } = useAuth();
   const [severity, setSeverity] = useState('');
@@ -57,7 +59,7 @@ export default function Findings() {
             options={['critical', 'high', 'medium', 'low', 'info'].map((v) => ({ value: v, label: titleCase(v) }))} />
           <Select value={category} onChange={setCategory} placeholder="All categories"
             options={(data.facets.byCategory || []).map((c) => ({ value: c.category, label: `${labels.findingCategory(c.category)} (${c.n})` }))} />
-          <span className="table-count">{data.items.length} findings</span>
+          <span className="table-count">{t('counts.findings', { count: formatNumber(data.items.length) })}</span>
         </div>
 
         <div className="card-body">

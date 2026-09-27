@@ -44,6 +44,7 @@ export function useLabels() {
     status: (key, serverLabel) => label('status', key, serverLabel),
     docType: (key, serverLabel) => label('docType', key, serverLabel),
     coverage: (key, serverLabel) => label('coverage', key, serverLabel),
+    implementation: (key, serverLabel) => label('implementation', key, serverLabel),
     evidenceStatus: (key, serverLabel) => label('evidenceStatus', key, serverLabel),
     treatment: (key, serverLabel) => label('treatment', key, serverLabel),
     riskStatus: (key, serverLabel) => label('riskStatus', key, serverLabel),
