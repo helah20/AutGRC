@@ -44,7 +44,22 @@ import actionRoutes from './routes/actions.js';
 import soaRoutes from './routes/soa.js';
 
 const app = express();
-app.set('trust proxy', 1);
+
+/**
+ * Whether to believe X-Forwarded-For.
+ *
+ * Trusting it unconditionally means that when the platform is reached directly,
+ * with no reverse proxy in front, the header is attacker-controlled and the
+ * per-address rate limiters key on a value the attacker chooses. Rotating it
+ * resets the bucket. Per-account lockout still stops credential guessing, so
+ * this is not a route to an account — but it removes one layer, and the layer
+ * is free to keep.
+ *
+ * So it is opt-in: set TRUST_PROXY to the number of proxies in front of the
+ * application (usually 1), and leave it unset when nothing is.
+ */
+const trustProxy = Number(process.env.TRUST_PROXY || 0);
+app.set('trust proxy', trustProxy > 0 ? trustProxy : false);
 app.disable('x-powered-by');
 
 app.use(helmet({

@@ -65,21 +65,57 @@ function tint(sheet, rowIdx, colIdx, argb) {
   sheet.getRow(rowIdx).getCell(colIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb } };
 }
 
+/**
+ * Neutralise a cell that Excel would read as a formula.
+ *
+ * Excel, LibreOffice and Google Sheets evaluate a cell whose text begins with
+ * =, +, - or @, so a document title or control name — both editable by any user
+ * with write access — becomes code when the register is opened. These workbooks
+ * are the artefact circulated to auditors and executives, which is exactly the
+ * reach the attack wants. Prefixing with an apostrophe is the standard
+ * mitigation: Excel shows the original text and evaluates nothing.
+ *
+ * Leading tab, carriage return and newline are included because Excel strips
+ * them before deciding, so "\t=cmd" is still a formula.
+ */
+const FORMULA_START = /^[\t\r\n ]*[=+\-@]/;
+
+function safeCell(value) {
+  if (typeof value !== 'string') return value;
+  return FORMULA_START.test(value) ? `'${value}` : value;
+}
+
+/**
+ * Every sheet this workbook produces sanitises its own cells.
+ *
+ * Wrapping addRow here rather than at each of the fifteen call sites means a
+ * sheet added later is covered by construction; a call site that has to remember
+ * is a call site that eventually forgets.
+ */
 function newWorkbook(orgName) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = orgName || 'AutGRC';
+  wb.creator = safeCell(orgName || 'AutGRC');
   wb.created = new Date();
+  const addWorksheet = wb.addWorksheet.bind(wb);
+  wb.addWorksheet = (...args) => {
+    const sheet = addWorksheet(...args);
+    const addRow = sheet.addRow.bind(sheet);
+    sheet.addRow = (values, ...rest) => addRow(
+      Array.isArray(values) ? values.map(safeCell) : values, ...rest
+    );
+    return sheet;
+  };
   return wb;
 }
 
 function coverSheet(wb, { orgName, title, subtitle, note }) {
   const sheet = wb.addWorksheet('Cover');
   sheet.columns = [{ width: 24 }, { width: 90 }];
-  sheet.getCell('A1').value = (orgName || 'Organisation').toUpperCase();
+  sheet.getCell('A1').value = safeCell((orgName || 'Organisation').toUpperCase());
   sheet.getCell('A1').font = { bold: true, size: 14, color: { argb: BRAND } };
-  sheet.getCell('A3').value = title;
+  sheet.getCell('A3').value = safeCell(title);
   sheet.getCell('A3').font = { bold: true, size: 18, color: { argb: BRAND } };
-  sheet.getCell('A4').value = subtitle || '';
+  sheet.getCell('A4').value = safeCell(subtitle || '');
   sheet.getCell('A4').font = { size: 11, color: { argb: 'FF6B7C8F' } };
   sheet.getCell('A6').value = 'Generated';
   sheet.getCell('B6').value = new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -87,7 +123,7 @@ function coverSheet(wb, { orgName, title, subtitle, note }) {
   sheet.getCell('B7').value = 'AutGRC — Cybersecurity Governance Platform';
   if (note) {
     sheet.getCell('A9').value = 'Note';
-    sheet.getCell('B9').value = note;
+    sheet.getCell('B9').value = safeCell(note);
     sheet.getCell('B9').alignment = { wrapText: true, vertical: 'top' };
     sheet.getRow(9).height = 60;
   }
