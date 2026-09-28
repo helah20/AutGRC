@@ -133,6 +133,18 @@ function textRuns(runs, extra = {}) {
   );
 }
 
+/**
+ * Table direction for the document being written.
+ *
+ * The default style carries rightToLeft and bidirectional, which covers every
+ * paragraph, but a table's column order is its own property: without
+ * `w:bidiVisual` Word right-aligns the cells and still puts the first column on
+ * the left, so an Arabic RACI matrix would read its activities from the wrong
+ * end. Set for the duration of one build; buildDocx does no I/O between
+ * setting it and using it.
+ */
+let activeRtl = false;
+
 function cell(content, { header = false, width, bold = false } = {}) {
   return new TableCell({
     borders: cellBorders,
@@ -153,6 +165,7 @@ function cell(content, { header = false, width, bold = false } = {}) {
 function infoTable(rows) {
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
+    visuallyRightToLeft: activeRtl || undefined,
     rows: rows.map(([k, v]) =>
       new TableRow({ children: [cell(k, { header: true, width: 30 }), cell(v, { width: 70 })] })
     )
@@ -169,7 +182,7 @@ function gridTable(head, rows) {
   for (const r of rows) {
     trs.push(new TableRow({ children: r.map((c) => cell(c, { width })) }));
   }
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: trs });
+  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, visuallyRightToLeft: activeRtl || undefined, rows: trs });
 }
 
 function blocksToDocx(blocks) {
@@ -200,9 +213,14 @@ function blocksToDocx(blocks) {
     } else if (b.type === 'callout') {
       out.push(new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
+        visuallyRightToLeft: activeRtl || undefined,
         rows: [new TableRow({
           children: [new TableCell({
-            borders: { top: thinBorder, bottom: thinBorder, right: thinBorder, left: { style: BorderStyle.SINGLE, size: 18, color: ACCENT } },
+            // The accent rule marks the start of the line, which is the right
+            // edge in Arabic.
+            borders: activeRtl
+              ? { top: thinBorder, bottom: thinBorder, left: thinBorder, right: { style: BorderStyle.SINGLE, size: 18, color: ACCENT } }
+              : { top: thinBorder, bottom: thinBorder, right: thinBorder, left: { style: BorderStyle.SINGLE, size: 18, color: ACCENT } },
             shading: { type: ShadingType.CLEAR, fill: LIGHT },
             margins: { top: 120, bottom: 120, left: 160, right: 160 },
             children: [
@@ -259,6 +277,7 @@ export async function buildDocx(data) {
   // and reorders the line itself, so the reader can edit what they receive.
   const lang = data.lang === 'ar' ? 'ar' : 'en';
   const rtl = lang === 'ar';
+  activeRtl = rtl;
   const L = FURNITURE[lang];
   const classification = rtl
     ? (CLASSIFICATION_AR[doc.classification] || CLASSIFICATION_AR.internal)
@@ -416,5 +435,9 @@ export async function buildDocx(data) {
     }]
   });
 
+  // Put the flag back before returning: the buffer is already described by the
+  // document object, and leaving it set would give the next English export
+  // right-to-left tables.
+  activeRtl = false;
   return Packer.toBuffer(document);
 }

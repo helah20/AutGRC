@@ -973,9 +973,16 @@ test('AutGRC end-to-end governance workflow', {
     assert.ok(ar.styles.includes('<w:bidi/>'), 'the paragraph default is bidirectional');
     assert.ok(/Segoe UI/.test(ar.styles), 'an Arabic-capable font is set');
 
+    // A table's column order is its own property. Without this Word
+    // right-aligns the cells and still puts the first column on the left, so an
+    // Arabic RACI matrix would read its activities from the wrong end.
+    assert.ok(ar.document.includes('<w:tbl>'), 'the export contains tables to check');
+    assert.ok(ar.document.includes('<w:bidiVisual/>'), 'Arabic tables run right to left');
+
     // English must not have acquired any of it.
     assert.ok(!en.document.includes('<w:bidi/>'), 'English paragraphs are not bidirectional');
     assert.ok(!en.document.includes('<w:rtl/>'), 'English runs are not right-to-left');
+    assert.ok(!en.document.includes('bidiVisual'), 'English tables are untouched, not explicitly left-to-right');
 
     // The document furniture is actually in Arabic, not English mirrored.
     const arabicRuns = ar.document.match(/[\u0600-\u06FF]{2,}/g) || [];
