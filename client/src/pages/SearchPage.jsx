@@ -4,6 +4,7 @@ import { useFetch, useDebounced } from '../lib/useApi.js';
 import { Card, Loading, ErrorNote, Empty, Badge, SearchInput } from '../components/ui.jsx';
 import { IconSearch } from '../components/Icons.jsx';
 import { useLabels } from '../i18n/labels.js';
+import { useT } from '../i18n/index.jsx';
 
 const ROUTE = {
   document: (r) => `/documents/${r.id}`,
@@ -16,6 +17,7 @@ const ROUTE = {
 };
 
 export default function SearchPage() {
+  const t = useT();
   const labels = useLabels();
   const [params, setParams] = useSearchParams();
   const [term, setTerm] = useState(params.get('q') || '');
@@ -34,11 +36,8 @@ export default function SearchPage() {
     <div className="page-narrow" style={{ margin: '0 auto' }}>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Search</h1>
-          <p className="page-sub">
-            One query across policies, standards, procedures, roles, controls, framework requirements,
-            evidence, RACI activities and gap assessment rows.
-          </p>
+          <h1 className="page-title">{t('search.title')}</h1>
+          <p className="page-sub">{t('search.subtitle')}</p>
         </div>
       </div>
 

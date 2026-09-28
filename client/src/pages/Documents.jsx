@@ -12,10 +12,23 @@ import { IconWand, IconDownload, IconDocument, IconFilter, IconX } from '../comp
 import { useLabels } from '../i18n/labels.js';
 import { useI18n } from '../i18n/index.jsx';
 
-const TYPE_LABEL = {
-  policy: 'Policy', standard: 'Standard', procedure: 'Procedure', guideline: 'Guideline',
-  framework: 'Framework', roles: 'Roles & Responsibilities', raci: 'RACI / RASCI',
-  control_matrix: 'Control Matrix', work_instruction: 'Work Instruction'
+// The type names themselves live in the dictionary, so the filter offers them
+// in the reader's language rather than a second English copy of the same list.
+const DOC_TYPES = [
+  'policy', 'standard', 'procedure', 'guideline', 'framework',
+  'roles', 'raci', 'control_matrix', 'work_instruction'
+];
+
+/** Headings for the type-filtered routes, which have their own plural. */
+const TYPE_TITLE = {
+  policy: 'documents.titlePolicy',
+  standard: 'documents.titleStandard',
+  procedure: 'documents.titleProcedure'
+};
+const TYPE_SUBTITLE = {
+  policy: 'documents.subtitlePolicy',
+  standard: 'documents.subtitleStandard',
+  procedure: 'documents.subtitleProcedure'
 };
 
 export default function Documents({ fixedType }) {
@@ -106,12 +119,11 @@ export default function Documents({ fixedType }) {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">{fixedType ? `${TYPE_LABEL[fixedType]}s` : 'Governance Documents'}</h1>
-          <p className="page-sub">
-            {fixedType
-              ? `Every ${TYPE_LABEL[fixedType].toLowerCase()} in the library, with its lifecycle state and review position.`
-              : 'The complete governance library across every document type, domain and lifecycle state.'}
-          </p>
+          {/* The plural is a dictionary entry, not the type label with an "s"
+              stuck on: that produced "Policys", and Arabic does not form a
+              plural by suffix at all. */}
+          <h1 className="page-title">{t(TYPE_TITLE[fixedType] || 'documents.title')}</h1>
+          <p className="page-sub">{t(TYPE_SUBTITLE[fixedType] || 'documents.subtitle')}</p>
         </div>
         <div className="page-actions">
           <button className="btn" onClick={() => api.download('/export/register.xlsx', 'Document Register.xlsx')
@@ -127,8 +139,8 @@ export default function Documents({ fixedType }) {
         <div className="table-toolbar">
           <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder="Search by title, reference or summary…" /></div>
           {!fixedType && (
-            <Select value={type} onChange={setType} placeholder="All types"
-              options={Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label }))} />
+            <Select value={type} onChange={setType} placeholder={t('documents.allTypes')}
+              options={DOC_TYPES.map((value) => ({ value, label: labels.docType(value) }))} />
           )}
           <Select value={domain} onChange={setDomain} placeholder="All domains" options={domainOptions} />
           <Select value={status} onChange={setStatus} placeholder="All statuses"

@@ -7,8 +7,10 @@ import { Card, Loading, ErrorNote, Empty, Badge, DataTable, Modal, Field, Select
 import { IconGrid, IconPlus, IconAlert, IconCheck } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useT } from '../i18n/index.jsx';
 
 export default function RaciList() {
+  const t = useT();
   const labels = useLabels();
   const { data, loading, error, reload } = useFetch('/raci');
   const { data: options } = useFetch('/generator/options');
@@ -25,7 +27,7 @@ export default function RaciList() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">RACI / RASCI Matrices</h1>
+          <h1 className="page-title">{t('raci.title')}</h1>
           <p className="page-sub">
             Responsibility assignment per domain. The builder validates that every activity has exactly
             one accountable role and at least one responsible role.

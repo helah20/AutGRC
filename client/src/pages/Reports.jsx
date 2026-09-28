@@ -4,8 +4,10 @@ import { useFetch } from '../lib/useApi.js';
 import { Card, Loading, ErrorNote, Empty, useToast, Badge } from '../components/ui.jsx';
 import { IconChart, IconDownload, IconChevronRight, IconX } from '../components/Icons.jsx';
 import { useLabels } from '../i18n/labels.js';
+import { useT } from '../i18n/index.jsx';
 
 export default function Reports() {
+  const t = useT();
   const labels = useLabels();
   const toast = useToast();
   const { data: reports, loading, error, reload } = useFetch('/reports');
@@ -26,11 +28,8 @@ export default function Reports() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Reports</h1>
-          <p className="page-sub">
-            Management and audit reporting drawn from the live data set. Every report exports to Excel,
-            and to PDF for circulation.
-          </p>
+          <h1 className="page-title">{t('reports.title')}</h1>
+          <p className="page-sub">{t('reports.subtitle')}</p>
         </div>
       </div>
 

@@ -84,9 +84,7 @@ export default function RaciBuilder() {
           </div>
           <h1 className="page-title">{matrix.name}</h1>
           <p className="page-sub">
-            {editable
-              ? 'Click a cell to cycle through the assignment values. Changes save immediately and the matrix revalidates.'
-              : 'Read-only view. Your role cannot modify responsibility assignments.'}
+            {editable ? t('raci.editableHint') : t('raci.readOnlyHint')}
           </p>
         </div>
         <div className="page-actions">

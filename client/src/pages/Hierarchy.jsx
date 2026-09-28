@@ -10,6 +10,7 @@ import FindingCard from '../components/FindingCard.jsx';
 import { IconLink, IconArrowDown, IconSparkles, IconWand, IconAlert } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useT } from '../i18n/index.jsx';
 
 const TIERS = [
   { key: 'framework', label: 'Framework / Regulation', types: ['framework'], help: 'The authoritative sources adopted for this domain.' },
@@ -21,6 +22,7 @@ const TIERS = [
 ];
 
 export default function Hierarchy() {
+  const t = useT();
   const labels = useLabels();
   const toast = useToast();
   const { can } = useAuth();
@@ -65,17 +67,16 @@ export default function Hierarchy() {
   if (loading) return <Loading label="Loading the governance hierarchy…" />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
-  const missingTiers = TIERS.slice(1, 4).filter((t) => !inDomain.some((d) => t.types.includes(d.doc_type)));
+  // Named `tier`, not `t`: `t` is the translator in this component now, and a
+  // parameter that shadows it is a trap for the next edit.
+  const missingTiers = TIERS.slice(1, 4).filter((tier) => !inDomain.some((d) => tier.types.includes(d.doc_type)));
 
   return (
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Document Hierarchy</h1>
-          <p className="page-sub">
-            The governance chain for a domain: framework, policy, standard, procedure, work instruction
-            and evidence. The quality engine reports where the chain breaks or the tiers disagree.
-          </p>
+          <h1 className="page-title">{t('hierarchy.title')}</h1>
+          <p className="page-sub">{t('hierarchy.subtitle')}</p>
         </div>
         <div className="page-actions">
           <Select value={domain} onChange={setDomain} options={domains} />
@@ -92,7 +93,7 @@ export default function Hierarchy() {
         <div className="callout" data-callout="warning">
           <strong>Incomplete chain</strong>
           <p style={{ marginBottom: 0 }}>
-            This domain has no {missingTiers.map((t) => t.label).join(' and no ')}.
+            This domain has no {missingTiers.map((tier) => tier.label).join(' and no ')}.
             A policy position that is not translated into measurable requirements and operational steps
             cannot be evidenced.
             {can('generate:run') && <> <Link to="/generator">Generate the missing tiers</Link>.</>}

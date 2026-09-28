@@ -134,11 +134,8 @@ export default function Generator() {
     <div className="page-narrow" style={{ margin: '0 auto' }}>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title"><IconWand width={20} height={20} />Document Generator</h1>
-          <p className="page-sub">
-            Every document in a package renders from one requirement model, so the policy, standard,
-            procedure, RACI and control library state the same commitments by construction.
-          </p>
+          <h1 className="page-title"><IconWand width={20} height={20} />{t('generator.title')}</h1>
+          <p className="page-sub">{t('generator.subtitle')}</p>
         </div>
       </div>
 

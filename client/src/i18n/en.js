@@ -104,6 +104,8 @@ export default {
   },
 
   search: {
+    title: 'Search',
+    subtitle: 'One query across policies, standards, procedures, roles, controls, framework requirements, evidence, RACI activities and gap assessment rows.',
     placeholder: 'Search policies, controls, requirements, roles…',
     full: 'Search policies, standards, procedures, controls, requirements, roles, evidence…',
     openSearch: 'Open search',
@@ -156,6 +158,18 @@ export default {
   },
 
   documents: {
+    title: 'Governance Documents',
+    subtitle: 'The complete governance library across every document type, domain and lifecycle state.',
+    // The type-filtered routes name their own plural. Appending "s" to the type
+    // label produced "Policys", and Arabic does not form a plural by suffix at
+    // all, so each one is written out.
+    titlePolicy: 'Policies',
+    titleStandard: 'Standards',
+    titleProcedure: 'Procedures',
+    subtitlePolicy: 'Every policy in the library, with its lifecycle state and review position.',
+    subtitleStandard: 'Every standard in the library, with its lifecycle state and review position.',
+    subtitleProcedure: 'Every procedure in the library, with its lifecycle state and review position.',
+    allTypes: 'All types',
     exportReady: 'Export ready',
     language: 'Language',
     allLanguages: 'All languages',
@@ -166,6 +180,8 @@ export default {
   },
 
   generator: {
+    title: 'Document Generator',
+    subtitle: 'Every document in a package renders from one requirement model, so the policy, standard, procedure, RACI and control library state the same commitments by construction.',
     languageTitle: 'Document language',
     languageSubtitle: 'A policy is approved in a language. The two language versions are separate controlled documents, linked to each other, each with its own lifecycle.',
     noArabicModel: 'This domain has no Arabic requirement model',
@@ -216,6 +232,65 @@ export default {
     docTitle: 'Title',
     owner: 'Owner',
     reviewDue: 'Review due'
+  },
+
+  // Page headings for the screens whose body content is already localised
+  // through the sections above and the shared label maps.
+  controls: {
+    title: 'Control Library',
+    subtitle: 'Every organisational control with its requirement, owner, evidence, indicator, related documents and framework mapping.'
+  },
+
+  rolesPage: {
+    title: 'Cybersecurity Roles',
+    subtitle: 'Each role records its purpose, reporting line, authority, responsibilities, accountabilities, required approvals, escalation duties and interfaces with other roles.'
+  },
+
+  raci: {
+    title: 'RACI / RASCI Matrices',
+    subtitle: 'Responsibility assignment per domain. Exactly one role is accountable for each activity.',
+    editableHint: 'Click a cell to cycle through the assignment values. Changes save immediately and the matrix revalidates.',
+    readOnlyHint: 'Read-only view. Your role cannot modify responsibility assignments.'
+  },
+
+  frameworks: {
+    title: 'Frameworks and Regulations',
+    subtitle: 'The authoritative sources adopted by the organisation, with requirement coverage by organisational control.'
+  },
+
+  mappings: {
+    title: 'Framework Mapping',
+    subtitle: 'Cross-framework coverage and the curated equivalences that let one organisational control satisfy several sources at once.'
+  },
+
+  gap: {
+    title: 'Gap Assessment',
+    subtitle: "Assess the organisation against a framework. New assessments start from the platform's real coverage position rather than a blank sheet."
+  },
+
+  hierarchy: {
+    title: 'Document Hierarchy',
+    subtitle: 'The governance chain for a domain: framework, policy, standard, procedure, work instruction and evidence. The quality engine reports where the chain breaks or the tiers disagree.'
+  },
+
+  findings: {
+    title: 'Findings Register',
+    subtitle: 'Issues raised by the quality engine, the AI reviewer and users, across completeness, consistency, accountability, auditability, compliance and ambiguity.'
+  },
+
+  imports: {
+    title: 'Import and Analyse',
+    subtitle: 'Upload existing policies, procedures, standards, control matrices or framework documents. The platform reports duplicate, missing, conflicting and outdated content, missing ownership and missing evidence.'
+  },
+
+  reports: {
+    title: 'Reports',
+    subtitle: 'Management and audit reporting drawn from the live data set. Every report exports to Excel, and to PDF for circulation.'
+  },
+
+  settings: {
+    title: 'Settings',
+    subtitle: 'Organisation context, access control, the audit log and platform status.'
   },
 
   evidence: {

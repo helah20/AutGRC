@@ -33,11 +33,8 @@ export default function Frameworks() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Frameworks and Regulations</h1>
-          <p className="page-sub">
-            The authoritative sources adopted by the organisation, with requirement coverage by
-            organisational control.
-          </p>
+          <h1 className="page-title">{t('frameworks.title')}</h1>
+          <p className="page-sub">{t('frameworks.subtitle')}</p>
         </div>
         <div className="page-actions">
           <button className="btn" onClick={() => api.download('/export/mappings.xlsx', 'Framework Mapping.xlsx')

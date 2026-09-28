@@ -11,8 +11,10 @@ import TraceChain from '../components/TraceChain.jsx';
 import { IconLink, IconDownload, IconArrowRight } from '../components/Icons.jsx';
 import { titleCase, TONE_COLORS } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useT } from '../i18n/index.jsx';
 
 export default function Mappings() {
+  const t = useT();
   const labels = useLabels();
   const toast = useToast();
   const { data, loading, error, reload } = useFetch('/frameworks/coverage');
@@ -29,11 +31,8 @@ export default function Mappings() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Framework Mapping</h1>
-          <p className="page-sub">
-            Cross-framework coverage and the curated equivalences that let one organisational control
-            satisfy several sources at once.
-          </p>
+          <h1 className="page-title">{t('mappings.title')}</h1>
+          <p className="page-sub">{t('mappings.subtitle')}</p>
         </div>
         <div className="page-actions">
           <button className="btn" onClick={() => api.download('/export/mappings.xlsx', 'Framework Mapping.xlsx')

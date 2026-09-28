@@ -28,11 +28,8 @@ export default function Findings() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Findings Register</h1>
-          <p className="page-sub">
-            Issues raised by the quality engine, the AI reviewer and users, across completeness,
-            consistency, accountability, auditability, compliance and ambiguity.
-          </p>
+          <h1 className="page-title">{t('findings.title')}</h1>
+          <p className="page-sub">{t('findings.subtitle')}</p>
         </div>
       </div>
 

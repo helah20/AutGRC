@@ -50,11 +50,9 @@ export default function Imports() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Import and Analyse</h1>
+          <h1 className="page-title">{t('imports.title')}</h1>
           <p className="page-sub">
-            Upload existing policies, procedures, standards, control matrices or framework documents.
-            The platform reports duplicate, missing, conflicting and outdated content, missing ownership
-            and missing evidence.
+            {t('imports.subtitle')}
           </p>
         </div>
       </div>

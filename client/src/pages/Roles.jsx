@@ -7,8 +7,10 @@ import { Card, Loading, ErrorNote, Empty, Badge, Modal, Field, useToast, DataTab
 import { IconUsers, IconPlus, IconDownload } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useT } from '../i18n/index.jsx';
 
 export default function Roles() {
+  const t = useT();
   const labels = useLabels();
   const { data, loading, error, reload } = useFetch('/roles');
   const navigate = useNavigate();
@@ -40,11 +42,8 @@ export default function Roles() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Cybersecurity Roles</h1>
-          <p className="page-sub">
-            Each role records its purpose, reporting line, authority, responsibilities, accountabilities,
-            required approvals, escalation duties and interfaces with other roles.
-          </p>
+          <h1 className="page-title">{t('rolesPage.title')}</h1>
+          <p className="page-sub">{t('rolesPage.subtitle')}</p>
         </div>
         <div className="page-actions">
           <button className="btn" onClick={() => api.download('/reports/roles_responsibilities/export.xlsx', 'Roles.xlsx')

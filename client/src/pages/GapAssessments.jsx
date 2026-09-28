@@ -9,8 +9,10 @@ import {
 import { IconTarget, IconPlus } from '../components/Icons.jsx';
 import { formatDate, titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
+import { useT } from '../i18n/index.jsx';
 
 export default function GapAssessments() {
+  const t = useT();
   const labels = useLabels();
   const { data, loading, error, reload } = useFetch('/assessments');
   const { data: frameworks } = useFetch('/frameworks');
@@ -28,11 +30,8 @@ export default function GapAssessments() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Gap Assessment</h1>
-          <p className="page-sub">
-            Assess the organisation against a framework. New assessments start from the platform's real
-            coverage position rather than a blank sheet.
-          </p>
+          <h1 className="page-title">{t('gap.title')}</h1>
+          <p className="page-sub">{t('gap.subtitle')}</p>
         </div>
         {can('gap:write') && (
           <div className="page-actions">

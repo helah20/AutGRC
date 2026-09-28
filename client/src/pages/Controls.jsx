@@ -39,11 +39,8 @@ export default function Controls() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Control Library</h1>
-          <p className="page-sub">
-            Every organisational control with its requirement, owner, evidence, indicator, related
-            documents and framework mapping.
-          </p>
+          <h1 className="page-title">{t('controls.title')}</h1>
+          <p className="page-sub">{t('controls.subtitle')}</p>
         </div>
         <div className="page-actions">
           <button className="btn" onClick={() => api.download(`/export/controls.xlsx${qs({ domain })}`, 'Control Matrix.xlsx')

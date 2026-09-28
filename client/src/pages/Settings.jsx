@@ -13,6 +13,7 @@ import {
 import { formatDate, relativeTime, titleCase } from '../lib/format.js';
 import { EnrolMfa } from './AccountAction.jsx';
 import { useLabels } from '../i18n/labels.js';
+import { useT } from '../i18n/index.jsx';
 
 /**
  * Roles as the server defines them. Kept here rather than fetched, because the
@@ -30,6 +31,7 @@ const ROLE_OPTIONS = [
 ];
 
 export default function Settings() {
+  const t = useT();
   const labels = useLabels();
   const { can, user } = useAuth();
   const [tab, setTab] = useState('organisation');
@@ -46,8 +48,8 @@ export default function Settings() {
     <>
       <div className="page-head">
         <div className="page-head-text">
-          <h1 className="page-title">Settings</h1>
-          <p className="page-sub">Organisation context, access control, the audit log and platform status.</p>
+          <h1 className="page-title">{t('settings.title')}</h1>
+          <p className="page-sub">{t('settings.subtitle')}</p>
         </div>
       </div>
 
