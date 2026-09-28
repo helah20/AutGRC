@@ -21,6 +21,7 @@ export const AR_FREQUENCY = {
   'Continuous, reviewed {{firewallReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{firewallReviewFrequency}}',
   'Continuous, reviewed {{privAccessReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{privAccessReviewFrequency}}',
   'Continuous, reviewed {{privilegedCloudReview}}': 'مستمر، ويُراجَع بتكرار {{privilegedCloudReview}}',
+  'Continuous, reviewed {{criticalSupplierReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{criticalSupplierReviewFrequency}}',
   'Continuous, reviewed {{serviceAccountReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{serviceAccountReviewFrequency}}',
   'Continuous, rotation {{vaultRotationFrequency}}': 'مستمر، مع تدوير بتكرار {{vaultRotationFrequency}}',
   'Monthly': 'شهري',
@@ -82,4 +83,86 @@ export const AR_FREQUENCY = {
 export function arFrequency(text) {
   if (!text) return text;
   return AR_FREQUENCY[text] ?? text;
+}
+
+/**
+ * Arabic labels for parameter names.
+ *
+ * The "Defined Values" table is the most consequential table in a Standard: it
+ * is the single place the organisation states each numeric commitment. Its left
+ * column was the humanised parameter name — "Access Review Frequency" — so an
+ * Arabic Standard listed English subjects against Arabic values.
+ *
+ * Keyed on the parameter name, so one entry serves every domain that uses it.
+ * A name with no entry falls back to the English humanisation, which is visibly
+ * English and therefore visibly missing rather than silently wrong.
+ */
+export const AR_PARAMETER_LABELS = {
+  // identity and access
+  accessReviewFrequency: 'تكرار مراجعة الوصول',
+  privAccessReviewFrequency: 'تكرار مراجعة الوصول المُمتاز',
+  serviceAccountReviewFrequency: 'تكرار مراجعة حسابات الخدمة',
+  accessRecertCompletionTarget: 'مستهدف إتمام إعادة التصديق على الوصول',
+  accountLockoutThreshold: 'حد إغلاق الحساب',
+  accountLockoutDuration: 'مدة إغلاق الحساب',
+  dormantAccountThreshold: 'حد اعتبار الحساب خامداً',
+  passwordMinLength: 'الحد الأدنى لطول كلمة المرور',
+  passwordHistory: 'سجل كلمات المرور السابقة',
+  sessionIdleTimeout: 'مدة انتهاء الجلسة بالخمول',
+  mfaMethods: 'أساليب التحقق متعدد العوامل',
+  mfaCoverageTarget: 'مستهدف تغطية التحقق متعدد العوامل',
+  provisioningSla: 'مستوى خدمة منح الوصول',
+  revocationSla: 'مستوى خدمة إلغاء الوصول',
+  // assets
+  inventoryReviewFrequency: 'تكرار مراجعة سجل الأصول',
+  inventoryAccuracyTarget: 'مستهدف دقة سجل الأصول',
+  discoveryFrequency: 'تكرار الاستكشاف الآلي',
+  assetReturnSla: 'مستوى خدمة إعادة الأصول',
+  disposalStandard: 'معيار التخلص من الأصول',
+  unauthorisedAssetSla: 'مستوى خدمة معالجة الأصول غير المصرّح بها',
+  assetRequirementReview: 'مراجعة متطلبات إدارة الأصول',
+  criticalAssetBaseline: 'خط الأساس للأصول الحرجة',
+  licenceReconciliation: 'مطابقة التراخيص',
+  endOfLifeHorizon: 'مدى التخطيط لانتهاء الدعم',
+  // incidents
+  p1TriageSla: 'مستوى خدمة فرز حوادث الدرجة الأولى',
+  p2TriageSla: 'مستوى خدمة فرز حوادث الدرجة الثانية',
+  p1ContainmentSla: 'مستوى خدمة احتواء حوادث الدرجة الأولى',
+  regulatoryNotificationSla: 'مستوى خدمة الإشعار التنظيمي',
+  lessonsLearnedSla: 'مستوى خدمة مراجعة ما بعد الحادث',
+  postIncidentActionSla: 'مستوى خدمة إجراءات ما بعد الحادث',
+  evidenceRetention: 'مدة الاحتفاظ بالأدلة',
+  irPlanTestFrequency: 'تكرار اختبار خطة الاستجابة',
+  // vulnerabilities
+  criticalRemediationSla: 'مستوى خدمة معالجة الثغرات الحرجة',
+  highRemediationSla: 'مستوى خدمة معالجة الثغرات عالية الخطورة',
+  mediumRemediationSla: 'مستوى خدمة معالجة الثغرات متوسطة الخطورة',
+  lowRemediationSla: 'مستوى خدمة معالجة الثغرات منخفضة الخطورة',
+  emergencyPatchSla: 'مستوى خدمة الترقيع الطارئ',
+  internalScanFrequency: 'تكرار الفحص الداخلي',
+  externalScanFrequency: 'تكرار الفحص الخارجي',
+  authenticatedScanFrequency: 'تكرار الفحص المُصادَق',
+  scanCoverageTarget: 'مستهدف تغطية الفحص',
+  pentestFrequency: 'تكرار اختبار الاختراق',
+  // third parties
+  dueDiligenceValidity: 'مدة صلاحية العناية الواجبة',
+  criticalSupplierReviewFrequency: 'تكرار مراجعة المورّدين الحرجين',
+  criticalSupplierCriteria: 'معايير تحديد المورّد الحرج',
+  supplierIncidentNotificationSla: 'مستوى خدمة إشعار المورّد بالحوادث',
+  supplierRemoteWorkRule: 'قاعدة العمل عن بُعد للمورّدين',
+  subProcessorRule: 'قاعدة المعالجين من الباطن',
+  offboardingSla: 'مستوى خدمة إنهاء التعامل',
+  dataReturnSla: 'مستوى خدمة إعادة البيانات',
+  assuranceEvidenceTypes: 'أنواع أدلة التأكيد المقبولة',
+  fourthPartyReview: 'مراجعة الاعتماد على الطرف الرابع',
+  supplierExitTesting: 'اختبار خطة الخروج من المورّد'
+};
+
+/**
+ * The Arabic label for a parameter name, or null when there is none.
+ * The caller falls back to the English humanisation rather than rendering the
+ * raw camel-case key.
+ */
+export function arParameterLabel(name) {
+  return AR_PARAMETER_LABELS[name] ?? null;
 }

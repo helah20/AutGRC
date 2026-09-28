@@ -30,7 +30,7 @@ const { reviewDomain, frequenciesIn, durationsIn, hasArabic, arabicTopicGaps } =
   await import('../src/services/review.js');
 const { DOMAIN_MODELS, localisedModel, validateKnowledgeBase, buildParameterSet } =
   await import('../src/knowledge/index.js');
-const { translatedDomains, isTranslated } = await import('../src/knowledge/ar/index.js');
+const { translatedDomains, isTranslated, arParameterLabel } = await import('../src/knowledge/ar/index.js');
 const { arabicTitle, translator } = await import('../src/services/doc-strings.js');
 
 seedFrameworks();
@@ -102,6 +102,18 @@ test('Arabic requirement model', async (t) => {
     const model = localisedModel(translatedDomains()[0], 'en');
     assert.equal(model.language, 'en');
     assert.equal(model.fullyTranslated, true);
+  });
+
+  await t.test('every parameter of a translated domain has an Arabic label', () => {
+    // The Defined Values table is where the organisation states each numeric
+    // commitment, so an English subject column beside Arabic values is the one
+    // place a reader most needs it not to be. A missing label falls back to the
+    // English humanisation, which reads as a defect rather than failing loudly.
+    for (const key of translatedDomains()) {
+      const missing = Object.keys(localisedModel(key, 'en').parameters)
+        .filter((name) => !arParameterLabel(name));
+      assert.deepEqual(missing, [], `${key} has parameters with no Arabic label`);
+    }
   });
 
   await t.test('resolved Arabic parameter values are Arabic', () => {

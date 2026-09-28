@@ -11,7 +11,7 @@
  * can always answer "where did this statement come from?".
  */
 
-import { resolveText, domainShort, roleName, roleShort } from '../knowledge/index.js';
+import { resolveText, domainShort, roleName, roleShort, arParameterLabel } from '../knowledge/index.js';
 import { h, joinBlocks, escapeHtml } from './html.js';
 import { translator, arabicTitle } from './doc-strings.js';
 
@@ -97,6 +97,17 @@ const T = (text, values) => activeT(text, values);
  */
 const RN = (code) => roleName(code, activeT.language);
 const RS = (code) => roleShort(code, activeT.language);
+
+/**
+ * The label for a parameter, in the language of the document.
+ *
+ * The Defined Values table is where the organisation states each numeric
+ * commitment, so its subject column is document content rather than chrome. The
+ * English fallback is the humanised camel-case name, which is visibly English
+ * and so visibly missing rather than silently wrong.
+ */
+const PL = (name) => (activeT.isRtl && arParameterLabel(name))
+  || name.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim();
 
 /**
  * Connective prose.
@@ -313,7 +324,7 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
   const administrative = reqs.filter((r) => r.controlNature === 'administrative' || r.controlNature === 'physical');
 
   const paramRows = Object.entries(model.parameters).map(([k, v]) => [
-    k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim(),
+    PL(k),
     resolveText(String(v), params)
   ]);
 

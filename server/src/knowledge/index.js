@@ -19,7 +19,7 @@ import { TECH_DOMAINS } from './req-tech.js';
 import { RESILIENCE_DOMAINS } from './req-resilience.js';
 import {
   AR_DOMAINS, LANGUAGES, isTranslated, translatedDomains,
-  arText, arParameters, arObjectives, arDomainName, arFrequency, AR_ROLES,
+  arText, arParameters, arObjectives, arDomainName, arFrequency, arParameterLabel, AR_ROLES,
   AR_PROCEDURES, arProcedure
 } from './ar/index.js';
 
@@ -360,7 +360,7 @@ export {
   FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE,
   ROLE_LIBRARY, ROLE_INDEX, roleName, roleShort, localisedRole, localisedRoles, STD_ROLES,
   AR_DOMAINS, LANGUAGES, isTranslated, translatedDomains,
-  arText, arParameters, arObjectives, arDomainName, arFrequency
+  arText, arParameters, arObjectives, arDomainName, arFrequency, arParameterLabel
 };
 
 /**

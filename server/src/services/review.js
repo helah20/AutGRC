@@ -219,13 +219,18 @@ const AR_PARAMETER_TOPICS = {
   // "اصول" and not "اصل": the plural drops the lam of the singular stem, and
   // the shorter "صول" would also match الوصول, an unrelated subject.
   unauthorisedAssetSla: ['اصول', 'غير المصرح'],
+  assetRequirementReview: ['متطلبات', 'اداره الاصول'],
+  licenceReconciliation: ['تراخيص', 'طابق'],
+  endOfLifeHorizon: ['نتهاء الدعم', 'ستبدال'],
   // third parties. The supplier is المورّد throughout; مزوّد is reserved for a
   // provider of something other than the contracted service, such as the
   // identity provider, so it is not a term for this subject.
   dueDiligenceValidity: ['عناي', 'واجب'],
   criticalSupplierReviewFrequency: ['مورد', 'حرج'],
   supplierIncidentNotificationSla: ['مورد', 'حادث'],
-  dataReturnSla: ['بيانات', 'عاد']
+  dataReturnSla: ['بيانات', 'عاد'],
+  fourthPartyReview: ['مورد', 'عتمد'],
+  supplierExitTesting: ['خروج', 'مورد']
 };
 
 /**
