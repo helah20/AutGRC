@@ -199,6 +199,12 @@ const AR_PARAMETER_TOPICS = {
   accountLockoutDuration: ['حساب', 'اغلاق'],
   dormantAccountThreshold: ['حساب', 'خامد'],
   sessionIdleTimeout: ['جلس', 'خمول'],
+  // privileged access
+  vaultRotationFrequency: ['دوير', 'الخزانه'],
+  sessionRecordingRetention: ['تسجيل', 'جلس'],
+  breakGlassTestFrequency: ['كسر الزجاج', 'ختبر'],
+  privSessionTimeout: ['جلس', 'خمول', 'ممتاز'],
+  emergencyAccessReviewSla: ['كسر الزجاج', 'راجع'],
   // vulnerabilities
   criticalRemediationSla: ['عالج', 'حرج'],
   highRemediationSla: ['عالج', 'عالي'],

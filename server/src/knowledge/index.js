@@ -199,6 +199,13 @@ export function validateKnowledgeBase() {
       }
     }
 
+    // A domain declared translated must have a translated procedure, or the
+    // generated Procedure document comes out in English inside an Arabic
+    // package and nothing in the coverage figure says so.
+    if (!AR_PROCEDURES[domainKey]) {
+      problems.push(`${domainKey}: declared translated but has no Arabic procedure block`);
+    }
+
     // Every parameter must carry Arabic wording: a half-translated set would
     // leave an English value embedded in an Arabic clause.
     for (const name of Object.keys(model.parameters || {})) {
@@ -417,8 +424,12 @@ export function localisedModel(domainKey, language = 'en') {
   const arabicProcedure = arProcedure(domainKey);
   let procedure = model.procedure;
   let raciActivities = model.raciActivities;
+  // Counted whether or not a translation exists. Counting it only when present
+  // meant a domain with translated requirements and no translated procedure
+  // reported fullyTranslated while generating an English Procedure — precisely
+  // the mixed-language document this figure is supposed to expose.
+  totalFields += 1;
   if (arabicProcedure) {
-    totalFields += 1;
     const sameShape =
       arabicProcedure.steps?.length === model.procedure.steps.length &&
       arabicProcedure.raciActivities?.length === model.raciActivities.length;
