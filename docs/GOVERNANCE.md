@@ -70,16 +70,36 @@ who replace the catalogue with their licensed copies.
 
 **6. Regulatory text is not translated.**
 The platform is bilingual, and the boundary sits in the same place as every
-other rule here. Its own words — interface, labels, document furniture, the
-structure of a generated package — exist in Arabic. A framework requirement
-does not: rendering an NCA ECC control into Arabic and presenting it as the
-framework's own wording would be writing regulatory text, which rule 1 forbids
-whatever the language.
+other rule here. Its own words exist in Arabic — the interface, the labels, and
+the whole of a generated package: policy clauses, standard requirements,
+procedure steps, role definitions, RACI activities, control names and evidence
+requirements. A framework requirement does not: rendering an NCA ECC control
+into Arabic and presenting it as the framework's own wording would be writing
+regulatory text, which rule 1 forbids whatever the language.
 
 An organisation that needs the official Arabic publication imports it, the same
 way it replaces any reference catalogue entry with its licensed copy. Until
 then the English reference text is shown as English text, bidi-isolated so it
 reads correctly inside an Arabic page, and visibly not a translation.
+
+**7. A translation carries the same commitment, not a similar one.**
+Arabic and English are two expressions of one decision. A numeric value is
+never written into a translated sentence: both languages carry the same
+`{{placeholder}}`, and the value comes from the one agreed parameter set, in
+Arabic wording for an Arabic document. The knowledge-base check fails if a
+translation drops, adds or moves a placeholder, because a policy that commits
+the organisation to a quarterly review in one language and an annual review in
+the other has two positions and no way to tell which governs.
+
+The same principle applies to a domain with no translation yet: it generates in
+English and records the document's language as English. A half-translated
+document labelled Arabic would misrepresent what the reader is holding.
+
+It also applies to the checks. The consistency engine reads Arabic through an
+Arabic vocabulary written out for the purpose, and the test suite asserts that
+no parameter it compares is missing one. An engine that reports a clean result
+on documents it could not read is the failure mode that matters here, because
+nothing about the output distinguishes it from a real pass.
 
 The same reasoning keeps Arabic out of the PDF export. The PDF engine cannot
 join Arabic letters, so an Arabic PDF would be a governance document nobody

@@ -48,8 +48,8 @@ for one. Findings, gaps and risks carry corrective actions with an owner and a
 date. Notifications tell the named person, and the My Work queue offers only
 actions they can actually take.
 
-**Works in Arabic.** The interface, navigation, labels, statuses and document
-furniture are available in Arabic, with the layout mirrored through logical CSS
+**Works in Arabic.** The interface, navigation, labels, statuses and generated
+documents are available in Arabic, with the layout mirrored through logical CSS
 properties rather than a stylesheet of overrides. Numbers, dates and plurals
 follow the reader's locale. Latin strings inside Arabic prose — a control
 reference, a clause citation — are bidi-isolated so they stay readable. See
@@ -239,21 +239,46 @@ document types, roles, coverage, risk bands, treatments, finding categories —
 which are re-labelled on the client from the key the API sends, so no endpoint
 needs to know the reader's language.
 
-**What stays in English, and why.**
+**Generated documents in Arabic.** Five domains — identity and access, asset
+management, incident management, vulnerability management and third-party
+security — generate a complete Arabic package: every policy clause, standard
+requirement, procedure step, decision branch, escalation condition, role
+definition, RACI activity, control name, KPI and piece of required evidence.
+The document furniture around them is Arabic too: headings, table columns,
+connective prose, the cover page, the document control and approval tables,
+version history, contents, headers and footers.
 
-- *Framework requirement text.* The catalogue holds each publisher's own
-  wording. Rendering an NCA ECC control into Arabic here and presenting it as
-  the framework's text would be inventing a regulatory requirement, which this
-  platform does not do. Import the official Arabic publication to replace the
-  reference entries.
-- *Generated document bodies.* Policy, standard and procedure text is produced
-  from the requirement model, which is currently English. The document
-  furniture around it — cover page, document control table, approval table,
-  version history, contents, headers and footers — is Arabic when you export
-  in Arabic.
+Choosing Arabic for a domain that has no translation yet generates it in
+English and records the document's language as English, rather than labelling a
+half-translated document as Arabic.
 
-Both appear bidi-isolated inside Arabic pages, so English reads left-to-right
-in its own block instead of having its punctuation moved to the wrong end.
+An agreed numeric value is never written into the translated sentence. Both
+languages carry the same `{{placeholder}}`, and the value arrives from the one
+agreed parameter set — in Arabic wording for an Arabic document, and always the
+same commitment. `npm run --workspace server verify:knowledge` fails if a
+translation drops, adds or moves a placeholder.
+
+**What stays in English, and why.** The catalogue holds each publisher's own
+wording for a framework requirement. Rendering an NCA ECC control into Arabic
+here and presenting it as the framework's text would be inventing a regulatory
+requirement, which this platform does not do; import the official Arabic
+publication to replace the reference entries. Framework references, control
+identifiers and acronyms that are read as words in Arabic technical speech —
+CISO, SOC, RACI, FIDO2 — also stay as they are.
+
+All of these appear bidi-isolated inside Arabic pages, so English reads
+left-to-right in its own block instead of having its punctuation moved to the
+wrong end.
+
+**The quality engine reads Arabic.** The cross-document consistency check finds
+a commitment stated in one document that disagrees with another. It attributes a
+sentence to a parameter through that parameter's subject, and English subjects
+are derived from the parameter's name, so Arabic ones are written out
+explicitly — including the frequency and duration vocabulary, Arabic-Indic
+digits and units such as "يوم عمل". A planted contradiction is caught in each of
+the five translated domains, and `arabicTopicGaps` reports any parameter the
+check compares but has no Arabic subject for, so the engine cannot quietly stop
+reading a language.
 
 **Word exports in Arabic. PDF does not.** Word does Arabic shaping and bidi
 reordering itself, so `?lang=ar` on a Word export produces a genuine RTL
@@ -274,8 +299,10 @@ save the PDF.
 - SQLite suits a single-node deployment. A multi-node deployment needs
   PostgreSQL; the data access layer is confined to `server/src/db/`.
 - Imported PDFs must contain a text layer. Scanned documents need OCR first.
-- Arabic covers the interface and the exported document furniture. Generated
-  policy text and framework requirements remain in English, for the reasons in
+- Arabic generation covers five of the twenty-four domains. The other nineteen
+  generate in English and say so; the machinery is in place and each is a
+  content addition under `server/src/knowledge/ar/`. Framework requirement text
+  stays in the publisher's wording in any language, for the reason in
   [Arabic and right-to-left support](#arabic-and-right-to-left-support).
 - Arabic PDF export is not supported. The PDF engine cannot shape Arabic
   script; Word export handles Arabic correctly and can save as PDF.

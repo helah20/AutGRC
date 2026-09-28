@@ -72,10 +72,18 @@ Click the globe in the top bar, or pick العربية on the login screen befor
 sign in. The choice is remembered on that browser.
 
 The interface, navigation, table columns, statuses, domains and roles are
-Arabic, and the layout mirrors. Framework requirement text stays in the
-publisher's own wording and generated policy text stays in English; both are
-marked as such rather than machine-translated, and the reasoning is in the
-README under "Arabic and right-to-left support".
+Arabic, and the layout mirrors.
+
+Generating with Arabic selected produces an Arabic package — policy, standard,
+procedure, roles, RACI and control matrix — for the five domains that are
+translated: identity and access, asset management, incident management,
+vulnerability management and third-party security. Pick another domain and it
+generates in English and records the document's language as English, rather
+than calling a half-translated document Arabic.
+
+Framework requirement text stays in the publisher's own wording in either
+language. It is marked as reference material rather than machine-translated,
+and the reasoning is in the README under "Arabic and right-to-left support".
 
 Exporting a document to Word with Arabic selected produces a genuine
 right-to-left document that Word shapes and reorders correctly. PDF export
