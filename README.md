@@ -138,7 +138,7 @@ server/                 Node.js + Express + SQLite (better-sqlite3)
 | --- | --- |
 | `frameworks.js` | 14 frameworks, 482 requirement references, 89 cross-framework equivalences |
 | `domains.js` | 24 cybersecurity domains and the placeholder resolver |
-| `req-*.js` | Canonical requirement models: 122 requirements across every domain |
+| `req-*.js` | Canonical requirement models: 218 requirements across 24 domains, every one traced to at least one framework requirement |
 | `roles.js` | 14 cybersecurity roles with authority, approvals and escalations |
 | `index.js` | Assembly and a load-time integrity validator |
 
@@ -299,6 +299,9 @@ save the PDF.
 - SQLite suits a single-node deployment. A multi-node deployment needs
   PostgreSQL; the data access layer is confined to `server/src/db/`.
 - Imported PDFs must contain a text layer. Scanned documents need OCR first.
+- Requirement depth varies by domain, from 8 clauses to 12. The shape of the
+  model is uniform; the amount of detail a domain warrants is not, and no domain
+  is padded to a target.
 - Arabic generation covers five of the twenty-four domains. The other nineteen
   generate in English and say so; the machinery is in place and each is a
   content addition under `server/src/knowledge/ar/`. Framework requirement text

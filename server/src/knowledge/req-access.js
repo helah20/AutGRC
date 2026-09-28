@@ -48,7 +48,7 @@ export const ACCESS_DOMAINS = {
           'Monthly HR-to-directory reconciliation report',
           'Register of approved shared-account exceptions with compensating controls'
         ],
-        refs: { 'NCA-ECC': ['2-2-1', '2-2-3-1'], 'ISO-27001': ['A.5.16'], 'NIST-CSF': ['PR.AA-01'], 'NIST-800-53': ['IA-2'], 'CIS-V8': ['5.1'], 'SAMA-CSF': ['3.5'] }
+        refs: { 'NCA-ECC': ['2-2-1', '2-2-3-1'], 'ISO-27001': ['A.5.16'], 'NIST-CSF': ['PR.AA-01'], 'NIST-800-53': ['IA-2'], 'CIS-V8': ['5.1', '6.7'], 'SAMA-CSF': ['3.5'] }
       },
       {
         key: 'access_authorisation',
@@ -68,7 +68,7 @@ export const ACCESS_DOMAINS = {
           'Role-to-entitlement catalogue (current version)',
           'Sample reconciliation of granted entitlements against approvals'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'] }
+        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-3'] }
       },
       {
         key: 'segregation_of_duties',
@@ -109,7 +109,7 @@ export const ACCESS_DOMAINS = {
           'MFA enrolment report reconciled to the privileged account inventory',
           'Break-glass account usage alerts for the reporting period'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-2', '2-2-3-4'], 'ISO-27001': ['A.8.5', 'A.8.2'], 'NIST-CSF': ['PR.AA-03'], 'NIST-800-53': ['IA-2', 'AC-17'], 'CIS-V8': ['6.3', '6.5'], 'SAMA-CSF': ['3.5'] }
+        refs: { 'NCA-ECC': ['2-2-3-2', '2-2-3-4'], 'ISO-27001': ['A.8.5', 'A.8.2'], 'NIST-CSF': ['PR.AA-03'], 'NIST-800-53': ['IA-2', 'AC-17'], 'CIS-V8': ['6.3', '6.5'], 'SAMA-CSF': ['3.5'], 'ISO-27002': ['8.5'] }
       },
       {
         key: 'authentication_credentials',
@@ -170,7 +170,7 @@ export const ACCESS_DOMAINS = {
           'Sign-off from each accountable owner for the completed cycle',
           'Privileged account review records for the cycle'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-5', '2-2-4'], 'ISO-27001': ['A.5.18'], 'NIST-800-53': ['AC-2'], 'NIST-CSF': ['PR.AA-05'], 'CIS-V8': ['5.1'], 'SAMA-CSF': ['3.5'] }
+        refs: { 'NCA-ECC': ['2-2-3-5', '2-2-4'], 'ISO-27001': ['A.5.18'], 'NIST-800-53': ['AC-2'], 'NIST-CSF': ['PR.AA-05'], 'CIS-V8': ['5.1'], 'SAMA-CSF': ['3.5'], 'NCA-CSCC': ['2-2'] }
       },
       {
         key: 'dormant_accounts',
@@ -496,7 +496,7 @@ export const ACCESS_DOMAINS = {
           'CISO and System Owner sign-off for the cycle',
           'Evidence of revocations completed after review'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-5', '2-2-4'], 'ISO-27001': ['A.5.18', 'A.8.2'], 'NIST-800-53': ['AC-2'], 'NIST-CSF': ['PR.AA-05'] }
+        refs: { 'NCA-ECC': ['2-2-3-5', '2-2-4'], 'ISO-27001': ['A.5.18', 'A.8.2'], 'NIST-800-53': ['AC-2'], 'NIST-CSF': ['PR.AA-05'], 'ISO-27002': ['8.2'] }
       },
       {
         key: 'priv_monitoring',
