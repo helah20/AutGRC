@@ -13,6 +13,7 @@
 
 import { resolveText, domainShort, roleName, roleShort, arParameterLabel } from '../knowledge/index.js';
 import { h, joinBlocks, escapeHtml } from './html.js';
+import { swimlanes, handoffs } from './swimlane.js';
 import { translator, arabicTitle } from './doc-strings.js';
 
 const P = {
@@ -503,13 +504,28 @@ export function buildProcedureDoc({ model, params, frameworkCodes }) {
     )
     .join('');
 
-  const flow = steps.map((s) => resolveText(s.name, params)).join(' → ');
+  // Lanes as columns and steps as rows: a procedure has two to seven actors and
+  // six to nine steps, so this is the orientation that fits a page, and it
+  // reads top to bottom in the order the process runs. In an Arabic document
+  // the table direction reverses the columns with it, so the first lane stays
+  // where the reader starts.
+  const lane = swimlanes(steps, (text) => resolveText(text, params));
+  const crossings = handoffs(lane);
+  const swimlaneGrid = h.table(
+    [T('Step'), ...lane.lanes],
+    lane.rows.map((row) => [
+      String(row.no).padStart(2, '0'),
+      ...lane.lanes.map((_, i) => (i === row.lane
+        ? `${row.decision ? '◆ ' : ''}${row.name}`
+        : ''))
+    ])
+  );
 
   return {
     docType: 'procedure',
     title: docTitle(model, 'Procedure'),
     provenance: P.PROCEDURE,
-    flow: { steps, title: docTitle(model, 'Process Flow') },
+    flow: { steps, title: docTitle(model, 'Process Flow'), lanes: lane.lanes, rows: lane.rows },
     sections: [
       section('purpose', 'Purpose',
         joinBlocks(
@@ -536,7 +552,15 @@ export function buildProcedureDoc({ model, params, frameworkCodes }) {
       section('process', 'Process Overview',
         joinBlocks(
           h.p(TP('procedure.processLead', 'The process proceeds through the following stages:')),
-          `<p class="proc-flow">${escapeHtml(flow)}</p>`,
+          h.p(TP('procedure.swimlaneLead', 'Each column is one actor and each row one step, so the point at which the work changes hands is visible rather than inferred. A step marked ◆ carries a decision, set out in full under Decision Points.')),
+          swimlaneGrid,
+          crossings.length
+            ? h.callout('note',
+                TP('procedure.handoffTitle', 'Hand-offs'),
+                TP('procedure.handoffCount',
+                  `This process changes hands ${crossings.length} time${crossings.length === 1 ? '' : 's'}. Each hand-off is a point at which a step can be left unstarted because each side believes the other owns it.`,
+                  { n: crossings.length }))
+            : '',
           h.table([T('Step'), TP('procedure.colStage', 'Stage'), TP('procedure.colPerformedBy', 'Performed by')],
             steps.map((s) => [String(s.no), resolveText(s.name, params), resolveText(s.actor, params)]))
         ), P.PROCEDURE, []),

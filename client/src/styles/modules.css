@@ -75,11 +75,8 @@
   width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-raised);
 }
 .prose .proc-actor { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
-.prose .proc-flow {
-  font-family: var(--mono); font-size: 12px; background: var(--bg-sunken);
-  padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border);
-  overflow-x: auto; white-space: nowrap; color: var(--text-muted);
-}
+.prose .clause-heading { margin: 14px 0 6px; }
+.prose .clause-owner { color: var(--text-muted); font-size: 12.5px; white-space: nowrap; }
 .prose .role-purpose { font-size: 14px; color: var(--text); border-inline-start: 3px solid var(--accent); padding-inline-start: 12px; margin-bottom: 14px; }
 
 /* Provenance marker attached to generated blocks. */
@@ -146,6 +143,13 @@
 /* Render at natural size and anchor left; stretching to the container width
    scales the diagram up and centres it behind a large empty gutter. */
 .flow-svg { display: block; max-width: 100%; height: auto; }
+.flow-lane { fill: transparent; }
+.flow-lane.alt { fill: var(--bg-sunken, rgba(127, 127, 127, 0.05)); }
+.flow-lane-edge { stroke: var(--border); stroke-width: 1; }
+.flow-lane-label { fill: var(--text-muted); font-size: 11px; font-weight: 600; }
+/* A hand-off is the event the chart exists to show, so the crossing line is
+   the one that is drawn to be noticed. */
+.flow-link.handoff { stroke: var(--accent); stroke-width: 1.6; }
 .flow-node-box { fill: var(--bg-raised); stroke: var(--border-strong); stroke-width: 1.2; }
 .flow-node-box.decision { fill: var(--warn-soft); stroke: var(--warn); }
 .flow-node-box.terminal { fill: var(--accent-soft); stroke: var(--accent); }

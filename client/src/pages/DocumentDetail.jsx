@@ -21,7 +21,7 @@ import { useI18n } from '../i18n/index.jsx';
 
 export default function DocumentDetail() {
   const labels = useLabels();
-  const { t, language } = useI18n();
+  const { t, language, isRtl } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -277,15 +277,22 @@ export default function DocumentDetail() {
             <div className="stack">
               <div>
                 <h3 style={{ marginBottom: 4 }}>{data.flow.title}</h3>
-                <p className="muted small">
-                  The process as defined in this Procedure. Decision points branch to the right; the
-                  main path runs top to bottom.
-                </p>
+                <p className="muted small">{t('documentDetail.swimlaneCaption')}</p>
               </div>
-              <FlowDiagram steps={data.flow.steps} params={params} />
+              <FlowDiagram
+                steps={data.flow.steps}
+                lanes={data.flow.lanes}
+                rows={data.flow.rows}
+                params={params}
+                rtl={isRtl}
+              />
               <div>
                 <h4 style={{ marginBottom: 8 }}>{t('documentDetail.decisionPoints')}</h4>
-                <DecisionList steps={data.flow.steps} params={params} />
+                <DecisionList steps={data.flow.steps} params={params} strings={{
+                  step: t('documentDetail.stepLabel'),
+                  yes: t('documentDetail.branchYes'),
+                  no: t('documentDetail.branchNo')
+                }} />
               </div>
             </div>
           </div>
