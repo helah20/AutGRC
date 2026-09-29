@@ -30,7 +30,8 @@ const { reviewDomain, frequenciesIn, durationsIn, hasArabic, arabicTopicGaps } =
   await import('../src/services/review.js');
 const { DOMAIN_MODELS, localisedModel, validateKnowledgeBase, buildParameterSet } =
   await import('../src/knowledge/index.js');
-const { translatedDomains, isTranslated, arParameterLabel } = await import('../src/knowledge/ar/index.js');
+const { AR_DOMAINS, translatedDomains, isTranslated, arParameterLabel } =
+  await import('../src/knowledge/ar/index.js');
 const { arabicTitle, translator } = await import('../src/services/doc-strings.js');
 
 seedFrameworks();
@@ -39,6 +40,27 @@ const users = seedUsers('Test#Password123');
 
 const placeholders = (text) =>
   [...String(text || '').matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]).sort();
+
+/**
+ * Run `fn` with one domain's Arabic entry withheld.
+ *
+ * The fallback to English matters most for a domain that has no translation
+ * yet, and all twenty-four now do, so there is no longer a domain in the
+ * shipped set to exercise it against. Withholding one for the duration of the
+ * assertion runs the real code path rather than replacing it with a test of
+ * something else; the entry is restored in a finally so a failure here cannot
+ * make the rest of the suite look untranslated.
+ */
+function withoutArabic(domainKey, fn) {
+  const held = AR_DOMAINS[domainKey];
+  delete AR_DOMAINS[domainKey];
+  try {
+    assert.equal(isTranslated(domainKey), false, 'the entry is actually withheld');
+    return fn();
+  } finally {
+    AR_DOMAINS[domainKey] = held;
+  }
+}
 
 // ------------------------------------------------- the translated model ----
 
@@ -91,11 +113,13 @@ test('Arabic requirement model', async (t) => {
   });
 
   await t.test('an untranslated domain falls back to English and says so', () => {
-    const untranslated = Object.keys(DOMAIN_MODELS).find((k) => !isTranslated(k));
-    assert.ok(untranslated, 'a domain without a translation exists');
-    const model = localisedModel(untranslated, 'ar');
-    assert.equal(model.language, 'en', 'the fallback reports the language it actually is');
-    assert.equal(model.fullyTranslated, false, 'and does not claim to be translated');
+    const key = translatedDomains()[0];
+    withoutArabic(key, () => {
+      const model = localisedModel(key, 'ar');
+      assert.equal(model.language, 'en', 'the fallback reports the language it actually is');
+      assert.equal(model.fullyTranslated, false, 'and does not claim to be translated');
+    });
+    assert.equal(localisedModel(key, 'ar').language, 'ar', 'and the entry is back afterwards');
   });
 
   await t.test('an English request is never reported as a partial translation', () => {
@@ -339,16 +363,16 @@ test('Arabic package generation', async (t) => {
   });
 
   await t.test('an untranslated domain generated as Arabic records the language it is', () => {
-    const untranslated = Object.keys(DOMAIN_MODELS).find((k) => !isTranslated(k));
-    const pkg = generatePackage({
-      domainKey: untranslated,
+    const key = translatedDomains()[0];
+    const pkg = withoutArabic(key, () => generatePackage({
+      domainKey: key,
       docTypes: ['policy'],
       frameworkCodes: ['NCA-ECC'],
       org,
       userId: users.grc_manager.id,
       ownerId: users.grc_manager.id,
       language: 'ar'
-    });
+    }));
     const doc = q.get('SELECT * FROM documents WHERE package_id = ?', pkg.packageId);
     assert.equal(doc.language, 'en', 'a fallback document is not labelled Arabic');
   });
@@ -381,7 +405,10 @@ const PLANTED = {
   cryptography: { docType: 'procedure', agreed: '٣٠ يوماً', wrong: '٦٠ يوماً', parameter: 'certificateExpiryAlert' },
   network_security: { docType: 'procedure', agreed: 'بتكرار نصف سنوي', wrong: 'بتكرار سنوي', parameter: 'firewallReviewFrequency' },
   application_security: { docType: 'procedure', agreed: '١٥ يوماً', wrong: '٤٥ يوماً', parameter: 'criticalAppFindingSla' },
-  change_management: { docType: 'procedure', agreed: '٥ أيام عمل', wrong: '١٥ يوم عمل', parameter: 'emergencyChangeReviewSla' }
+  change_management: { docType: 'procedure', agreed: '٥ أيام عمل', wrong: '١٥ يوم عمل', parameter: 'emergencyChangeReviewSla' },
+  physical_security: { docType: 'procedure', agreed: 'بتكرار ربع سنوي', wrong: 'بتكرار سنوي', parameter: 'accessReviewFrequency' },
+  data_protection: { docType: 'procedure', agreed: '٢٤ ساعة', wrong: '٧٢ ساعة', parameter: 'piiBreachAssessmentSla' },
+  cloud_security: { docType: 'procedure', agreed: 'بتكرار ربع سنوي', wrong: 'بتكرار سنوي', parameter: 'privilegedCloudReview' }
 };
 
 test('Arabic consistency detection', async (t) => {

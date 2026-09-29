@@ -353,6 +353,32 @@ const AR_PARAMETER_TOPICS = {
   emergencyChangeReviewSla: ['طارئ', 'راجع'],
   configReviewFrequency: ['راجع', 'اساس'],
   unauthorisedChangeSla: ['حقق', 'مفسر'],
+  // physical security. The recording retention period is carried by the noun
+  // pair the clause actually uses — "تسجيلات" and "مرئية" — because Arabic
+  // drops the alef in the passive verb "يُحتفظ", so the retention stem shared
+  // by the other domains matches the noun "الاحتفاظ" and not this clause.
+  cctvRetention: ['مرئي', 'تسجيلات'],
+  // "مرافق" is both the escort and the facility, so the visitor is what
+  // separates the escort rule from the policy sentence about the facilities
+  // themselves.
+  visitorEscortRequirement: ['زوار', 'مرافق'],
+  // data protection. Two cycles here are both "annually", so each carries the
+  // noun its own clause names: the classification, and the schedule.
+  classificationReviewFrequency: ['راجع', 'صنيف'],
+  retentionScheduleReviewFrequency: ['راجع', 'جدول'],
+  piiBreachAssessmentSla: ['تسريب', 'شخصي'],
+  criticalDataProtection: ['بيانات', 'حرج'],
+  // cloud security. "وضع" plus "امني" and not the scan verb: the Procedure
+  // states the same cycle as operating posture management rather than scanning
+  // with it, and a stem taken from the verb would see only the Standard.
+  cspmScanFrequency: ['وضع', 'امني'],
+  privilegedCloudReview: ['راجع', 'دوار', 'سحاب'],
+  exitPlanReviewFrequency: ['خروج', 'خطة'],
+  cloudStrategyReview: ['راجع', 'ستراتيجي'],
+  // "تقييم" and not the verb stem "قيم": the reassessment cycle is stated with
+  // the verbal noun, which the shorter stem does not sit inside — Arabic
+  // doubles the yeh in the noun and the stem would match nothing at all.
+  cspAssessmentFrequency: ['تقييم', 'خدمات'],
   // third parties. The supplier is المورّد throughout; مزوّد is reserved for a
   // provider of something other than the contracted service, such as the
   // identity provider, so it is not a term for this subject.

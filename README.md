@@ -136,7 +136,7 @@ server/                 Node.js + Express + SQLite (better-sqlite3)
   src/routes/           17 route modules
   src/middleware/       Authentication, RBAC, audit, error handling
   src/db/               Schema, accessors, seed
-  test/                 137 tests
+  test/                 155 tests
 ```
 
 ### The knowledge base
@@ -209,7 +209,7 @@ development a secret is generated and persisted on first run.
 ## Testing
 
 ```bash
-npm test          # 98 offline tests (1 suite skipped); 137 with a server on :4000
+npm test          # 116 offline tests (1 suite skipped); 155 with a server on :4000
 npm run check     # static checks the bundler does not catch
 ```
 
@@ -261,22 +261,18 @@ document types, roles, coverage, risk bands, treatments, finding categories —
 which are re-labelled on the client from the key the API sends, so no endpoint
 needs to know the reader's language.
 
-**Generated documents in Arabic.** Twenty-one domains — governance, risk
-management, security awareness, identity and access, privileged access, asset
-management, incident management, vulnerability management, third-party security,
-security operations, security monitoring, logging & monitoring, backup &
-recovery, business continuity, disaster recovery, cryptography, endpoint
-security, network security, application security, secure SDLC and change
-management — generate a complete Arabic package: every policy clause, standard
-requirement, procedure step, decision branch, escalation condition, role
-definition, RACI activity, control name, KPI and piece of required evidence.
+**Generated documents in Arabic.** All twenty-four domains generate a complete
+Arabic package: every policy clause, standard requirement, procedure step,
+decision branch, escalation condition, role definition, RACI activity, control
+name, KPI and piece of required evidence.
 The document furniture around them is Arabic too: headings, table columns,
 connective prose, the cover page, the document control and approval tables,
 version history, contents, headers and footers.
 
-Choosing Arabic for a domain that has no translation yet generates it in
-English and records the document's language as English, rather than labelling a
-half-translated document as Arabic.
+A domain with no Arabic entry still falls back: it generates in English and
+records the document's language as English, rather than labelling a
+half-translated document as Arabic. Nothing in the shipped set takes that path
+any more, so the test withholds one domain's translation to keep exercising it.
 
 An agreed numeric value is never written into the translated sentence. Both
 languages carry the same `{{placeholder}}`, and the value arrives from the one
@@ -330,10 +326,15 @@ save the PDF.
 - Requirement depth varies by domain, from 8 clauses to 12. The shape of the
   model is uniform; the amount of detail a domain warrants is not, and no domain
   is padded to a target.
-- Arabic generation covers twenty-one of the twenty-four domains. The other
-  three generate in English and say so; the machinery is in place and each is a
-  content addition under `server/src/knowledge/ar/`. Framework requirement text
-  stays in the publisher's wording in any language, for the reason in
+- Framework requirement text stays in the publisher's wording in any language,
+  so an Arabic package quotes NCA and ISO controls in the publisher's own text
+  rather than a translation of it, for the reason in
   [Arabic and right-to-left support](#arabic-and-right-to-left-support).
+- Two domains host no planted Arabic contradiction in the test suite —
+  endpoint security and secure SDLC restate no parameter across two documents —
+  and three parameters are stated in Arabic prose only once, so the
+  cross-document check has nothing to compare them against. Adding a second
+  statement would change the commitment to manufacture a test, so it is
+  recorded here instead.
 - Arabic PDF export is not supported. The PDF engine cannot shape Arabic
   script; Word export handles Arabic correctly and can save as PDF.

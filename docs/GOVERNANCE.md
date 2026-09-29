@@ -114,7 +114,10 @@ the other has two positions and no way to tell which governs.
 
 The same principle applies to a domain with no translation yet: it generates in
 English and records the document's language as English. A half-translated
-document labelled Arabic would misrepresent what the reader is holding.
+document labelled Arabic would misrepresent what the reader is holding. All
+twenty-four domains are now translated, so nothing takes that path in the
+shipped set; the fallback and its test both stay, because the next domain added
+will take it before its Arabic is written.
 
 It also applies to the checks. The consistency engine reads Arabic through an
 Arabic vocabulary written out for the purpose, and the test suite asserts that
