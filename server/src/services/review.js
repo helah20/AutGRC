@@ -281,6 +281,35 @@ const AR_PARAMETER_TOPICS = {
   // The agreed value names its own audience, so the subject reaches the
   // sentence through the parameter rather than being restated around it.
   executiveBriefingFrequency: ['رفع', 'تنفيذي'],
+  // security operations
+  serviceReviewFrequency: ['راجع', 'خدم'],
+  runbookReviewFrequency: ['راجع', 'دلة', 'تشغيل'],
+  opsReportFrequency: ['رفع', 'داء'],
+  capacityPlanningFrequency: ['خطيط', 'طاق'],
+  // security monitoring. Coverage and the operating window are both stated as
+  // "24 hours a day", so the window carries its own subject — "النافذة الزمنية"
+  // — rather than sharing the coverage subject and being compared against it.
+  monitoringCoverage: ['راقب', 'تغطي'],
+  monitoringWindow: ['راقب', 'نافذ'],
+  p1AlertTriageSla: ['فرز', 'اولى'],
+  useCaseReviewFrequency: ['راجع', 'كشف'],
+  threatModelUpdateFrequency: ['ولويات', 'كشف'],
+  intelAssessmentSla: ['قيم', 'ستشاري'],
+  toolHealthCheck: ['فحص', 'سلام'],
+  // logging. The plural "سجلات" and not the singular "سجل": the Roles document
+  // carries the whole role library, so the Risk Manager's "المراجعة ربع السنوية
+  // لسجل المخاطر" sits inside every domain's Roles document and the singular
+  // stem matched it — attributing a statement about the risk register to the log
+  // review cycle, and reporting a conflict between two correct sentences.
+  // The noun "الاحتفاظ" and not the stem shared with the passive verb "يُحتفظ":
+  // Arabic drops the alef in the verb, and the wider stem also matched the
+  // privileged-activity clause, which states the critical-system period rather
+  // than this one. The clauses that state a retention period are worded with
+  // the noun for exactly this reason.
+  logRetention: ['حتفاظ', 'سجلات'],
+  criticalLogRetention: ['حتفاظ', 'حرج'],
+  logReviewFrequency: ['راجع', 'سجلات'],
+  logOnboardingSla: ['دراج', 'سجلات'],
   // third parties. The supplier is المورّد throughout; مزوّد is reserved for a
   // provider of something other than the contracted service, such as the
   // identity provider, so it is not a term for this subject.

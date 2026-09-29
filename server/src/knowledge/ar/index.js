@@ -22,6 +22,7 @@ import { AR_ACCESS } from './ar-access.js';
 import { AR_OPERATE } from './ar-operate.js';
 import { AR_DATA } from './ar-data.js';
 import { AR_GOVERN } from './ar-govern.js';
+import { AR_DETECT } from './ar-detect.js';
 
 export { AR_FREQUENCY, arFrequency } from './ar-common.js';
 export { AR_PARAMETER_LABELS, arParameterLabel } from './ar-common.js';
@@ -32,7 +33,8 @@ export const AR_DOMAINS = {
   ...AR_GOVERN,
   ...AR_ACCESS,
   ...AR_OPERATE,
-  ...AR_DATA
+  ...AR_DATA,
+  ...AR_DETECT
 };
 
 /** Languages a document can be generated in. */

@@ -16,6 +16,7 @@
  */
 
 import { AR_PROC_GOVERN } from './ar-proc-govern.js';
+import { AR_PROC_DETECT } from './ar-proc-detect.js';
 
 /**
  * The blocks written here, kept in this file for the domains translated first.
@@ -652,7 +653,8 @@ const AR_PROCEDURES_BASE = {
 
 export const AR_PROCEDURES = {
   ...AR_PROCEDURES_BASE,
-  ...AR_PROC_GOVERN
+  ...AR_PROC_GOVERN,
+  ...AR_PROC_DETECT
 };
 
 /** The Arabic procedure block for one domain, or null when untranslated. */

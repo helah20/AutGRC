@@ -371,7 +371,10 @@ const PLANTED = {
   // Against the adjectival form in the Roles document — "المراجعة ربع السنوية" —
   // which the frequency vocabulary read as annual until it learned the pattern.
   risk_management: { docType: 'standard', agreed: 'ربع سنوي', wrong: 'سنوي', parameter: 'riskRegisterReviewFrequency' },
-  security_awareness: { docType: 'standard', agreed: '٣٠ يوماً', wrong: '٦٠ يوماً', parameter: 'trainingCompletionTarget' }
+  security_awareness: { docType: 'standard', agreed: '٣٠ يوماً', wrong: '٦٠ يوماً', parameter: 'trainingCompletionTarget' },
+  security_operations: { docType: 'procedure', agreed: 'بتكرار شهري', wrong: 'بتكرار ربع سنوي', parameter: 'opsReportFrequency' },
+  security_monitoring: { docType: 'standard', agreed: '١٥ دقيقة', wrong: '٦٠ دقيقة', parameter: 'p1AlertTriageSla' },
+  logging_monitoring: { docType: 'procedure', agreed: '١٢ شهراً متصلة', wrong: '٦ أشهر متصلة', parameter: 'logRetention' }
 };
 
 test('Arabic consistency detection', async (t) => {
