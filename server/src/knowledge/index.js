@@ -10,7 +10,7 @@
 import { DOMAIN_META, DOMAIN_INDEX, DOMAIN_CATEGORIES, domainName, domainShort, resolveText, unresolvedPlaceholders } from './domains.js';
 import { FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE } from './frameworks.js';
 import { ROLE_LIBRARY, ROLE_INDEX, roleName, roleShort, localisedRole, localisedRoles } from './roles.js';
-import { buildProcedure, STD_ROLES } from './req-helpers.js';
+import { buildProcedure, splitClauses, STD_ROLES } from './req-helpers.js';
 import { ACCESS_DOMAINS } from './req-access.js';
 import { OPERATE_DOMAINS } from './req-operate.js';
 import { DATA_DOMAINS } from './req-data.js';
@@ -180,6 +180,36 @@ export function validateKnowledgeBase() {
           problems.push(`${domainKey}.${requirement.key}: Arabic "${field}" is missing`);
         }
       }
+      // The Standard's clauses must correspond one for one. Comparing the
+      // paragraphs as wholes passes while the two languages commit the
+      // organisation to different controls: the Arabic iam/access_authorisation
+      // required an immutable approval log the English never mentioned, and the
+      // English required role-based groups the Arabic never mentioned. Neither
+      // the placeholder check nor the field-presence check could see it,
+      // because both texts had the same placeholders and both were present.
+      if (requirement.standard && arabic.standard) {
+        const english = splitClauses(requirement.standard);
+        const translated = splitClauses(arabic.standard);
+        if (english.length !== translated.length) {
+          problems.push(
+            `${domainKey}.${requirement.key}: the Standard has ${english.length} clause(s) in English `
+            + `and ${translated.length} in Arabic — the two languages state a different number of requirements`
+          );
+        } else {
+          // Each clause must carry the same commitments as its counterpart.
+          for (let i = 0; i < english.length; i += 1) {
+            const en = new Set(unresolvedPlaceholders(english[i]));
+            const ar = new Set(unresolvedPlaceholders(translated[i]));
+            for (const name of en) {
+              if (!ar.has(name)) problems.push(`${domainKey}.${requirement.key}: Standard clause ${i + 1} states {{${name}}} in English but not in Arabic`);
+            }
+            for (const name of ar) {
+              if (!en.has(name)) problems.push(`${domainKey}.${requirement.key}: Standard clause ${i + 1} states {{${name}}} in Arabic but not in English`);
+            }
+          }
+        }
+      }
+
       // A placeholder dropped in translation would silently lose the numeric
       // commitment the whole consistency model rests on.
       for (const field of ['policy', 'standard', 'kpi']) {

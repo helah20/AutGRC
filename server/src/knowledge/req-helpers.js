@@ -44,6 +44,29 @@ export function buildProcedure(domainName, seed, requirements) {
   };
 }
 
+/**
+ * Split a requirement's Standard text into its atomic clauses.
+ *
+ * A Standard paragraph is authored as a sequence of complete sentences, each
+ * stating one testable requirement. That is the unit an auditor cites and the
+ * unit an accountable owner is named against, so it is the unit the Standard
+ * document renders — not the paragraph that happens to contain several of them.
+ *
+ * One rule serves both languages: a full stop, whitespace, then the start of a
+ * new statement. English starts one with a capital or a `{{placeholder}}`;
+ * Arabic has no case, so any Arabic letter opens one. Deriving the clauses from
+ * the prose rather than authoring them separately keeps a single source of
+ * truth for the text, and makes the English and Arabic clause counts comparable
+ * — which is what catches a translation that has quietly grown or lost a
+ * requirement.
+ */
+export function splitClauses(text) {
+  return String(text || '')
+    .split(/(?<=\.)\s+(?=[A-Z{\u0600-\u06FF])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 /** Default eight-column RACI role set for domains that do not override it. */
 export const STD_ROLES = [
   'ciso', 'grc_manager', 'cyber_analyst', 'it_manager',
