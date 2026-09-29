@@ -324,6 +324,25 @@ const AR_PARAMETER_TOPICS = {
   crisisTeamActivation: ['نشيط', 'عيار'],
   // disaster recovery
   drPlanReviewFrequency: ['راجع', 'خطط'],
+  // cryptography. Four parameters in this domain all resolve to "annually", so
+  // each carries the noun its own clause names rather than a shared stem.
+  keyRotationFrequency: ['دوير', 'مفاتيح'],
+  certificateExpiryAlert: ['شهادات', 'نتهاء'],
+  cryptoReviewFrequency: ['راجع', 'قائم'],
+  cryptoInventoryReview: ['راجع', 'جرد'],
+  pqcReadinessReview: ['جهوزي', 'نتقال'],
+  // endpoints
+  malwareSignatureUpdate: ['حدث', 'بصمات'],
+  baselineReviewFrequency: ['راجع', 'اساس'],
+  patchDeploymentSla: ['نشر', 'تحديثات'],
+  endpointLogForwarding: ['حداث', 'طرفي'],
+  unsupportedOsGrace: ['ستبدل', 'دعم'],
+  // networks. The review cycle and the rule expiry cycle are stated in one
+  // sentence, so they are separated by the verb each governs.
+  firewallReviewFrequency: ['راجع', 'قواعد'],
+  ruleExpiryReview: ['حذف', 'قواعد'],
+  architectureReviewFrequency: ['راجع', 'معماري'],
+  deviceConfigBackup: ['نسخ', 'تهيئات'],
   // third parties. The supplier is المورّد throughout; مزوّد is reserved for a
   // provider of something other than the contracted service, such as the
   // identity provider, so it is not a term for this subject.

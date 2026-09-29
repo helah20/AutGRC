@@ -377,7 +377,9 @@ const PLANTED = {
   logging_monitoring: { docType: 'procedure', agreed: '١٢ شهراً متصلة', wrong: '٦ أشهر متصلة', parameter: 'logRetention' },
   backup_recovery: { docType: 'procedure', agreed: 'بتكرار ربع سنوي', wrong: 'بتكرار سنوي', parameter: 'restoreTestFrequency' },
   business_continuity: { docType: 'procedure', agreed: 'بتكرار سنوياً', wrong: 'بتكرار ربع سنوياً', parameter: 'planReviewFrequency' },
-  disaster_recovery: { docType: 'procedure', agreed: 'بتكرار سنوياً', wrong: 'بتكرار ربع سنوياً', parameter: 'drPlanReviewFrequency' }
+  disaster_recovery: { docType: 'procedure', agreed: 'بتكرار سنوياً', wrong: 'بتكرار ربع سنوياً', parameter: 'drPlanReviewFrequency' },
+  cryptography: { docType: 'procedure', agreed: '٣٠ يوماً', wrong: '٦٠ يوماً', parameter: 'certificateExpiryAlert' },
+  network_security: { docType: 'procedure', agreed: 'بتكرار نصف سنوي', wrong: 'بتكرار سنوي', parameter: 'firewallReviewFrequency' }
 };
 
 test('Arabic consistency detection', async (t) => {
