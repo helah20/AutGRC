@@ -176,6 +176,19 @@ export function validateKnowledgeBase() {
       }
     }
 
+    // A placeholder was only checked inside the steps, so one written into an
+    // input, output, escalation condition or record would have reached the
+    // document as literal "{{name}}" text.
+    for (const field of ['inputs', 'outputs', 'escalation', 'records']) {
+      for (const [i, text] of (model.procedure[field] || []).entries()) {
+        for (const ph of unresolvedPlaceholders(text)) {
+          if (ph !== 'orgName' && !(ph in model.parameters)) {
+            problems.push(`${model.key}: procedure ${field} ${i + 1} placeholder {{${ph}}} has no parameter`);
+          }
+        }
+      }
+    }
+
     for (const step of model.procedure.steps) {
       for (const ph of unresolvedPlaceholders(`${step.detail} ${step.name} ${step.actor}`)) {
         if (ph !== 'orgName' && !(ph in model.parameters)) {

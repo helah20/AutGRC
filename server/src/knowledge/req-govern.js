@@ -131,6 +131,27 @@ export const GOVERN_DOMAINS = {
         { name: 'Publish and communicate', actor: 'Cybersecurity GRC Manager', detail: 'Publish to the document repository and communicate to affected personnel, recording acknowledgement where required.' },
         { name: 'Monitor compliance', actor: 'Cybersecurity Analyst', detail: 'Assess compliance with the document {{complianceReviewFrequency}} and record gaps as findings.' },
         { name: 'Review', actor: 'Document Owner', detail: 'Review at least {{policyReviewFrequency}}, or earlier on material change, and reissue or retire the document.' }
+      ],
+      inputs: [
+        'Regulatory and contractual obligations applicable to {{orgName}}',
+        'Audit, review and assessment findings',
+        'The risk register and the current risk position',
+        'Requests for a new or amended governance document'
+      ],
+      outputs: [
+        'Approved policies, standards and procedures with review dates',
+        'A current compliance obligations register with named owners',
+        'Improvement actions arising from review and audit'
+      ],
+      escalation: [
+        'A document overdue for review escalates to {{policyApprovalAuthority}}.',
+        'A regulatory change with no assigned owner escalates to the CISO within 30 days of publication.',
+        'A finding recurring across two review cycles escalates to the Cybersecurity Steering Committee as a systemic issue.'
+      ],
+      records: [
+        'Approved documents with version and approval history (retained for the life of the document plus 3 years)',
+        'Compliance assessment results with gap closure evidence (retained 5 years)',
+        'Improvement register entries with verified closure (retained 3 years)'
       ]
     },
     raciActivities: [
@@ -257,7 +278,29 @@ export const GOVERN_DOMAINS = {
       { name: 'Plan treatment', actor: 'Risk Owner', detail: 'Select mitigation, transfer, avoidance or acceptance, and define actions with owners and due dates.' },
       { name: 'Approve', actor: 'CISO / Steering Committee', detail: 'Approve the treatment plan, or formally accept residual risk for no more than {{riskAcceptanceMaxDuration}}.', decision: { question: 'Is the residual risk rated Critical?', yes: 'Escalate to {{criticalRiskEscalation}}', no: 'Approve at the delegated authority level' } },
       { name: 'Monitor and report', actor: 'Risk Manager', detail: 'Track treatment progress and report the risk position {{riskRegisterReviewFrequency}}.' }
-    ] },
+    ],
+    inputs: [
+      'The asset and system inventory with business criticality',
+      'Threat intelligence and incident history',
+      'Control effectiveness results from the assurance programme',
+      'Changes and projects that meet an assessment trigger, namely {{assessmentTriggers}}'
+    ],
+    outputs: [
+      'A current risk register with named owners and residual ratings',
+      'Approved treatment plans with actions, owners and due dates',
+      'Recorded risk acceptances with expiry dates'
+    ],
+    escalation: [
+      'A risk rated Critical escalates under {{criticalRiskEscalation}}.',
+      'A treatment plan overdue by more than one review cycle escalates to the CISO.',
+      'A risk whose owner has left escalates to the Risk Manager for reassignment within one review cycle.'
+    ],
+    records: [
+      'Risk assessments with method, scope and participants (retained 5 years)',
+      'Treatment plans and progress records (retained for the life of the risk plus 3 years)',
+      'Risk acceptance approvals with expiry dates (retained 5 years)'
+    ]
+    },
     raciActivities: [
       raci('Define the risk management methodology', 'Govern', 'A:ciso R:risk_manager C:grc_manager C:internal_auditor'),
       raci('Conduct cybersecurity risk assessments', 'Assure', 'A:risk_manager R:cyber_analyst C:system_owner C:it_manager'),
@@ -379,7 +422,29 @@ export const GOVERN_DOMAINS = {
       { name: 'Simulate', actor: 'Cybersecurity Analyst', detail: 'Run phishing simulations {{phishingSimulationFrequency}} and record click and reporting rates.' },
       { name: 'Coach', actor: 'Cybersecurity GRC Manager', detail: 'Provide targeted coaching for repeated susceptibility before considering disciplinary measures.' },
       { name: 'Measure and report', actor: 'CISO', detail: 'Report completion, reporting rate and trend to the Steering Committee and refresh content accordingly.' }
-    ] },
+    ],
+    inputs: [
+      'Incident root causes and audit findings indicating awareness gaps',
+      'Joiner, mover and leaver notifications from Human Resources',
+      'Phishing simulation results',
+      'Policy and regulatory changes affecting staff obligations'
+    ],
+    outputs: [
+      'Delivered training with completion recorded per individual',
+      'Phishing simulation results with reporting and click rates',
+      'Targeted coaching records where susceptibility recurs'
+    ],
+    escalation: [
+      'Completion below {{trainingCompletionTarget}} in a business area escalates to the accountable executive.',
+      'Susceptibility that persists after targeted coaching escalates to line management and Human Resources.',
+      'An induction not completed by its deadline escalates to the line manager before access is confirmed.'
+    ],
+    records: [
+      'Training completion records per individual (retained 3 years)',
+      'Phishing simulation results and follow-up coaching (retained 3 years)',
+      'Acceptable use acknowledgements (retained for the engagement plus 2 years)'
+    ]
+    },
     raciActivities: [
       raci('Define the awareness programme', 'Govern', 'A:ciso R:grc_manager C:business_owner'),
       raci('Develop awareness and role-based content', 'Govern', 'A:grc_manager R:cyber_analyst C:it_manager'),
@@ -500,7 +565,29 @@ export const GOVERN_DOMAINS = {
       { name: 'Approve', actor: 'Change Advisory Board', detail: 'Approve, defer or reject at the {{cabFrequency}} board, confirming {{backoutRequirement}} is present.' },
       { name: 'Implement and verify', actor: 'IT Manager', detail: 'Implement within the approved window and verify that security controls and log forwarding remain effective.', decision: { question: 'Did post-implementation verification pass?', yes: 'Close the change', no: 'Invoke the back-out plan and record the failure' } },
       { name: 'Review', actor: 'Cybersecurity GRC Manager', detail: 'Review emergency changes within {{emergencyChangeReviewSla}} and investigate any change implemented without approval.' }
-    ] },
+    ],
+    inputs: [
+      'Change requests with justification and affected systems',
+      'Patches awaiting deployment under {{patchChangeRoute}}',
+      'Configuration baselines and drift detection output',
+      'Incident and problem records requiring a corrective change'
+    ],
+    outputs: [
+      'Change records evidencing {{backoutRequirement}}',
+      'Post-implementation verification results',
+      'A change record trail supporting configuration audit'
+    ],
+    escalation: [
+      'A change implemented without authorisation escalates to the Cybersecurity GRC Manager within {{unauthorisedChangeSla}}.',
+      'An emergency change not reviewed within {{emergencyChangeReviewSla}} escalates to the CISO.',
+      'Failed verification that cannot be backed out escalates to the Change Advisory Board and the system owner.'
+    ],
+    records: [
+      'Change records with approvals and verification evidence (retained 3 years)',
+      'Emergency and unauthorised change reviews (retained 3 years)',
+      'Configuration baselines and approved deviations (retained for the life of the system)'
+    ]
+    },
     raciActivities: [
       raci('Define the change management process', 'Govern', 'A:ciso R:grc_manager C:it_manager C:system_owner'),
       raci('Raise and document changes', 'Operate', 'A:system_owner R:it_manager C:business_owner'),

@@ -94,7 +94,29 @@ export const TECH_DOMAINS = {
       { name: 'Implement', actor: 'IT Manager', detail: 'Apply encryption to the data store or transmission path and validate by configuration scan.' },
       { name: 'Monitor', actor: 'Cybersecurity Analyst', detail: 'Scan for deprecated algorithms and protocol versions, and monitor certificate expiry with alerts {{certificateExpiryAlert}}.' },
       { name: 'Rotate and retire', actor: 'Security Architect', detail: 'Rotate keys {{keyRotationFrequency}} and retire deprecated algorithms under the change process.' }
-    ] },
+    ],
+    inputs: [
+      'Requests for keys, certificates or cryptographic services',
+      'Certificate expiry alerts and algorithm deprecation advisories',
+      'The cryptographic inventory',
+      'Configuration scan output for protocol and cipher suite use'
+    ],
+    outputs: [
+      'Issued keys and certificates with recorded custodians',
+      'A cryptographic inventory reconciled against scan output',
+      'Exception records where a service cannot support {{minTlsVersion}}'
+    ],
+    escalation: [
+      'A suspected key compromise escalates immediately to the Incident Management process.',
+      'A certificate whose expiry alert has fired with no renewal in progress escalates to the system owner.',
+      'Use of a deprecated algorithm on a critical system escalates to the Security Architect and the CISO.'
+    ],
+    records: [
+      'Key generation, rotation and destruction records (retained 5 years)',
+      'Certificate inventory with owner and expiry (retained for the life of the certificate plus 3 years)',
+      'Custodian appointments and dual-control authorisations (retained 5 years)'
+    ]
+    },
     raciActivities: [
       raci('Define approved cryptographic standards', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst'),
       raci('Implement encryption at rest and in transit', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
@@ -220,7 +242,29 @@ export const TECH_DOMAINS = {
       { name: 'Implement', actor: 'IT Manager', detail: 'Implement the rule through the Change Management process, recording owner and review date.' },
       { name: 'Verify', actor: 'Cybersecurity Analyst', detail: 'Confirm the rule behaves as intended and does not expose management protocols externally.' },
       { name: 'Review periodically', actor: 'Security Architect', detail: 'Review the rule base {{firewallReviewFrequency}} and remove unused or expired rules {{ruleExpiryReview}}.' }
-    ] },
+    ],
+    inputs: [
+      'Rule change requests with business justification and owner',
+      'The network architecture and zone model',
+      'Rule review and expiry reports',
+      'Alerts from perimeter, wireless and network access control'
+    ],
+    outputs: [
+      'Approved rule sets with owners and review dates',
+      'A current architecture record covering every external connection',
+      'Device configuration backups taken {{deviceConfigBackup}}'
+    ],
+    escalation: [
+      'A management protocol found exposed directly to the internet escalates immediately to the Incident Management process.',
+      'A firewall rule left in place without justification after its expiry review escalates to the system owner.',
+      'An unrecognised device connecting to a controlled segment escalates to the security team for investigation.'
+    ],
+    records: [
+      'Rule change approvals with business justification (retained 3 years)',
+      'Architecture reviews and external connection assessments (retained 5 years)',
+      'Device configuration backups and change detection output (retained 12 months)'
+    ]
+    },
     raciActivities: [
       raci('Define the network security architecture', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst'),
       raci('Approve firewall rule changes', 'Protect', 'A:it_manager R:cyber_analyst C:system_owner'),
@@ -339,7 +383,29 @@ export const TECH_DOMAINS = {
       { name: 'Monitor compliance', actor: 'Cybersecurity Analyst', detail: 'Monitor baseline compliance and agent health, and investigate endpoints that stop reporting.' },
       { name: 'Remediate drift', actor: 'IT Manager', detail: 'Restore configuration to baseline and record the cause of drift.' },
       { name: 'Decommission', actor: 'IT Manager', detail: 'Wipe corporate data, remove enrolment and sanitise storage before disposal or re-use.' }
-    ] },
+    ],
+    inputs: [
+      'The endpoint inventory reconciled to the asset register',
+      'Vendor security patches and malware detection content',
+      'Baseline compliance and configuration drift reports',
+      'Endpoint detection alerts and isolation requests'
+    ],
+    outputs: [
+      'Endpoints built and maintained to {{baselineStandard}}',
+      'Patch deployment reports with a named owner for the remainder',
+      'Disk encryption and detection coverage reports'
+    ],
+    escalation: [
+      'An endpoint that stops reporting escalates to the SOC as a monitoring gap within one business day.',
+      'An operating system past vendor support with neither a replacement scheduled nor an approved exception escalates to the system owner and the CISO.',
+      'Malware that resists removal escalates immediately to the Incident Management process.'
+    ],
+    records: [
+      'Baseline configuration and compliance evidence (retained 3 years)',
+      'Patch deployment and exception records (retained 3 years)',
+      'Endpoint isolation actions with the authorising decision (retained 3 years)'
+    ]
+    },
     raciActivities: [
       raci('Define the endpoint hardening baseline', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst'),
       raci('Deploy and maintain endpoint protection', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
@@ -446,7 +512,29 @@ export const TECH_DOMAINS = {
       { name: 'Remediate', actor: 'System Owner', detail: 'Remediate critical findings within {{criticalAppFindingSla}} and verify closure.', decision: { question: 'Are critical findings still open?', yes: 'Block the release until remediated or formally risk-accepted', no: 'Approve for release' } },
       { name: 'Protect', actor: 'IT Manager', detail: 'Deploy behind a web application firewall in {{wafMode}} and confirm event forwarding to monitoring.' },
       { name: 'Reassess', actor: 'Cybersecurity Analyst', detail: 'Retest {{appTestFrequency}} and on material change.' }
-    ] },
+    ],
+    inputs: [
+      'Security requirements recorded as acceptance criteria',
+      'Threat models produced for {{threatModelTrigger}}',
+      'Static, dynamic and dependency scan results',
+      'Penetration test and independent assessment findings'
+    ],
+    outputs: [
+      'Applications released against verified security acceptance criteria',
+      'Remediated findings with retest evidence',
+      'A component inventory per application with known vulnerabilities tracked'
+    ],
+    escalation: [
+      'A critical finding open beyond {{criticalAppFindingSla}} escalates to the system owner and the CISO.',
+      'A release proposed with an open critical finding escalates to the Cybersecurity Steering Committee.',
+      'A secret found in a source repository escalates immediately to the Incident Management process and the credential is rotated.'
+    ],
+    records: [
+      'Security test results with remediation and retest evidence (retained 3 years)',
+      'Threat models with review dates (retained for the life of the application)',
+      'Release approvals recording accepted residual risk (retained 5 years)'
+    ]
+    },
     raciActivities: [
       raci('Define application security requirements', 'Govern', 'A:ciso R:grc_manager C:system_owner C:it_manager'),
       raci('Conduct security design review', 'Protect', 'A:grc_manager R:cyber_analyst C:system_owner'),
@@ -563,7 +651,29 @@ export const TECH_DOMAINS = {
       { name: 'Test', actor: 'Cybersecurity Analyst', detail: 'Perform dynamic security testing in the test environment against masked data.' },
       { name: 'Approve release', actor: 'Security Architect', detail: 'Confirm the security gate is satisfied and no critical findings remain open.', decision: { question: 'Is the security gate satisfied?', yes: 'Approve promotion to production', no: 'Return to development or obtain formal risk acceptance' } },
       { name: 'Maintain', actor: 'System Owner', detail: 'Monitor component vulnerabilities post-release and remediate under the vulnerability management service levels.' }
-    ] },
+    ],
+    inputs: [
+      'Project initiations with data classification and regulatory obligations',
+      'Repository and branch protection configuration',
+      'Pipeline gate results and build provenance',
+      'Requests for production access or for production data'
+    ],
+    outputs: [
+      'Releases built through the pipeline with {{sbomRequirement}}',
+      'Security gate decisions at initiation and at go-live',
+      'Masked or synthetic non-production datasets with deletion evidence'
+    ],
+    escalation: [
+      'A deployment made outside the pipeline escalates to the Cybersecurity GRC Manager as a control failure.',
+      'Unmasked production data found in a non-production environment escalates to the Information Owner and the Cybersecurity GRC Manager.',
+      'A project reaching go-live without a completed security gate escalates to the CISO.'
+    ],
+    records: [
+      'Security gate decisions with supporting evidence (retained 5 years)',
+      'Build provenance and signed artefact records (retained 3 years)',
+      'Production access grants to development staff with justification (retained 3 years)'
+    ]
+    },
     raciActivities: [
       raci('Define the secure development lifecycle', 'Govern', 'A:ciso R:grc_manager C:system_owner C:it_manager'),
       raci('Enforce code review and branch protection', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
@@ -670,7 +780,29 @@ export const TECH_DOMAINS = {
       { name: 'Manage visitors', actor: 'Reception / Host', detail: 'Register visitors against a named host, issue a distinct badge and apply {{visitorEscortRequirement}}.' },
       { name: 'Monitor', actor: 'Cybersecurity Analyst', detail: 'Monitor surveillance, intrusion and environmental alerts, and investigate anomalies.' },
       { name: 'Review and revoke', actor: 'Facility Owner', detail: 'Review access {{accessReviewFrequency}} and revoke by {{badgeRevocationSla}} on termination.' }
-    ] },
+    ],
+    inputs: [
+      'Access requests for secure areas with business justification',
+      'Visitor and contractor bookings against a named host',
+      'Surveillance, intrusion and environmental alerts',
+      'Equipment movement, delivery and maintenance requests'
+    ],
+    outputs: [
+      'Issued badges with approved permissions recorded against the individual',
+      'Visitor and maintenance records with escort evidence',
+      'Environmental and surveillance monitoring evidence'
+    ],
+    escalation: [
+      'Unauthorised entry to a secure area escalates immediately to the Incident Management process.',
+      'An environmental alert affecting equipment supporting a critical service escalates to the IT Manager and the facility owner.',
+      'A clear desk finding unresolved after one cycle escalates to the area owner and the Cybersecurity GRC Manager.'
+    ],
+    records: [
+      'Entry and exit logs for secure areas (retained 12 months)',
+      'Visitor and supervised maintenance records (retained 12 months)',
+      'Surveillance recordings (retained {{cctvRetention}})'
+    ]
+    },
     raciActivities: [
       raci('Define physical security zones', 'Govern', 'A:ciso R:it_manager C:business_owner C:grc_manager'),
       raci('Authorise physical access', 'Protect', 'A:business_owner R:it_manager C:ciso'),

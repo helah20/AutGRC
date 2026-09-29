@@ -104,7 +104,29 @@ export const RESILIENCE_DOMAINS = {
       { name: 'Monitor', actor: 'SOC Analyst', detail: 'Operate detection use cases over collected logs and triage exceptions {{logReviewFrequency}}.', decision: { question: 'Does the exception indicate unauthorised activity?', yes: 'Raise a cybersecurity incident', no: 'Close with rationale and tune the use case' } },
       { name: 'Verify coverage', actor: 'Cybersecurity Analyst', detail: 'Report sources that have stopped forwarding and restore them within 2 business days.' },
       { name: 'Retain and dispose', actor: 'IT Manager', detail: 'Retain logs for {{logRetention}} and dispose securely on expiry unless a legal hold applies.' }
-    ] },
+    ],
+    inputs: [
+      'The asset register defining which sources must be logged',
+      'Log source onboarding requests',
+      'Correlation rule definitions and tuning requests',
+      'Log platform ingestion and availability data'
+    ],
+    outputs: [
+      'Logs collected centrally with {{logIntegrityMethod}} applied',
+      'Coverage reports measured against the asset register',
+      'Correlation rules each naming the recipient of what they raise'
+    ],
+    escalation: [
+      'A source that stops sending escalates to the SOC and is investigated against {{logAvailabilityTarget}}.',
+      'Attempted tampering with the log platform escalates immediately to the Incident Management process.',
+      'A critical system reaching go-live without log onboarding escalates to the Cybersecurity GRC Manager.'
+    ],
+    records: [
+      'Log coverage and source onboarding records (retained 3 years)',
+      'Correlation rule definitions and review history (retained 3 years)',
+      'Collected logs (retained {{logRetention}}, and {{criticalLogRetention}} for critical systems)'
+    ]
+    },
     raciActivities: [
       raci('Define logging requirements', 'Govern', 'A:ciso R:grc_manager C:cyber_analyst C:it_manager'),
       raci('Onboard log sources', 'Protect', 'A:it_manager R:cyber_analyst C:system_owner'),
@@ -211,7 +233,29 @@ export const RESILIENCE_DOMAINS = {
       { name: 'Triage', actor: 'SOC Analyst', detail: 'Investigate the alert following the playbook and record the disposition rationale within {{p1AlertTriageSla}} for Severity 1.', decision: { question: 'Is the alert a confirmed security incident?', yes: 'Escalate to the Incident Management process', no: 'Close as false positive or benign, and tune' } },
       { name: 'Tune', actor: 'Cybersecurity Analyst', detail: 'Adjust use cases to keep false positives {{falsePositiveTarget}} without losing true detections.' },
       { name: 'Review coverage', actor: 'CISO', detail: 'Review detection coverage against the threat model {{useCaseReviewFrequency}} and commission new use cases for gaps.' }
-    ] },
+    ],
+    inputs: [
+      'Correlated events from the central log platform and detection tooling',
+      'Threat intelligence advisories and indicators',
+      'The detection use case library and coverage model',
+      'Tooling health and ingestion status'
+    ],
+    outputs: [
+      'Triaged alerts with a recorded disposition and rationale',
+      'Detection use cases validated before production',
+      'Hunt records stating the data examined and the outcome'
+    ],
+    escalation: [
+      'A Severity 1 alert not triaged within {{p1AlertTriageSla}} escalates to the CISO.',
+      'Loss of a data source a detection depends on escalates as a coverage gap to be recorded as risk.',
+      'Monitoring degradation against {{monitoringAvailabilityTarget}} escalates as an operational incident.'
+    ],
+    records: [
+      'Alert triage records with disposition rationale (retained 3 years)',
+      'Detection use case definitions and validation results (retained 3 years)',
+      'Threat hunt records, including hunts that found nothing (retained 3 years)'
+    ]
+    },
     raciActivities: [
       raci('Define monitoring requirements and coverage', 'Govern', 'A:ciso R:grc_manager C:cyber_analyst C:it_manager'),
       raci('Develop and validate detection use cases', 'Detect', 'A:ciso R:cyber_analyst C:it_manager'),
@@ -318,7 +362,29 @@ export const RESILIENCE_DOMAINS = {
       { name: 'Escalate', actor: 'SOC Analyst', detail: 'Escalate confirmed incidents and service level breaches per the documented escalation path.' },
       { name: 'Hand over', actor: 'SOC Analyst', detail: 'Complete the handover record covering open items, suppressions and planned changes.' },
       { name: 'Report', actor: 'CISO', detail: 'Report service performance and operational metrics to management {{opsReportFrequency}}.' }
-    ] },
+    ],
+    inputs: [
+      'The security service catalogue with its agreed service levels',
+      'Shift handover records and open work',
+      'Tooling availability and licence position',
+      'Demand volumes measured against current capacity'
+    ],
+    outputs: [
+      'Operated services evidenced against their agreed service levels',
+      'Current runbooks reachable during an outage of primary systems',
+      'Performance reporting {{opsReportFrequency}} covering {{metricsReported}}'
+    ],
+    escalation: [
+      'Sustained volume beyond capacity escalates to the CISO as a risk with options rather than being absorbed.',
+      'A tool that a detection or control depends upon becoming unsupported escalates to the CISO.',
+      'A service level that cannot be met with current resourcing escalates for renegotiation rather than being reported as met.'
+    ],
+    records: [
+      'Shift handover records (retained 12 months)',
+      'Service performance against agreed levels (retained 3 years)',
+      'Runbook versions with review dates (retained for the life of the service plus 1 year)'
+    ]
+    },
     raciActivities: [
       raci('Define the security service catalogue', 'Govern', 'A:ciso R:grc_manager C:cyber_analyst C:it_manager'),
       raci('Maintain operational runbooks', 'Operate', 'A:it_manager R:cyber_analyst C:system_owner'),
@@ -435,7 +501,29 @@ export const RESILIENCE_DOMAINS = {
       { name: 'Validate', actor: 'Cybersecurity Analyst', detail: 'Run posture management scanning and confirm no critical misconfiguration before go-live.', decision: { question: 'Are critical misconfigurations present?', yes: 'Remediate before go-live', no: 'Approve for production use' } },
       { name: 'Monitor', actor: 'Cybersecurity Analyst', detail: 'Operate posture management {{cspmScanFrequency}} and review cloud privileged access {{privilegedCloudReview}}.' },
       { name: 'Plan exit', actor: 'Business Owner', detail: 'Maintain and test the exit plan {{exitPlanReviewFrequency}}, confirming data extraction works in practice.' }
-    ] },
+    ],
+    inputs: [
+      'Requests to adopt a cloud service or create a tenancy',
+      'The classification of the data to be hosted',
+      'Posture management scan output',
+      'Provider assurance reports and contract terms'
+    ],
+    outputs: [
+      'Agreed responsibility matrices per service model',
+      'Landing zones built to {{configBaselineStandard}} with logging enabled',
+      'A tenancy register with owners, classifications and billing routes'
+    ],
+    escalation: [
+      'Publicly exposed storage or an unrestricted management port escalates immediately to the Incident Management process.',
+      'A tenancy found without a named owner escalates to the Cybersecurity GRC Manager as a finding.',
+      'A provider unable to meet the agreed incident notification terms escalates to the CISO and the business owner.'
+    ],
+    records: [
+      'Responsibility matrices and provider assurance reports (retained for the life of the service plus 3 years)',
+      'Posture scan results and remediation records (retained 3 years)',
+      'Exit plans with test results and deletion certificates (retained 5 years)'
+    ]
+    },
     raciActivities: [
       raci('Define the cloud security policy and baselines', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst'),
       raci('Agree the shared responsibility matrix', 'Govern', 'A:grc_manager R:it_manager C:business_owner C:ciso'),
@@ -553,7 +641,29 @@ export const RESILIENCE_DOMAINS = {
       { name: 'Exercise', actor: 'Risk Manager', detail: 'Conduct {{exerciseTypes}} at least {{bcpTestFrequency}}, including cyber-specific scenarios.' },
       { name: 'Review findings', actor: 'Cybersecurity GRC Manager', detail: 'Record shortfalls as findings with owners and due dates, and update plans.', decision: { question: 'Were recovery objectives met during the exercise?', yes: 'Record and schedule the next exercise', no: 'Raise findings and escalate to the Steering Committee' } },
       { name: 'Maintain', actor: 'Business Owner', detail: 'Review plans {{planReviewFrequency}} and after every invocation.' }
-    ] },
+    ],
+    inputs: [
+      'Business impact analysis results with recovery objectives',
+      'Dependency mapping including critical suppliers',
+      'Exercise findings and experience from real invocations',
+      'Changes to scope, sites, services or regulatory obligations'
+    ],
+    outputs: [
+      'Continuity plans reachable during an outage of primary systems',
+      'Exercise reports measured against the recovery objectives',
+      'Findings with named owners tracked to verified closure'
+    ],
+    escalation: [
+      'A critical activity with no agreed minimum service level escalates to executive management.',
+      'A supplier identified as a single point of failure escalates to the Risk Manager for a treatment decision.',
+      'A finding recurring across two exercises escalates to executive management as a systemic issue.'
+    ],
+    records: [
+      'Business impact analyses with participants and assumptions (retained 5 years)',
+      'Exercise reports and real invocation records (retained 5 years)',
+      'Crisis contact lists with verification dates (retained until superseded plus 1 year)'
+    ]
+    },
     raciActivities: [
       raci('Conduct business impact analysis', 'Resilience', 'A:business_owner R:risk_manager C:system_owner C:it_manager'),
       raci('Define continuity strategies', 'Resilience', 'A:risk_manager R:business_owner C:it_manager C:ciso'),
@@ -671,7 +781,29 @@ export const RESILIENCE_DOMAINS = {
       { name: 'Test', actor: 'IT Manager', detail: 'Execute {{failoverTestType}} at least {{drTestFrequency}}, measuring actual recovery time and data loss.', decision: { question: 'Were the recovery objectives met?', yes: 'Record results and schedule the next test', no: 'Raise findings and escalate to the Steering Committee' } },
       { name: 'Invoke', actor: 'CISO / IT Manager', detail: 'On disaster or cyber incident, invoke recovery, ensuring restoration to a verified clean state before service resumption.', decision: { question: 'Is the recovery following a cyber incident?', yes: 'Verify clean state, close the entry vector and rotate credentials before resumption', no: 'Proceed with standard recovery' } },
       { name: 'Review', actor: 'Cybersecurity GRC Manager', detail: 'Review the invocation or test, update plans {{drPlanReviewFrequency}} and track findings to closure.' }
-    ] },
+    ],
+    inputs: [
+      'Recovery objectives agreed with the business owner',
+      'Recovery runbooks and the dependency order they follow',
+      'Test results recording actual recovery time and data loss',
+      'Invocation and fail-back decisions'
+    ],
+    outputs: [
+      'Recovery capability tested against the recovery time and recovery point objectives recorded for each service',
+      'Runbooks revised and dated after every test and invocation',
+      'Recovery shortfalls recorded as findings with named owners'
+    ],
+    escalation: [
+      'A service that misses its recovery objective escalates to its business owner for an investment or objective decision.',
+      'A recovery environment found unpatched relative to production escalates to the IT Manager.',
+      'A disruption arising from a cybersecurity incident escalates to the Incident Management process for coordinated communication.'
+    ],
+    records: [
+      'Recovery test results with measured time and data loss (retained 5 years)',
+      'Invocation records with the decision maker and the criteria met (retained 5 years)',
+      'Runbook versions with revision dates (retained for the life of the system)'
+    ]
+    },
     raciActivities: [
       raci('Define recovery objectives', 'Resilience', 'A:business_owner R:system_owner C:risk_manager C:it_manager'),
       raci('Design and maintain recovery capability', 'Resilience', 'A:it_manager R:system_owner C:ciso C:risk_manager'),
@@ -779,7 +911,29 @@ export const RESILIENCE_DOMAINS = {
       { name: 'Monitor', actor: 'Cybersecurity Analyst', detail: 'Monitor job success and investigate failures within 1 business day.', decision: { question: 'Did the backup job fail?', yes: 'Investigate and re-run; escalate after two consecutive failures', no: 'Record success' } },
       { name: 'Test restore', actor: 'IT Manager', detail: 'Perform restoration tests {{restoreTestFrequency}}, verifying integrity and completeness of restored data.', decision: { question: 'Did the restore verify as complete and usable?', yes: 'Record the result', no: 'Raise a finding and correct the backup configuration' } },
       { name: 'Reconcile scope', actor: 'Cybersecurity GRC Manager', detail: 'Reconcile backup scope to the asset inventory quarterly to capture newly added systems.' }
-    ] },
+    ],
+    inputs: [
+      'The backup scope reconciled to the asset inventory',
+      'Backup job status and failure alerts',
+      'Restore requests with the reason and destination',
+      'Restoration test schedules for critical systems'
+    ],
+    outputs: [
+      'A backup schedule of {{backupFrequency}}, with retention of {{backupRetention}}',
+      'Restoration test results verifying integrity and completeness',
+      'A cyber recovery copy whose isolation has been verified'
+    ],
+    escalation: [
+      'A system found unprotected by any backup escalates to its business owner for inclusion or recorded acceptance.',
+      'Repeated failure of the same backup job escalates as a control failure rather than being re-run.',
+      'A failed restoration test for a critical system escalates to the IT Manager and the CISO.'
+    ],
+    records: [
+      'Backup job records and coverage reconciliation (retained 3 years)',
+      'Restoration test results with measured integrity (retained 3 years)',
+      'Restore authorisations with requester, authoriser and destination (retained 3 years)'
+    ]
+    },
     raciActivities: [
       raci('Define backup requirements', 'Govern', 'A:ciso R:grc_manager C:system_owner C:it_manager'),
       raci('Configure and operate backups', 'Resilience', 'A:it_manager R:system_owner C:cyber_analyst'),
