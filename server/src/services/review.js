@@ -343,6 +343,16 @@ const AR_PARAMETER_TOPICS = {
   ruleExpiryReview: ['حذف', 'قواعد'],
   architectureReviewFrequency: ['راجع', 'معماري'],
   deviceConfigBackup: ['نسخ', 'تهيئات'],
+  // applications
+  appTestFrequency: ['اختبار', 'تطبيقات'],
+  criticalAppFindingSla: ['عالج', 'ملاحظات'],
+  appInventoryReviewFrequency: ['جرد', 'تطبيقات'],
+  sessionIdleLimit: ['جلسات', 'رموز'],
+  dependencyScanFrequency: ['فحص', 'مكونات'],
+  // change management
+  emergencyChangeReviewSla: ['طارئ', 'راجع'],
+  configReviewFrequency: ['راجع', 'اساس'],
+  unauthorisedChangeSla: ['حقق', 'مفسر'],
   // third parties. The supplier is المورّد throughout; مزوّد is reserved for a
   // provider of something other than the contracted service, such as the
   // identity provider, so it is not a term for this subject.

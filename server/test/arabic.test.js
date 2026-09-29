@@ -379,7 +379,9 @@ const PLANTED = {
   business_continuity: { docType: 'procedure', agreed: 'بتكرار سنوياً', wrong: 'بتكرار ربع سنوياً', parameter: 'planReviewFrequency' },
   disaster_recovery: { docType: 'procedure', agreed: 'بتكرار سنوياً', wrong: 'بتكرار ربع سنوياً', parameter: 'drPlanReviewFrequency' },
   cryptography: { docType: 'procedure', agreed: '٣٠ يوماً', wrong: '٦٠ يوماً', parameter: 'certificateExpiryAlert' },
-  network_security: { docType: 'procedure', agreed: 'بتكرار نصف سنوي', wrong: 'بتكرار سنوي', parameter: 'firewallReviewFrequency' }
+  network_security: { docType: 'procedure', agreed: 'بتكرار نصف سنوي', wrong: 'بتكرار سنوي', parameter: 'firewallReviewFrequency' },
+  application_security: { docType: 'procedure', agreed: '١٥ يوماً', wrong: '٤٥ يوماً', parameter: 'criticalAppFindingSla' },
+  change_management: { docType: 'procedure', agreed: '٥ أيام عمل', wrong: '١٥ يوم عمل', parameter: 'emergencyChangeReviewSla' }
 };
 
 test('Arabic consistency detection', async (t) => {
