@@ -15,7 +15,14 @@
  * validateKnowledgeBase enforces all of it.
  */
 
-export const AR_PROCEDURES = {
+import { AR_PROC_GOVERN } from './ar-proc-govern.js';
+
+/**
+ * The blocks written here, kept in this file for the domains translated first.
+ * Later batches live in ar-proc-<category>.js and are merged below, because one
+ * file holding twenty-four procedures is not a file anyone can review.
+ */
+const AR_PROCEDURES_BASE = {
   pam: {
     purpose: 'تحديد كيفية طلب الوصول المُمتاز في {{orgName}} واعتماده ورفعه ومراقبته وإلغائه ومراجعته.',
     preconditions: [
@@ -641,6 +648,11 @@ export const AR_PROCEDURES = {
       'صيانة خطط خروج المورّدين واختبارها'
     ]
   }
+};
+
+export const AR_PROCEDURES = {
+  ...AR_PROCEDURES_BASE,
+  ...AR_PROC_GOVERN
 };
 
 /** The Arabic procedure block for one domain, or null when untranslated. */

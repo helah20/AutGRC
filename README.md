@@ -261,9 +261,10 @@ document types, roles, coverage, risk bands, treatments, finding categories —
 which are re-labelled on the client from the key the API sends, so no endpoint
 needs to know the reader's language.
 
-**Generated documents in Arabic.** Five domains — identity and access, asset
-management, incident management, vulnerability management and third-party
-security — generate a complete Arabic package: every policy clause, standard
+**Generated documents in Arabic.** Nine domains — governance, risk management,
+security awareness, identity and access, privileged access, asset management,
+incident management, vulnerability management and third-party security —
+generate a complete Arabic package: every policy clause, standard
 requirement, procedure step, decision branch, escalation condition, role
 definition, RACI activity, control name, KPI and piece of required evidence.
 The document furniture around them is Arabic too: headings, table columns,
@@ -298,7 +299,7 @@ sentence to a parameter through that parameter's subject, and English subjects
 are derived from the parameter's name, so Arabic ones are written out
 explicitly — including the frequency and duration vocabulary, Arabic-Indic
 digits and units such as "يوم عمل". A planted contradiction is caught in each of
-the five translated domains, and `arabicTopicGaps` reports any parameter the
+every translated domain, and `arabicTopicGaps` reports any parameter the
 check compares but has no Arabic subject for, so the engine cannot quietly stop
 reading a language.
 
@@ -326,7 +327,7 @@ save the PDF.
 - Requirement depth varies by domain, from 8 clauses to 12. The shape of the
   model is uniform; the amount of detail a domain warrants is not, and no domain
   is padded to a target.
-- Arabic generation covers five of the twenty-four domains. The other nineteen
+- Arabic generation covers nine of the twenty-four domains. The other fifteen
   generate in English and say so; the machinery is in place and each is a
   content addition under `server/src/knowledge/ar/`. Framework requirement text
   stays in the publisher's wording in any language, for the reason in

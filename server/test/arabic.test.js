@@ -155,6 +155,36 @@ test('Arabic frequency and duration vocabulary', async (t) => {
     assert.deepEqual(found.map((d) => [d.value, d.unit]), [[3, 'business day']]);
   });
 
+  await t.test('reads one stated the way Arabic states it', () => {
+    // Arabic counts one by agreement rather than with a numeral, and puts the
+    // word after the unit. A commitment written naturally would otherwise carry
+    // a value the check could not extract, and a clean report would say nothing
+    // about the sentence it failed to read.
+    assert.deepEqual(
+      durationsIn('تُعاد الأصول خلال يوم عمل واحد من آخر يوم عمل.').map((d) => [d.value, d.unit]),
+      [[1, 'business day']]
+    );
+    assert.deepEqual(
+      durationsIn('يُبلَّغ خلال ساعة واحدة من الاكتشاف.').map((d) => [d.value, d.unit]),
+      [[1, 'hour']]
+    );
+    // And still reads the digit form beside it, rather than one shadowing the other.
+    assert.deepEqual(
+      durationsIn('خلال ٣٠ يوماً وساعة واحدة.').map((d) => [d.value, d.unit]).sort(),
+      [[1, 'hour'], [30, 'day']].sort()
+    );
+  });
+
+  await t.test('reads a cycle stated as an adjective', () => {
+    // "المراجعة ربع السنوية" — the quarterly review. Matching only the final
+    // word read a correct quarterly commitment as annual, which reported a
+    // document as contradicting itself.
+    assert.deepEqual(frequenciesIn('تشغيل المراجعة ربع السنوية لسجل المخاطر.'), ['quarterly']);
+    assert.deepEqual(frequenciesIn('التقرير نصف السنوي إلى اللجنة.'), ['semi-annually']);
+    assert.deepEqual(frequenciesIn('دورة المراجعة السنوية للسياسات.'), ['annually']);
+    assert.deepEqual(frequenciesIn('المطابقة الشهرية للجرد.'), ['monthly']);
+  });
+
   await t.test('hasArabic distinguishes the two scripts', () => {
     assert.equal(hasArabic('quarterly'), false);
     assert.equal(hasArabic('ربع سنوي'), true);
@@ -336,7 +366,12 @@ const PLANTED = {
   vulnerability_management: { docType: 'procedure', agreed: '١٥ يوماً', wrong: '٣٠ يوماً', parameter: 'criticalRemediationSla' },
   incident_management: { docType: 'procedure', agreed: '١٠ أيام عمل', wrong: '٣٠ يوم عمل', parameter: 'lessonsLearnedSla' },
   asset_management: { docType: 'procedure', agreed: '٤٨ ساعة', wrong: '٧٢ ساعة', parameter: 'unauthorisedAssetSla' },
-  third_party: { docType: 'procedure', agreed: '٢٤ ساعة', wrong: '٤٨ ساعة', parameter: 'supplierIncidentNotificationSla' }
+  third_party: { docType: 'procedure', agreed: '٢٤ ساعة', wrong: '٤٨ ساعة', parameter: 'supplierIncidentNotificationSla' },
+  governance: { docType: 'policy', agreed: 'بتكرار سنوي', wrong: 'بتكرار نصف سنوي', parameter: 'policyReviewFrequency' },
+  // Against the adjectival form in the Roles document — "المراجعة ربع السنوية" —
+  // which the frequency vocabulary read as annual until it learned the pattern.
+  risk_management: { docType: 'standard', agreed: 'ربع سنوي', wrong: 'سنوي', parameter: 'riskRegisterReviewFrequency' },
+  security_awareness: { docType: 'standard', agreed: '٣٠ يوماً', wrong: '٦٠ يوماً', parameter: 'trainingCompletionTarget' }
 };
 
 test('Arabic consistency detection', async (t) => {

@@ -113,7 +113,22 @@ const AR_FREQUENCY_TERMS = {
   'سنوي': 'annually', 'سنوياً': 'annually', 'كل سنة': 'annually', 'كل عام': 'annually',
   'كل سنتين': 'biennially',
   'كل وردية': 'every shift', 'عند الطلب': 'per request', 'لكل طلب': 'per request',
-  'عند كل حدث': 'per event', 'لكل حدث': 'per event'
+  'عند كل حدث': 'per event', 'لكل حدث': 'per event',
+  // Adjectival forms. Arabic states a cycle as an adjective agreeing with its
+  // noun — "المراجعة ربع السنوية", the quarterly review — as often as it states
+  // it adverbially. Without these, "ربع السنوية" matched only its final word and
+  // a correct quarterly commitment was read as annual, which reported a
+  // contradiction against itself. The matcher blanks the longest term it finds
+  // before trying shorter ones, so the definite forms are consumed before
+  // "السنوية" can see them.
+  'ربع السنوية': 'quarterly', 'ربع السنوي': 'quarterly',
+  'ربع سنوية': 'quarterly',
+  'نصف السنوية': 'semi-annually', 'نصف السنوي': 'semi-annually',
+  'نصف سنوية': 'semi-annually',
+  'السنوية': 'annually', 'السنوي': 'annually', 'سنوية': 'annually',
+  'الشهرية': 'monthly', 'الشهري': 'monthly', 'شهرية': 'monthly',
+  'الأسبوعية': 'weekly', 'الأسبوعي': 'weekly', 'أسبوعية': 'weekly',
+  'اليومية': 'daily', 'اليومي': 'daily', 'يومية': 'daily'
 };
 
 /** Arabic-Indic digits, so "٩٠ يوماً" is read as ninety days. */
@@ -130,8 +145,21 @@ const AR_DURATION_UNITS = {
 };
 
 // Longest first, so "يوم عمل" is matched before "يوم".
-const AR_DURATION_RE = new RegExp(
-  `([0-9٠-٩]+)\\s*(${Object.keys(AR_DURATION_UNITS).sort((a, b) => b.length - a.length).join('|')})`,
+const AR_UNITS_ALTERNATION = Object.keys(AR_DURATION_UNITS)
+  .sort((a, b) => b.length - a.length).join('|');
+
+const AR_DURATION_RE = new RegExp(`([0-9٠-٩]+)\\s*(${AR_UNITS_ALTERNATION})`, 'g');
+
+/**
+ * "يوم عمل واحد" — one business day.
+ *
+ * Arabic counts one by agreement rather than with a numeral, and puts the word
+ * after the unit, so the digit pattern above cannot see it. A parameter whose
+ * Arabic reads naturally would otherwise carry a commitment the consistency
+ * check could not extract, and nothing in a clean report would say so.
+ */
+const AR_DURATION_ONE_RE = new RegExp(
+  `(${AR_UNITS_ALTERNATION})\\s+واحد[\u064B-\u0652]*[ةه]?[\u064B-\u0652]*`,
   'g'
 );
 
@@ -229,6 +257,30 @@ const AR_PARAMETER_TOPICS = {
   assetRequirementReview: ['متطلبات', 'اداره الاصول'],
   licenceReconciliation: ['تراخيص', 'طابق'],
   endOfLifeHorizon: ['نتهاء الدعم', 'ستبدال'],
+  // governance. Several parameters here are all "annually", so the subjects have
+  // to separate them: a sentence attributed to the wrong one would compare a
+  // correct value against a correct value and, if they ever diverge, blame the
+  // wrong clause.
+  policyReviewFrequency: ['راجع', 'سياس'],
+  complianceReviewFrequency: ['قيم', 'التزام'],
+  contextReviewFrequency: ['راجع', 'سجل', 'سياق'],
+  ipComplianceReview: ['راجع', 'تراخيص'],
+  // risk
+  riskAssessmentFrequency: ['تقييم', 'مخاطر'],
+  riskRegisterReviewFrequency: ['راجع', 'سجل', 'مخاطر'],
+  riskAcceptanceMaxDuration: ['قبول', 'انتهاء'],
+  criticalRiskEscalation: ['رفع', 'حرج'],
+  appetiteReviewFrequency: ['راجع', 'نزعة'],
+  // awareness
+  phishingSimulationFrequency: ['حاكا', 'تصيد'],
+  trainingCompletionTarget: ['تمام', 'تدريب'],
+  // Without 'وصول' this also matched the training step, which mentions the
+  // induction while stating the training cycle rather than the induction deadline.
+  onboardingDeadline: ['تعريف', 'تمهيدي', 'وصول'],
+  leaverReturnSla: ['غادر', 'اصول'],
+  // The agreed value names its own audience, so the subject reaches the
+  // sentence through the parameter rather than being restated around it.
+  executiveBriefingFrequency: ['رفع', 'تنفيذي'],
   // third parties. The supplier is المورّد throughout; مزوّد is reserved for a
   // provider of something other than the contracted service, such as the
   // identity provider, so it is not a term for this subject.
@@ -331,6 +383,10 @@ export function durationsIn(sentence) {
         unit: AR_DURATION_UNITS[m[2]],
         text: m[0]
       });
+    }
+    const one = new RegExp(AR_DURATION_ONE_RE.source, 'g');
+    while ((m = one.exec(sentence))) {
+      out.push({ value: 1, unit: AR_DURATION_UNITS[m[1]], text: m[0] });
     }
   }
   return out;

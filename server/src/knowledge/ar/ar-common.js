@@ -22,6 +22,9 @@ export const AR_FREQUENCY = {
   'Continuous, reviewed {{privAccessReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{privAccessReviewFrequency}}',
   'Continuous, reviewed {{privilegedCloudReview}}': 'مستمر، ويُراجَع بتكرار {{privilegedCloudReview}}',
   'Continuous, reviewed {{criticalSupplierReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{criticalSupplierReviewFrequency}}',
+  'Continuous, reviewed {{cryptoReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{cryptoReviewFrequency}}',
+  'Continuous, reviewed {{cspAssessmentFrequency}}': 'مستمر، ويُراجَع بتكرار {{cspAssessmentFrequency}}',
+  'Continuous, reviewed {{restoreTestFrequency}}': 'مستمر، ويُراجَع بتكرار {{restoreTestFrequency}}',
   'Continuous, reviewed {{serviceAccountReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{serviceAccountReviewFrequency}}',
   'Continuous, rotation {{vaultRotationFrequency}}': 'مستمر، مع تدوير بتكرار {{vaultRotationFrequency}}',
   'Monthly': 'شهري',
@@ -29,6 +32,17 @@ export const AR_FREQUENCY = {
   'Monthly cycle with emergency provision': 'دورة شهرية مع مسار للحالات الطارئة',
   'Monthly to management, quarterly to the Steering Committee': 'شهري إلى الإدارة، وربع سنوي إلى اللجنة الإشرافية',
   'Reviewed annually': 'يُراجَع سنوياً',
+  'Reviewed {{accessReviewFrequency}}': 'يُراجَع بتكرار {{accessReviewFrequency}}',
+  'Reviewed {{appetiteReviewFrequency}}': 'يُراجَع بتكرار {{appetiteReviewFrequency}}',
+  'Reviewed {{architectureReviewFrequency}}': 'يُراجَع بتكرار {{architectureReviewFrequency}}',
+  'Reviewed {{bcmsScopeReview}}': 'يُراجَع بتكرار {{bcmsScopeReview}}',
+  'Reviewed {{cloudStrategyReview}}': 'يُراجَع بتكرار {{cloudStrategyReview}}',
+  'Reviewed {{complianceReviewFrequency}}': 'يُراجَع بتكرار {{complianceReviewFrequency}}',
+  'Reviewed {{configReviewFrequency}}': 'يُراجَع بتكرار {{configReviewFrequency}}',
+  'Reviewed {{contextReviewFrequency}}': 'يُراجَع بتكرار {{contextReviewFrequency}}',
+  'Reviewed {{cryptoInventoryReview}}': 'يُراجَع بتكرار {{cryptoInventoryReview}}',
+  'Reviewed {{logReviewFrequency}}': 'يُراجَع بتكرار {{logReviewFrequency}}',
+  'Reviewed {{serviceReviewFrequency}}': 'يُراجَع بتكرار {{serviceReviewFrequency}}',
   'Reviewed and exercised {{irPlanTestFrequency}}': 'يُراجَع ويُختبَر بتكرار {{irPlanTestFrequency}}',
   'Reviewed {{classificationReviewFrequency}}': 'يُراجَع بتكرار {{classificationReviewFrequency}}',
   'Reviewed {{cryptoReviewFrequency}}': 'يُراجَع بتكرار {{cryptoReviewFrequency}}',
@@ -37,6 +51,7 @@ export const AR_FREQUENCY = {
   'Reviewed {{policyReviewFrequency}}': 'يُراجَع بتكرار {{policyReviewFrequency}}',
   'Reviewed {{retentionScheduleReviewFrequency}}': 'يُراجَع بتكرار {{retentionScheduleReviewFrequency}}',
   'Tested {{bcpTestFrequency}}': 'يُختبَر بتكرار {{bcpTestFrequency}}',
+  'Tested {{baselineReviewFrequency}}': 'يُختبَر بتكرار {{baselineReviewFrequency}}',
   'At acquisition and {{inventoryReviewFrequency}}': 'عند الاقتناء، وبتكرار {{inventoryReviewFrequency}}',
   'At creation, reviewed {{classificationReviewFrequency}}': 'عند الإنشاء، ويُراجَع بتكرار {{classificationReviewFrequency}}',
   'At hire and on role change': 'عند التعيين وعند تغيّر الدور',
@@ -63,6 +78,11 @@ export const AR_FREQUENCY = {
   'Per environment refresh': 'لكل تحديث للبيئة',
   'Per project or material change': 'لكل مشروع أو تغيير جوهري',
   'Per qualifying change': 'لكل تغيير مشمول',
+  'Per change': 'لكل تغيير',
+  'Per application or material change': 'لكل تطبيق أو تغيير جوهري',
+  'Per freeze window': 'لكل نافذة تجميد',
+  'Per invocation': 'لكل تنشيط',
+  'Per trigger': 'لكل حالة استدعاء',
   'Per emergency change': 'لكل تغيير طارئ',
   'Per release, training {{trainingFrequency}}': 'لكل إصدار، مع تدريب بتكرار {{trainingFrequency}}',
   'Per scan cycle': 'لكل دورة فحص',
@@ -98,6 +118,42 @@ export function arFrequency(text) {
  * English and therefore visibly missing rather than silently wrong.
  */
 export const AR_PARAMETER_LABELS = {
+  // governance
+  policyReviewFrequency: 'تكرار مراجعة السياسات',
+  committeeFrequency: 'تكرار اجتماع اللجنة',
+  strategyHorizon: 'الأفق الزمني للاستراتيجية',
+  complianceReviewFrequency: 'تكرار مراجعة الالتزام',
+  auditFrequency: 'تكرار التدقيق',
+  policyApprovalAuthority: 'صلاحية اعتماد السياسات',
+  contextReviewFrequency: 'تكرار مراجعة السياق',
+  criticalSystemDesignation: 'أسلوب تصنيف الأنظمة الحرجة',
+  improvementClosureTarget: 'مستهدف إغلاق إجراءات التحسين',
+  auditTestingSafeguards: 'ضمانات اختبار التدقيق',
+  ipComplianceReview: 'مراجعة الالتزام بالملكية الفكرية',
+  businessProcessControls: 'ضوابط عمليات الأعمال',
+  // risk management
+  riskAssessmentFrequency: 'تكرار تقييم المخاطر',
+  riskRegisterReviewFrequency: 'تكرار مراجعة سجل المخاطر',
+  riskAcceptanceMaxDuration: 'الحد الأعلى لمدة قبول الخطر',
+  criticalRiskEscalation: 'مسار رفع المخاطر الحرجة',
+  riskMethodology: 'منهجية المخاطر',
+  riskEvaluationCriteria: 'معايير تقييم الخطر',
+  assessmentTriggers: 'مُحرِّكات استدعاء التقييم',
+  riskOwnerRule: 'قاعدة ملكية الخطر',
+  appetiteReviewFrequency: 'تكرار مراجعة نزعة المخاطر',
+  assuranceIntegration: 'التكامل مع أنشطة التأكيد',
+  // security awareness
+  awarenessFrequency: 'تكرار التوعية',
+  phishingSimulationFrequency: 'تكرار محاكاة التصيّد',
+  trainingCompletionTarget: 'مستهدف إتمام التدريب',
+  phishingReportingTarget: 'مستهدف الإبلاغ عن التصيّد',
+  screeningRequirement: 'متطلب فحص العاملين',
+  onboardingDeadline: 'الموعد النهائي للتعريف التمهيدي',
+  acceptableUseAcknowledgement: 'الإقرار بالاستخدام المسموح',
+  disciplinaryLinkage: 'الارتباط بالإجراء التأديبي',
+  leaverReturnSla: 'مستوى خدمة إعادة أصول المغادرين',
+  teleworkAwareness: 'توعية العمل عن بُعد',
+  executiveBriefingFrequency: 'تكرار الإيجاز التنفيذي',
   // identity and access
   accessReviewFrequency: 'تكرار مراجعة الوصول',
   privAccessReviewFrequency: 'تكرار مراجعة الوصول المُمتاز',
@@ -173,3 +229,55 @@ export const AR_PARAMETER_LABELS = {
 export function arParameterLabel(name) {
   return AR_PARAMETER_LABELS[name] ?? null;
 }
+
+// ------------------------------------------- shared procedure boilerplate --
+
+/**
+ * The procedure lists most domains share verbatim.
+ *
+ * Seventeen of the twenty-four domain models use identical English for a
+ * procedure's inputs, outputs, escalation path and records, and identical text
+ * for all but the first of its preconditions — the generic scaffolding around
+ * the steps, which are what actually differ per domain. Translating them once
+ * here rather than seventeen times keeps them worded the same way in every
+ * Arabic Procedure, which is the whole point of them being shared. A domain
+ * whose English differs writes its own; validateKnowledgeBase compares the list
+ * lengths against the English either way, so a domain that borrowed these
+ * wrongly fails at load rather than shipping a mismatched document.
+ */
+
+/** The three preconditions, given the domain-specific first one. */
+export const arPreconditions = (opening) => [
+  opening,
+  'أن تُسنَد أدوار هذا المجال ومسؤولياته إلى أفراد مُسمّين.',
+  'أن تكون الأدوات المساندة مُنصَّبة وترفع تقاريرها إلى مالك الضابط.'
+];
+
+/** "The <Domain> Policy and Standard are approved and published." */
+export const arPolicyPublished = (domainNameAr) =>
+  `أن تكون سياسة ${domainNameAr} ومعيارها معتمدين ومنشورين.`;
+
+export const AR_PROC_INPUTS = [
+  'متطلبات السياسة والمعيار المعتمدة',
+  'جرد الأصول والأنظمة',
+  'سجلات التغييرات والحوادث',
+  'مخرجات مراقبة الضوابط'
+];
+
+export const AR_PROC_OUTPUTS = [
+  'ضوابط مُشغَّلة بأدلة محفوظة',
+  'سجلات استثناءات حيث يتعذّر استيفاء المتطلبات',
+  'مقاييس أداء الضوابط لرفعها إلى الإدارة'
+];
+
+export const AR_PROC_ESCALATION = [
+  'يُصعَّد إخفاق الضوابط إلى مدير حوكمة الأمن السيبراني والمخاطر والالتزام خلال يوم عمل واحد.',
+  'تُصعَّد المتطلبات التي يتعذّر استيفاؤها إلى رئيس الأمن السيبراني لقبول الخطر لمدة محددة.',
+  'يُصعَّد الاختراق المشتبه به فوراً إلى عملية إدارة الحوادث.'
+];
+
+export const AR_PROC_RECORDS = [
+  'أدلة تشغيل الضوابط (يُحتفظ بها ٣ سنوات)',
+  'اعتمادات الاستثناءات (يُحتفظ بها لمدة الاستثناء زائد ٣ سنوات)',
+  'سجلات المراجعة والتصديق (يُحتفظ بها ٣ سنوات)'
+];
