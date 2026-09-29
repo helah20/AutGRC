@@ -193,6 +193,29 @@ export function validateKnowledgeBase() {
     }
   }
 
+  // ------------------------------------------------- cross-domain values --
+  // A parameter name is a commitment, not a local variable. When two domains
+  // use the same name they are stating the same organisational decision, and
+  // two Standards that disagree about it commit the organisation to both. The
+  // per-domain consistency engine cannot see this: it compares a domain's
+  // documents against that domain's parameters, so a value that differs
+  // between domains is internally consistent in each of them and contradictory
+  // across the set.
+  const byParameter = new Map();
+  for (const model of Object.values(DOMAIN_MODELS)) {
+    for (const [name, value] of Object.entries(model.parameters)) {
+      if (!byParameter.has(name)) byParameter.set(name, new Map());
+      const values = byParameter.get(name);
+      const key = String(value);
+      values.set(key, [...(values.get(key) || []), model.key]);
+    }
+  }
+  for (const [name, values] of byParameter) {
+    if (values.size < 2) continue;
+    const stated = [...values].map(([value, domains]) => `${domains.join(', ')} say "${value}"`);
+    problems.push(`Parameter {{${name}}} has different values in different domains: ${stated.join('; ')}`);
+  }
+
   for (const [srcCode, srcRef, tgtCode, tgtRef] of CROSSWALKS) {
     if (!frameworkRequirementExists(srcCode, srcRef)) problems.push(`Crosswalk source ${srcCode} ${srcRef} not in catalogue`);
     if (!frameworkRequirementExists(tgtCode, tgtRef)) problems.push(`Crosswalk target ${tgtCode} ${tgtRef} not in catalogue`);

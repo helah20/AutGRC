@@ -230,7 +230,7 @@ export const DATA_DOMAINS = {
         refs: { 'ISO-27001': ['A.5.34'], 'NCA-DCC': ['2-7'], 'NCA-ECC': ['2-7-3'], 'NIST-800-53': ['PT'] } },
       { key: 'data_masking', title: 'Masking of data in non-production environments',
         policy: 'Confidential and Secret information, including personal data, shall not be used in development, test or training environments unless masked, tokenised or synthesised.',
-        standard: 'Non-production environments shall be populated with masked, tokenised or synthetic data. Where production data must be used, it shall require Information Owner approval, be time-bounded, and the environment shall be protected to production standard for the duration.',
+        standard: 'Non-production environments shall be populated with masked, tokenised or synthetic data. Where production data must be used, it shall require Information Owner approval, and the masking, approval expiry and deletion requirements of the Secure Development Standard shall govern how the copy is made, held and destroyed.',
         clauseOwners: ['system_owner', 'asset_owner'],
         guidance: 'Provide a supported masking pipeline; without one, teams copy production data because it is the only way to test realistically.',
         controlName: 'Test data protection and masking', controlType: 'preventive', controlNature: 'technical',

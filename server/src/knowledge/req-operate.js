@@ -41,7 +41,7 @@ export const OPERATE_DOMAINS = {
         refs: { 'NCA-ECC': ['2-1-1'], 'ISO-27001': ['A.5.9'], 'NIST-CSF': ['ID.AM-05'] } },
       { key: 'asset_classification', title: 'Asset classification and labelling',
         policy: 'Assets shall be classified according to the {{orgName}} classification scheme and handled in line with the classification assigned.',
-        standard: 'Classification shall be assigned at acquisition or creation and reviewed on significant change or {{inventoryReviewFrequency}}. Labelling shall be applied physically for media and equipment and through metadata for information assets. Handling requirements per classification level shall be defined in the Data Protection Standard.',
+        standard: 'Classification shall be assigned at acquisition or creation, reviewed on significant change, and re-reviewed on the cycle set by the Data Protection Standard rather than on the inventory cycle. Labelling shall be applied physically for media and equipment and through metadata for information assets. Handling requirements per classification level shall be defined in the Data Protection Standard.',
         clauseOwners: ['asset_owner', 'it_manager', 'grc_manager'],
         guidance: 'Classify the business service first and inherit to its supporting assets, rather than classifying thousands of endpoints individually.',
         controlName: 'Asset classification and labelling', controlType: 'directive', controlNature: 'administrative',
@@ -328,7 +328,11 @@ export const OPERATE_DOMAINS = {
       externalScanFrequency: 'weekly',
       authenticatedScanFrequency: 'monthly',
       pentestFrequency: 'annually and after significant change',
-      scanCoverageTarget: '98% of the authorised asset inventory'
+      scanCoverageTarget: '98% of the authorised asset inventory',
+      // Stated here as well as in Risk Management because a vulnerability
+      // exception is a risk acceptance, and the two Standards must expire it
+      // on the same date. validateKnowledgeBase fails the load if they drift.
+      riskAcceptanceMaxDuration: '12 months'
     },
     requirements: [
       { key: 'vm_process', title: 'Vulnerability management process',
@@ -400,7 +404,7 @@ export const OPERATE_DOMAINS = {
         refs: { 'NCA-ECC': ['2-11'], 'CIS-V8': ['18'], 'ISO-27001': ['A.8.8', 'A.8.29'], 'NIST-800-53': ['CA'], 'NCA-CSCC': ['2-10'] } },
       { key: 'vuln_exceptions', title: 'Vulnerability exceptions and risk acceptance',
         policy: 'Vulnerabilities that cannot be remediated within the defined service level shall be subject to formal, time-bound risk acceptance.',
-        standard: 'Exception requests shall record the vulnerability, the reason remediation is not possible, the compensating controls in place, the residual risk rating and an expiry date not exceeding 12 months. Critical exceptions shall be approved by the CISO and recorded in the risk register.',
+        standard: 'Exception requests shall record the vulnerability, the reason remediation is not possible, the compensating controls in place, the residual risk rating and an expiry date not exceeding {{riskAcceptanceMaxDuration}}. Critical exceptions shall be approved under the acceptance authority set by the Risk Management Standard and recorded in the risk register.',
         clauseOwners: ['system_owner', 'ciso'],
         guidance: 'Expire exceptions automatically and require re-approval; open-ended exceptions become permanent by default.',
         controlName: 'Vulnerability exception management', controlType: 'directive', controlNature: 'administrative',

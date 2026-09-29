@@ -234,6 +234,10 @@ const AR_PARAMETER_TOPICS = {
   breakGlassTestFrequency: ['كسر الزجاج', 'ختبر'],
   privSessionTimeout: ['جلس', 'خمول', 'ممتاز'],
   emergencyAccessReviewSla: ['كسر الزجاج', 'راجع'],
+  // The privileged revocation period, distinct from the general provisioning
+  // service level the identity domain states: the clause names the review
+  // decision it follows, which the general one does not.
+  privRevocationSla: ['لغاء', 'ممتاز', 'راجع'],
   // vulnerabilities
   criticalRemediationSla: ['عالج', 'حرج'],
   highRemediationSla: ['عالج', 'عالي'],
