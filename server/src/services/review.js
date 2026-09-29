@@ -310,6 +310,20 @@ const AR_PARAMETER_TOPICS = {
   criticalLogRetention: ['حتفاظ', 'حرج'],
   logReviewFrequency: ['راجع', 'سجلات'],
   logOnboardingSla: ['دراج', 'سجلات'],
+  // backup and recovery
+  backupRetention: ['حتفاظ', 'احتياطي'],
+  restoreTestFrequency: ['ختبار', 'ستعاد'],
+  backupMonitoringSla: ['راقب', 'مهام'],
+  backupScopeReconciliation: ['طابق', 'تغطي'],
+  // business continuity. "خطط" is the plural: the singular "خطة" appears in
+  // unrelated clauses about submitting a plan, and folding the two together
+  // attributed those to the plan review cycle.
+  bcpTestFrequency: ['مرين', 'خدمات'],
+  planReviewFrequency: ['راجع', 'خطط'],
+  bcmsScopeReview: ['راجع', 'نطاق'],
+  crisisTeamActivation: ['نشيط', 'عيار'],
+  // disaster recovery
+  drPlanReviewFrequency: ['راجع', 'خطط'],
   // third parties. The supplier is المورّد throughout; مزوّد is reserved for a
   // provider of something other than the contracted service, such as the
   // identity provider, so it is not a term for this subject.

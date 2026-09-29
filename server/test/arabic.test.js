@@ -374,7 +374,10 @@ const PLANTED = {
   security_awareness: { docType: 'standard', agreed: '٣٠ يوماً', wrong: '٦٠ يوماً', parameter: 'trainingCompletionTarget' },
   security_operations: { docType: 'procedure', agreed: 'بتكرار شهري', wrong: 'بتكرار ربع سنوي', parameter: 'opsReportFrequency' },
   security_monitoring: { docType: 'standard', agreed: '١٥ دقيقة', wrong: '٦٠ دقيقة', parameter: 'p1AlertTriageSla' },
-  logging_monitoring: { docType: 'procedure', agreed: '١٢ شهراً متصلة', wrong: '٦ أشهر متصلة', parameter: 'logRetention' }
+  logging_monitoring: { docType: 'procedure', agreed: '١٢ شهراً متصلة', wrong: '٦ أشهر متصلة', parameter: 'logRetention' },
+  backup_recovery: { docType: 'procedure', agreed: 'بتكرار ربع سنوي', wrong: 'بتكرار سنوي', parameter: 'restoreTestFrequency' },
+  business_continuity: { docType: 'procedure', agreed: 'بتكرار سنوياً', wrong: 'بتكرار ربع سنوياً', parameter: 'planReviewFrequency' },
+  disaster_recovery: { docType: 'procedure', agreed: 'بتكرار سنوياً', wrong: 'بتكرار ربع سنوياً', parameter: 'drPlanReviewFrequency' }
 };
 
 test('Arabic consistency detection', async (t) => {
