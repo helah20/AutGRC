@@ -7,9 +7,14 @@
  */
 
 export function buildProcedure(domainName, seed, requirements) {
+  // Every control that carries a KPI publishes it here. The list used to be
+  // capped at five, which silently dropped the rest: asset management measured
+  // three of its ten controls, and the Procedure — the document that states how
+  // performance is measured — simply did not mention the others. A domain that
+  // wants process-level indicators of its own states them in the seed instead,
+  // and several do; what the cap produced was not a choice, just a truncation.
   const kpis = requirements
     .filter((r) => r.kpi)
-    .slice(0, 5)
     .map((r) => ({ name: r.controlName, target: r.kpi }));
   return {
     purpose: seed.purpose || `To define how ${domainName.toLowerCase()} controls are operated, evidenced and reviewed at {{orgName}}.`,

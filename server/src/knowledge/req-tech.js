@@ -453,6 +453,9 @@ export const TECH_DOMAINS = {
       raci('Perform application security testing', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager'),
       raci('Remediate application findings', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
       raci('Operate application protection controls', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
+      raci('Enforce application authentication and session handling', 'Protect', 'A:system_owner R:it_manager C:security_architect'),
+      raci('Enforce input validation and output handling', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
+      raci('Manage third-party components and application secrets', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
       raci('Approve release with open risk', 'Govern', 'A:ciso R:business_owner C:risk_manager C:grc_manager')
     ]
   },
@@ -567,6 +570,9 @@ export const TECH_DOMAINS = {
       raci('Operate pipeline security gates', 'Protect', 'A:it_manager R:cyber_analyst C:system_owner'),
       raci('Maintain environment separation', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst I:ciso'),
       raci('Assure outsourced development security', 'Assure', 'A:grc_manager R:cyber_analyst C:business_owner'),
+      raci('Govern test data in non-production environments', 'Protect', 'A:system_owner R:it_manager C:grc_manager'),
+      raci('Control developer access to production', 'Protect', 'A:grc_manager R:it_manager C:system_owner I:ciso'),
+      raci('Deliver secure development training', 'Govern', 'A:grc_manager R:security_architect C:system_owner'),
       raci('Approve release with residual risk', 'Govern', 'A:ciso R:system_owner C:risk_manager')
     ]
   },

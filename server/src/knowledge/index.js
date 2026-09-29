@@ -68,6 +68,12 @@ function assemble() {
       const procedure = raw.procedure
         ? raw.procedure
         : buildProcedure(meta.name, raw.procedureSeed, raw.requirements);
+      // A derived KPI list is the control KPIs verbatim, so the Arabic one is
+      // derived from the Arabic control KPIs rather than authored as a copy of
+      // a copy. An authored list states process-level indicators the controls
+      // do not — "provisioning timeliness" is not any one control's measure —
+      // and those are translated as content.
+      const kpisDerived = !raw.procedure && !raw.procedureSeed?.kpis;
 
       // Compact seeds do not list roles explicitly; derive them from the RACI.
       const roles = raw.roles?.length
@@ -86,6 +92,7 @@ function assemble() {
           ...r, index: i + 1, clauses: clausesFor(key, r, r.standard)
         })),
         procedure,
+        kpisDerived,
         roles,
         raciActivities: raw.raciActivities
       };
@@ -186,6 +193,28 @@ export function validateKnowledgeBase() {
       for (const code of Object.keys(activity.assign)) {
         if (!ROLE_INDEX[code]) problems.push(`${model.key}: "${activity.activity}" references unknown role "${code}"`);
       }
+    }
+
+    // Every requirement needs at least one RACI activity, or the matrix leaves
+    // it with nobody assigned. Matching an activity to a requirement is a
+    // judgement the free text cannot carry, so the check is the floor the
+    // count has to clear: application security had six activities for eight
+    // requirements and secure development six for nine, and the requirements
+    // that fell off the end were simply absent from the matrix.
+    if (model.raciActivities.length < model.requirements.length) {
+      problems.push(
+        `${model.key}: ${model.raciActivities.length} RACI activities for ${model.requirements.length} requirements `
+        + '— at least one requirement has no activity assigning it to anyone'
+      );
+    }
+
+    // A Procedure states how performance is measured, so a control KPI that
+    // never reaches it is measured nowhere the operator reads.
+    const withKpi = model.requirements.filter((r) => r.kpi).length;
+    if (model.kpisDerived && model.procedure.kpis.length < withKpi) {
+      problems.push(
+        `${model.key}: the Procedure publishes ${model.procedure.kpis.length} of ${withKpi} control KPIs`
+      );
     }
 
     for (const code of model.roles) {
@@ -336,6 +365,10 @@ export function validateKnowledgeBase() {
     const proc = model.procedure;
     if (!arabic.purpose) problems.push(`${domainKey}: Arabic procedure has no purpose`);
     for (const field of ['preconditions', 'inputs', 'outputs', 'escalation', 'records', 'kpis', 'steps']) {
+      // A derived KPI list is built from the Arabic control KPIs at load time,
+      // so there is nothing for the Arabic procedure block to author and
+      // nothing to compare. Only a list the domain wrote itself is checked.
+      if (field === 'kpis' && model.kpisDerived) continue;
       const list = arabic[field];
       if (!Array.isArray(list)) { problems.push(`${domainKey}: Arabic procedure "${field}" is missing`); continue; }
       if (list.length !== proc[field].length) {
@@ -354,7 +387,7 @@ export function validateKnowledgeBase() {
         if (proc[field][i] !== undefined) placeholderPairs.push([`${domainKey}: procedure ${field} ${i + 1}`, text, proc[field][i]]);
       });
     }
-    (arabic.kpis || []).forEach((kpi, i) => {
+    (model.kpisDerived ? [] : arabic.kpis || []).forEach((kpi, i) => {
       const english = proc.kpis[i];
       if (!english) return;
       if (!kpi?.name || !kpi?.target) problems.push(`${domainKey}: Arabic procedure KPI ${i + 1} is incomplete`);
@@ -555,7 +588,9 @@ export function localisedModel(domainKey, language = 'en') {
         outputs: arabicProcedure.outputs || model.procedure.outputs,
         escalation: arabicProcedure.escalation || model.procedure.escalation,
         records: arabicProcedure.records || model.procedure.records,
-        kpis: arabicProcedure.kpis || model.procedure.kpis,
+        kpis: model.kpisDerived
+          ? requirements.filter((r) => r.kpi).map((r) => ({ name: r.controlName, target: r.kpi }))
+          : arabicProcedure.kpis || model.procedure.kpis,
         steps: model.procedure.steps.map((step, i) => {
           const arabicStep = arabicProcedure.steps[i];
           if (!arabicStep) return step;
