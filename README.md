@@ -326,6 +326,12 @@ save the PDF.
 - Requirement depth varies by domain, from 8 clauses to 12. The shape of the
   model is uniform; the amount of detail a domain warrants is not, and no domain
   is padded to a target.
+- Five topics the ECC names as their own subdomains — email protection, mobile
+  device security, penetration testing, web application security and ICS
+  protection — are requirements inside existing domains rather than domains of
+  their own, because that is where the controls that implement them already
+  live. Every one of the thirteen ECC subdomains carried at heading level has
+  at least one requirement mapped to it.
 - The reference catalogue is not the publication. It holds 51 of the 114
   controls the NCA ECC entry describes, and thirteen of that framework's
   twenty-nine subdomains are carried at heading level only — so a generated
