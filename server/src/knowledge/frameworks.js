@@ -22,6 +22,13 @@ export const FRAMEWORKS = [
     isMandatory: 1,
     description:
       'Minimum cybersecurity requirements for national organisations, structured in five main domains, 29 subdomains and 114 controls.',
+    // The count the publisher states, recorded so that catalogue coverage can
+    // be reported against it rather than implied. Reference metadata like the
+    // identifiers themselves: verify against the official publication.
+    publishedControls: 114,
+    // ECC numbers its controls at the third and fourth levels; the first two are
+    // domains and subdomains, so counting those would overstate what is held.
+    controlLevels: [3, 4],
     provenance: 'regulatory_requirement'
   },
   {
@@ -93,6 +100,10 @@ export const FRAMEWORKS = [
     isMandatory: 0,
     description:
       'Requirements for an information security management system (Clauses 4–10) together with the Annex A reference control set of 93 controls.',
+    publishedControls: 93,
+    // The published count is Annex A only. The management clauses 4-10 are also
+    // in this catalogue, so the comparison is restricted to the Annex A refs.
+    controlPrefix: 'A.',
     provenance: 'framework_guidance'
   },
   {

@@ -123,6 +123,70 @@ export function lookupFrameworkRequirement(code, ref) {
  * Referential integrity check over the seed data. Returns a list of problems;
  * an empty list means the knowledge base is internally consistent.
  */
+/**
+ * How completely the reference catalogue represents each framework.
+ *
+ * The catalogue holds identifiers and titles compiled for mapping, not the
+ * publications themselves, and it is not complete: the NCA ECC entry describes
+ * a control set of 114 and the catalogue carries 51 control-level rows, with
+ * thirteen of its twenty-nine subdomains represented only at subdomain level.
+ * That is a material fact about what a generated compliance table can claim —
+ * a Policy citing "ECC 2-4" is citing a subdomain, not the control inside it —
+ * and it was visible nowhere.
+ *
+ * It is reported rather than fixed. Writing the missing control titles from
+ * anywhere other than the publication would be composing regulatory text,
+ * which docs/GOVERNANCE.md rule 1 forbids; the remedy is to import the
+ * licensed copy, and this is what tells an organisation that it needs to.
+ */
+export function frameworkCoverage() {
+  return FRAMEWORKS.map((framework) => {
+    const rows = REQUIREMENTS[framework.code] || [];
+    const childCount = new Map();
+    for (const row of rows) if (row[4]) childCount.set(row[4], (childCount.get(row[4]) || 0) + 1);
+
+    // A row nothing else names as its parent is as specific as this catalogue
+    // gets, so it is what a requirement can map to precisely.
+    const detailed = rows.filter((row) => !childCount.has(row[0]));
+
+    // Which rows correspond to the publisher's own control set, so that the
+    // comparison is like for like. ECC numbers controls at its third and fourth
+    // levels; the ISO count covers Annex A only, while this catalogue also
+    // carries the management clauses. Counting leaves for both would compare
+    // one framework's controls against another framework's everything.
+    const controls = framework.controlLevels
+      ? rows.filter((row) => framework.controlLevels.includes(row[3]))
+      : framework.controlPrefix
+        ? rows.filter((row) => String(row[0]).startsWith(framework.controlPrefix) && !childCount.has(row[0]))
+        : detailed;
+
+    // A subdomain with no controls beneath it stands in for controls the
+    // catalogue does not carry, so a requirement mapping to it is citing the
+    // heading rather than the control. Only meaningful where the framework is
+    // catalogued below subdomain level at all.
+    const hasControlRows = rows.some((row) => row[3] >= 3);
+    const groupsWithoutDetail = hasControlRows
+      ? rows.filter((row) => row[3] === 2 && !childCount.has(row[0])).map((row) => ({ ref: row[0], title: row[1] }))
+      : [];
+
+    return {
+      code: framework.code,
+      name: framework.name,
+      publisher: framework.publisher,
+      rows: rows.length,
+      detailed: detailed.length,
+      controls: controls.length,
+      publishedControls: framework.publishedControls ?? null,
+      // Null where the publisher count is not recorded: an unknown denominator
+      // is reported as unknown rather than assumed to be what we happen to hold.
+      completeness: framework.publishedControls
+        ? Math.round((controls.length / framework.publishedControls) * 100)
+        : null,
+      groupsWithoutDetail
+    };
+  });
+}
+
 export function validateKnowledgeBase() {
   const problems = [];
   const frameworkCodes = new Set(FRAMEWORKS.map((f) => f.code));

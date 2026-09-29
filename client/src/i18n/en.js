@@ -259,6 +259,8 @@ export default {
   },
 
   frameworks: {
+    catalogueShare: 'Reference catalogue holds {held} of {published} published controls',
+    headingsOnly: '{n} subdomain(s) carried at heading level only — import a licensed copy to map at control level',
     title: 'Frameworks and Regulations',
     subtitle: 'The authoritative sources adopted by the organisation, with requirement coverage by organisational control.',
     importCatalogue: 'Import licensed copy',

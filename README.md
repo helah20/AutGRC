@@ -326,6 +326,16 @@ save the PDF.
 - Requirement depth varies by domain, from 8 clauses to 12. The shape of the
   model is uniform; the amount of detail a domain warrants is not, and no domain
   is padded to a target.
+- The reference catalogue is not the publication. It holds 51 of the 114
+  controls the NCA ECC entry describes, and thirteen of that framework's
+  twenty-nine subdomains are carried at heading level only — so a generated
+  compliance table can cite "ECC 2-4" where the obligation lives in a control
+  beneath it. The Frameworks page and `verify:knowledge` both state the
+  shortfall per framework and name the subdomains. The missing titles are not
+  written here, because composing regulatory text is what
+  [docs/GOVERNANCE.md](docs/GOVERNANCE.md) rule 1 forbids; import the licensed
+  copy through `POST /api/frameworks/:code/catalogue` to map at control level.
+  ISO/IEC 27001 Annex A is complete at 93 of 93.
 - Framework requirement text stays in the publisher's wording in any language,
   so an Arabic package quotes NCA and ISO controls in the publisher's own text
   rather than a translation of it, for the reason in

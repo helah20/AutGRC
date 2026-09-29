@@ -120,6 +120,22 @@ export default function Frameworks() {
                 </div>
                 <p className="small muted clamp-3" style={{ marginBottom: 12 }}>{f.description}</p>
                 <CoverageBar value={f.coverage} label={t('counts.mapped', { mapped: formatNumber(f.mapped_count), total: formatNumber(f.requirement_count) })} />
+                {/* What the reference catalogue actually holds. A mapping to a
+                    subdomain with no controls beneath it reads exactly like a
+                    mapping to a control, so the shortfall is stated here rather
+                    than left for a reader to discover during an audit. */}
+                {(f.catalogue?.completeness !== null && f.catalogue?.completeness < 100) || f.catalogue?.headingsOnly?.length ? (
+                  <div className="tiny muted" style={{ marginTop: 8 }}>
+                    {f.catalogue.completeness !== null && (
+                      <>{t('frameworks.catalogueShare', {
+                        held: formatNumber(f.catalogue.controls),
+                        published: formatNumber(f.catalogue.publishedControls)
+                      })}<br /></>
+                    )}
+                    {f.catalogue.headingsOnly?.length > 0 &&
+                      t('frameworks.headingsOnly', { n: formatNumber(f.catalogue.headingsOnly.length) })}
+                  </div>
+                ) : null}
               </div>
             </button>
           ))}

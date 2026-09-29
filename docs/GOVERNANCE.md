@@ -98,6 +98,16 @@ requirements. A framework requirement does not: rendering an NCA ECC control
 into Arabic and presenting it as the framework's own wording would be writing
 regulatory text, which rule 1 forbids whatever the language.
 
+The same rule decides what happens to the gap that leaves. The catalogue holds
+51 of the 114 controls the NCA ECC entry itself describes, and thirteen of its
+subdomains carry no controls at all. The tempting fix — writing the missing
+titles — is the prohibited one, because a title composed here and displayed
+beside real identifiers is indistinguishable from the publication to everyone
+downstream. So the shortfall is reported instead: per framework, with the
+subdomains named, on the Frameworks page and in `verify:knowledge`. A gap an
+organisation can see is a gap it can close by importing its licensed copy; a
+gap filled with plausible text is one nobody knows is there.
+
 An organisation that needs the official Arabic publication imports it, the same
 way it replaces any reference catalogue entry with its licensed copy. Until
 then the English reference text is shown as English text, bidi-isolated so it

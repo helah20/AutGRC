@@ -10,7 +10,7 @@ import { db, q, nowIso } from '../db/index.js';
 import { id } from '../utils/ids.js';
 import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound, HttpError } from '../middleware/errors.js';
-import { domainName, SOURCE_NOTE, DOMAIN_META } from '../knowledge/index.js';
+import { domainName, SOURCE_NOTE, DOMAIN_META, frameworkCoverage } from '../knowledge/index.js';
 import { suggestMappings } from '../services/ai.js';
 import { analyseCatalogue, applyCatalogue } from '../services/import-framework.js';
 import { listParam } from './_shared.js';
@@ -56,10 +56,23 @@ router.get('/', asyncHandler(async (req, res) => {
             GROUP BY fr.framework_id`).map((r) => [r.framework_id, r.n])
   );
   const byId = Object.fromEntries(rows.map((f) => [f.id, f]));
+  // How completely the reference catalogue represents each publication. A
+  // mapping to a subdomain the catalogue carries no controls for reads exactly
+  // like a mapping to a control, so the difference is stated rather than left
+  // for the reader to infer.
+  const catalogue = Object.fromEntries(frameworkCoverage().map((c) => [c.code, c]));
   res.json({
     sourceNote: SOURCE_NOTE,
     items: rows.map((f) => ({
       ...f,
+      catalogue: catalogue[f.code]
+        ? {
+            controls: catalogue[f.code].controls,
+            publishedControls: catalogue[f.code].publishedControls,
+            completeness: catalogue[f.code].completeness,
+            headingsOnly: catalogue[f.code].groupsWithoutDetail
+          }
+        : null,
       requirement_count: counts[f.id] || 0,
       mapped_count: mapped[f.id] || 0,
       coverage: counts[f.id] ? Math.round(((mapped[f.id] || 0) / counts[f.id]) * 100) : 0,
