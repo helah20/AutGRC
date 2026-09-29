@@ -68,6 +68,27 @@ that presents them carries the notice:
 `source_status` accepts `verified_official` and `user_imported` for customers
 who replace the catalogue with their licensed copies.
 
+`POST /frameworks/:code/catalogue` is how they do it: a spreadsheet of the
+publication's own controls, analysed first and written only on confirmation,
+stamped `user_imported` row by row. It is the only path other than the seed that
+writes `framework_requirements`, so rule 1 still holds — no generation path
+reaches that table.
+
+Three constraints make it safe to point at source material:
+
+- **Nothing is deleted.** A catalogue row the file does not mention is reported
+  and left alone. Control mappings, gap items and crosswalks point at
+  requirement ids, and replacing a row rather than updating it would take the
+  traceability built on it too. Existing rows are matched by reference and
+  updated in place, keeping their ids.
+- **A superseded edition cannot be rewritten.** An organisation stays assessed
+  against the edition it was certified under, so only the current or draft
+  edition accepts an import.
+- **A cross-reference column does not become a crosswalk.** A "Relevant
+  Standards" cell naming ISO 27001 A.5.15 is somebody's note, not a reviewed
+  equivalence. The values are returned as candidates for a person to accept
+  through the crosswalk route.
+
 **6. Regulatory text is not translated.**
 The platform is bilingual, and the boundary sits in the same place as every
 other rule here. Its own words exist in Arabic — the interface, the labels, and
@@ -144,6 +165,62 @@ evidenced.
 | Compliance | Do the mapped framework requirements have controls behind them? |
 | Ambiguity | Are obligations measurable, or do they rely on "regularly", "appropriately", "as needed"? |
 
+### How the same findings are reported per criterion
+
+The 0-100 readiness score says how much work is outstanding. It cannot say what
+kind: a domain that loses twenty points because nothing is accountable and a
+domain that loses twenty points because two documents state different review
+frequencies produce the same number, and they need different people to fix them.
+
+The findings are therefore also reported across five criteria, each fed by the
+checks above and scored 1 to 5:
+
+| Criterion | Fed by | Asks |
+| --- | --- | --- |
+| Policy Alignment | Compliance | Do the adopted framework requirements have controls behind them? |
+| Role Clarity | Accountability, ownership | Is every activity accountable to one role, and every document owned? |
+| Applicability | Ambiguity, consistency, duplication | Are the obligations measurable, and do the documents agree on them? |
+| Governance and Compliance | Auditability, currency | Can each control be evidenced, and is the document itself under control? |
+| Completeness of Controls | Completeness | Are the required sections present and populated? |
+
+Every category any check emits is assigned to exactly one criterion, and the
+test suite fails if one is left out — a category counted nowhere would quietly
+stop mattering. The band is read from the penalty **per document**, so a domain
+of eleven documents is comparable with a domain of three; the readiness score
+beside it remains the domain total, and the two are derived from one finding
+list so they cannot disagree about whether there is a problem.
+
+The five criteria are not the platform's invention, and the profile is not a
+regulatory rating. It is labelled as derived from the platform's own checks
+wherever it is shown. Its provenance and the reasoning behind adopting it are in
+[RESEARCH-ALIGNMENT.md](RESEARCH-ALIGNMENT.md).
+
+### Human assessment is recorded per reviewer, not averaged
+
+The lifecycle records that a review happened and what it decided. It does not
+record what the reviewer thought, so two reviewers who reach opposite judgements
+leave identical traces.
+
+Any account holding `assessment:write` — administrator, GRC manager, reviewer,
+approver or auditor — may rate a document 1 to 5 on the same five criteria. The
+ratings are held separately, bound to the document version they were given
+against, and the platform reports the **spread** as well as the mean. Where the
+panel spans two bands or more on any criterion, the assessment is flagged as
+materially divergent rather than presented as a score.
+
+Two rules constrain it:
+
+- **A rating is not a vote.** Revising your own rating replaces it; it never
+  adds a second voice to the panel.
+- **A document cannot be assessed by its own owner**, for the same reason it
+  cannot be approved by its own owner. A self-rating is not an independent
+  assessment, and averaging it in would raise the figure without adding a
+  judgement.
+
+The platform's own checks and the panel are shown side by side and neither is
+reconciled into the other. A gap of two bands means one of them is measuring the
+wrong thing, and which one it is is worth knowing.
+
 ### How the consistency check works
 
 For each parameter in the domain model, the engine derives the topic words
@@ -180,5 +257,7 @@ Two rules are enforced beyond the matrix:
 
 - **A document cannot be approved by its own owner.** Authorship and approval
   must be separate people.
+- **A document cannot be assessed by its own owner.** The same reasoning applied
+  to the five-criterion assessment.
 - **Published documents are read-only.** They must be moved to Under Revision
   first, so the version in force is never edited in place.

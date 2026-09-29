@@ -54,6 +54,7 @@ export function useLabels() {
     findingStatus: (key, serverLabel) => label('findingStatus', key, serverLabel),
     gapStatus: (key, serverLabel) => label('gapStatus', key, serverLabel),
     provenance: (key, serverLabel) => label('provenance', key, serverLabel),
+    sourceStatus: (key, serverLabel) => label('sourceStatus', key, serverLabel),
     /** Anything with no dictionary: presentable, but still English. */
     humanise
   };

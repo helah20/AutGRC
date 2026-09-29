@@ -62,7 +62,20 @@ export const config = {
     model: process.env.AI_MODEL || 'claude-sonnet-5',
     baseUrl: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com',
     maxTokens: Number(process.env.AI_MAX_TOKENS || 8000),
-    timeoutMs: Number(process.env.AI_TIMEOUT_MS || 120000)
+    timeoutMs: Number(process.env.AI_TIMEOUT_MS || 120000),
+    // Governance text is not a place for phrasing variety. Alharthi et al.
+    // (Grant CRPG-25-1063) report that lower temperatures produced "more
+    // deterministic and regulation-oriented outputs" while higher ones
+    // "occasionally introduced variability in terminology and policy
+    // formulation" (section 6.4, page 26). Their evidence is a stated tendency
+    // rather than a measured effect, so this is set on the argument: varying
+    // terminology between runs is the drift the consistency engine exists to
+    // catch, and generating it deliberately is indefensible.
+    // `??` alone would read the blank line .env.example ships as 0, which is a
+    // different setting nobody chose.
+    temperature: process.env.AI_TEMPERATURE?.trim()
+      ? Number(process.env.AI_TEMPERATURE)
+      : 0.2
   },
   seedPassword: process.env.SEED_PASSWORD || 'Autgrc#2025'
 };

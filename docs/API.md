@@ -61,6 +61,8 @@ matrix in one transaction.
 | GET | `/documents/:id/compare?from=…` | `document:read` |
 | POST | `/documents/:id/comments` | `comment:write` |
 | POST | `/documents/:id/links` | `document:update` |
+| GET | `/documents/:id/assessment` | `document:read` |
+| PUT | `/documents/:id/assessment` | `assessment:write`, and never the document's own owner |
 
 Lifecycle transitions are validated server-side. Each target status requires
 its own permission, a document cannot be approved by its owner, and
@@ -91,6 +93,7 @@ cleared.
 | GET | `/frameworks/:code/requirements` | — |
 | GET | `/frameworks/requirements/:id/trace` | — |
 | GET | `/frameworks/coverage` | — |
+| POST | `/frameworks/:code/catalogue` (multipart; `confirm=true` to write) | `settings:write` |
 | GET/POST/DELETE | `/frameworks/crosswalks…` | `mapping:write` to write |
 | POST/DELETE | `/frameworks/mappings…` | `mapping:write` |
 | POST | `/frameworks/requirements/:id/suggest` | `ai:use` |

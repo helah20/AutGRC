@@ -64,6 +64,7 @@ async function callClaude({ system, messages, maxTokens }) {
       body: JSON.stringify({
         model: config.ai.model,
         max_tokens: maxTokens || config.ai.maxTokens,
+        temperature: config.ai.temperature,
         system,
         messages
       })

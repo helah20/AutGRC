@@ -1,17 +1,47 @@
 /** Authoritative source catalogue and cross-framework mapping engine. */
 
 import express from 'express';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import multer from 'multer';
 import { z } from 'zod';
+import config from '../config.js';
 import { db, q, nowIso } from '../db/index.js';
 import { id } from '../utils/ids.js';
 import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound, HttpError } from '../middleware/errors.js';
 import { domainName, SOURCE_NOTE, DOMAIN_META } from '../knowledge/index.js';
 import { suggestMappings } from '../services/ai.js';
+import { analyseCatalogue, applyCatalogue } from '../services/import-framework.js';
 import { listParam } from './_shared.js';
 
 const router = express.Router();
 router.use(authenticate);
+
+/**
+ * Upload of a licensed catalogue. Only a spreadsheet: a control set is tabular,
+ * and extracting one from a PDF layout is guesswork this route will not do on
+ * source material.
+ */
+const CATALOGUE_EXT = new Set(['xlsx', 'xlsm', 'csv']);
+const catalogueUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, config.uploadDir),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase().slice(0, 8).replace(/[^.a-z0-9]/g, '');
+      cb(null, `${id('fwc')}${ext}`);
+    }
+  }),
+  limits: { fileSize: config.security.maxUploadBytes, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const ext = (file.originalname.split('.').pop() || '').toLowerCase();
+    if (!CATALOGUE_EXT.has(ext)) {
+      return cb(new HttpError(400,
+        `A catalogue must be a spreadsheet. Supported: ${[...CATALOGUE_EXT].join(', ')}.`));
+    }
+    cb(null, true);
+  }
+});
 
 router.get('/', asyncHandler(async (req, res) => {
   const rows = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code');
@@ -268,6 +298,92 @@ router.get('/crosswalks', asyncHandler(async (req, res) => {
   );
   res.json({ items: rows.map((r) => ({ ...r, domain_label: r.domain_key ? domainName(r.domain_key) : null })) });
 }));
+
+// ------------------------------------------------------- catalogue import --
+
+/**
+ * Replace a framework edition's reference metadata with the organisation's
+ * licensed copy.
+ *
+ * The shipped catalogue is reference metadata and says so. This is how an
+ * organisation that holds the publication — including an official Arabic one —
+ * puts the publisher's own wording in its place, which GOVERNANCE.md rules 1 and
+ * 6 both assume is possible.
+ *
+ * Analyse first, apply on confirmation. The default is a dry run because the
+ * target is source material: the caller sees which rows would be inserted,
+ * which updated, which rejected and why, and which catalogue rows the file does
+ * not cover, before anything is written. `settings:write`, so the same roles
+ * that can create an edition can replace its text.
+ */
+router.post('/:code/catalogue', requirePermission('settings:write'),
+  catalogueUpload.single('file'), asyncHandler(async (req, res) => {
+    if (!req.file) throw new HttpError(400, 'No file was uploaded.');
+    const framework = q.get('SELECT * FROM frameworks WHERE code = ?', req.params.code);
+    if (!framework) {
+      await fs.unlink(req.file.path).catch(() => {});
+      throw notFound('Framework');
+    }
+    // A superseded edition is history. Rewriting its text would change what an
+    // organisation was assessed against.
+    if (framework.edition_status === 'superseded') {
+      await fs.unlink(req.file.path).catch(() => {});
+      throw new HttpError(409,
+        `${framework.code} is a superseded edition. Import into the current edition instead, so the edition an organisation was assessed against is not rewritten.`);
+    }
+
+    const confirm = String(req.body?.confirm ?? '').toLowerCase() === 'true';
+    const existing = q.all('SELECT id, ref, title FROM framework_requirements WHERE framework_id = ?', framework.id);
+
+    let analysis;
+    try {
+      analysis = await analyseCatalogue({
+        filePath: req.file.path, originalName: req.file.originalname, existing
+      });
+    } catch (err) {
+      throw new HttpError(400, err.message);
+    } finally {
+      // Nothing about the file is worth keeping once it is parsed: the rows go
+      // into the catalogue, and holding a licensed publication on disk is the
+      // customer's decision to make, not this route's.
+      await fs.unlink(req.file.path).catch(() => {});
+    }
+
+    if (!analysis.accepted.length) {
+      throw new HttpError(400,
+        `No usable rows were found. ${analysis.rejected.length} row(s) were rejected; the first reason was: ${analysis.rejected[0]?.reason || 'unknown'}.`);
+    }
+
+    if (!confirm) {
+      audit(req, {
+        action: 'framework:catalogue_preview', entityType: 'framework', entityId: framework.id,
+        summary: `Previewed a catalogue import for ${framework.code}: ${analysis.inserts} new, ${analysis.updates} updated`
+      });
+      return res.json({ applied: false, framework: { code: framework.code, name: framework.name }, ...analysis });
+    }
+
+    const written = applyCatalogue({ framework, accepted: analysis.accepted });
+    audit(req, {
+      action: 'framework:catalogue_import', entityType: 'framework', entityId: framework.id,
+      summary: `Imported a licensed catalogue for ${framework.code}: ${written.inserted} inserted, ${written.updated} updated`,
+      detail: {
+        layout: analysis.layout, rejected: analysis.rejected.length,
+        notCovered: analysis.notCovered.length, file: req.file.originalname
+      }
+    });
+    return res.json({
+      applied: true,
+      framework: { code: framework.code, name: framework.name },
+      ...analysis,
+      written,
+      sourceStatus: 'user_imported',
+      // Said plainly because it is the one thing a reader could get wrong: the
+      // rows the file did not mention are still the shipped reference text.
+      note: analysis.notCovered.length
+        ? `${analysis.notCovered.length} catalogue row(s) were not in the file and remain reference metadata. Nothing was deleted, so the control mappings and gap items built on them are intact.`
+        : 'Every row in this edition is now the imported text.'
+    });
+  }));
 
 router.post('/crosswalks', requirePermission('mapping:write'), validate(z.object({
   source_id: z.string().min(1),

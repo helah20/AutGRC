@@ -12,6 +12,8 @@ import { notifyTransition, notifyComment } from '../services/notify.js';
 import { enrichDocument, enrichDocuments, listParam, paginate, STATUS_LABEL } from './_shared.js';
 import { DOC_TYPE_LABEL, DOC_TYPE_PREFIX } from '../services/generator.js';
 import { domainName, domainShort } from '../knowledge/index.js';
+import { CRITERIA, KRI_THRESHOLDS, assessmentOf, compareBases } from '../services/scorecard.js';
+import { reviewDocument } from '../services/review.js';
 import { padNumber } from '../utils/ids.js';
 
 const router = express.Router();
@@ -522,6 +524,109 @@ router.delete('/:id/comments/:commentId', requirePermission('comment:write'), as
   q.run('DELETE FROM comments WHERE id = ?', comment.id);
   res.json({ ok: true });
 }));
+
+// ------------------------------------------------------------ assessment --
+
+/**
+ * The reviewer panel's five-criterion assessment, the engine's own scorecard,
+ * and the gap between them.
+ *
+ * Readable by anyone who can read the document: a rating that only its author
+ * can see is not a governance record.
+ */
+router.get('/:id/assessment', asyncHandler(async (req, res) => {
+  const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
+  if (!doc) throw notFound('Document');
+  const assessment = assessmentOf(doc.id);
+  const engine = reviewDocument(doc.id).scorecard;
+  res.json({
+    criteria: CRITERIA.map(({ key, short, label, question }) => ({ key, short, label, question })),
+    thresholds: KRI_THRESHOLDS,
+    engine,
+    assessment,
+    comparison: compareBases(engine, assessment),
+    mine: assessment.reviewers.find((r) => r.reviewerId === req.user.id) || null,
+    // Computed here rather than in the client so the form is not offered to a
+    // reader the route would refuse: the permission is not the whole answer,
+    // because the document's own owner holds it and still may not self-assess.
+    canAssess: can(req.user.role, 'assessment:write') && doc.owner_id !== req.user.id
+  });
+}));
+
+/**
+ * Record or replace the caller's own rating of this document.
+ *
+ * Deliberately not restricted to the assigned reviewer. The point of holding
+ * ratings per reviewer is to see where judgements differ, which needs more than
+ * one judgement; a panel of one measures nothing. It is restricted to the roles
+ * that may review at all, so it stays a review record rather than a poll.
+ *
+ * The rating is bound to the version in force when it was given. A later edit
+ * leaves it behind as history rather than carrying an opinion forward onto
+ * wording its author never saw.
+ */
+const assessmentSchema = z.object({
+  policy_alignment: z.number().int().min(1).max(5),
+  role_clarity: z.number().int().min(1).max(5),
+  applicability: z.number().int().min(1).max(5),
+  governance_compliance: z.number().int().min(1).max(5),
+  control_completeness: z.number().int().min(1).max(5),
+  comment: z.string().max(4000).nullable().optional()
+});
+
+router.put('/:id/assessment', requirePermission('assessment:write'), validate(assessmentSchema), asyncHandler(async (req, res) => {
+  const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
+  if (!doc) throw notFound('Document');
+  // Segregation of duties, for the same reason the owner cannot approve
+  // their own document: an author's rating of their own wording is not an
+  // independent assessment, and averaging it into the panel would raise the
+  // score without adding a judgement.
+  if (doc.owner_id === req.user.id) {
+    throw new HttpError(409, 'Segregation of duties: a document cannot be assessed by its own owner.');
+  }
+  const at = nowIso();
+  const existing = q.get(
+    'SELECT * FROM document_reviews WHERE document_id = ? AND reviewer_id = ? AND document_version = ?',
+    doc.id, req.user.id, doc.version
+  );
+  const b = req.body;
+  if (existing) {
+    q.run(
+      `UPDATE document_reviews
+          SET policy_alignment = ?, role_clarity = ?, applicability = ?,
+              governance_compliance = ?, control_completeness = ?,
+              comment = ?, updated_at = ?
+        WHERE id = ?`,
+      b.policy_alignment, b.role_clarity, b.applicability,
+      b.governance_compliance, b.control_completeness,
+      b.comment || null, at, existing.id
+    );
+  } else {
+    q.run(
+      `INSERT INTO document_reviews
+         (id, document_id, reviewer_id, reviewer_name, reviewer_role, document_version,
+          policy_alignment, role_clarity, applicability, governance_compliance,
+          control_completeness, comment, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      id('dra'), doc.id, req.user.id, req.user.name, req.user.role, doc.version,
+      b.policy_alignment, b.role_clarity, b.applicability,
+      b.governance_compliance, b.control_completeness,
+      b.comment || null, at, at
+    );
+  }
+  const assessment = assessmentOf(doc.id);
+  audit(req, {
+    action: 'document:assess', entityType: 'document', entityId: doc.id,
+    summary: `Assessed ${doc.reference} v${doc.version} at ${assessmentSum(b)}/25`
+  });
+  const engine = reviewDocument(doc.id).scorecard;
+  res.json({ assessment, engine, comparison: compareBases(engine, assessment) });
+}));
+
+function assessmentSum(b) {
+  return b.policy_alignment + b.role_clarity + b.applicability
+    + b.governance_compliance + b.control_completeness;
+}
 
 // ----------------------------------------------------------------- links --
 

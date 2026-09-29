@@ -33,6 +33,15 @@ set and reports disagreements with both statements quoted:
 > PRC-IAM-001 states "annually" where the agreed organisational value is
 > "quarterly" and POL-IAM-001 states it correctly.
 
+**Reports quality per dimension, not as one number.** The same findings are
+split across five criteria — policy alignment, role clarity, applicability,
+governance and compliance, completeness of controls — and scored 1 to 5 per
+document, so a weak dimension is visible instead of disappearing into a
+readiness percentage. Reviewers can record their own rating against the same
+five criteria; the ratings are held separately and the **spread** is reported,
+because a panel that disagrees by two bands has not agreed on anything the mean
+would tell you. See [docs/RESEARCH-ALIGNMENT.md](docs/RESEARCH-ALIGNMENT.md).
+
 **Traces every requirement to evidence.** Source requirement → organisational
 control → policy clause → standard clause → procedure → evidence, rendered as
 a chain and exported for audit.
@@ -127,7 +136,7 @@ server/                 Node.js + Express + SQLite (better-sqlite3)
   src/routes/           17 route modules
   src/middleware/       Authentication, RBAC, audit, error handling
   src/db/               Schema, accessors, seed
-  test/                 31 tests
+  test/                 137 tests
 ```
 
 ### The knowledge base
@@ -186,7 +195,7 @@ than failing. Both paths label their output as an AI-generated recommendation.
 | Authorisation | Permission matrix — routes name a permission, never a role |
 | Second factor | TOTP (RFC 6238) with hashed single-use recovery codes; enforceable per role, and the password alone buys a challenge token the API refuses |
 | Account recovery | Administrator-issued temporary password, shown once; the account can do nothing but change it |
-| Segregation of duties | A document cannot be approved by its own owner, evidence cannot be verified by whoever collected it, a corrective action cannot be verified by whoever did it, and a risk cannot be accepted by its owner |
+| Segregation of duties | A document cannot be approved or assessed by its own owner, evidence cannot be verified by whoever collected it, a corrective action cannot be verified by whoever did it, and a risk cannot be accepted by its owner |
 | Audit | Every authentication, authorisation decision, document change, generation, export and administrative action, with actor and outcome |
 | Input | Zod validation on every write; strict allow-list HTML sanitiser on section bodies |
 | Uploads | Extension and MIME checks, size cap, client filename never used on disk |
@@ -200,7 +209,7 @@ development a secret is generated and persisted on first run.
 ## Testing
 
 ```bash
-npm test          # 26 offline tests (1 suite skipped); 62 with a server on :4000
+npm test          # 98 offline tests (1 suite skipped); 137 with a server on :4000
 npm run check     # static checks the bundler does not catch
 ```
 
@@ -221,6 +230,19 @@ published algorithm would refuse every real authenticator app.
 `server/test/risk.test.js` checks that a requirement the knowledge base calls
 medium risk produces a medium risk, because a register that inflates every
 entry by a band is one nobody believes.
+
+`server/test/scorecard.test.js` asserts the property the quality profile depends
+on and nothing in its output would reveal: that every finding category the engine
+or the importer can emit is counted against exactly one criterion. A category
+mapped to nothing would score nothing, and the profile would look better than the
+evidence supports. It also checks that a single reviewer's rating is never
+reported as reviewers agreeing.
+
+`server/test/framework-import.test.js` covers the catalogue import, which writes
+to the one table the platform treats as authoritative — so it asserts the
+destructive things it must not do: no row is deleted, existing requirement ids
+survive so the mappings built on them survive, and a column naming other
+frameworks does not become a crosswalk.
 
 `npm run check` catches a React hook used without being imported or obtained.
 Vite compiles that happily and it only fails when the component renders, which
@@ -295,7 +317,9 @@ save the PDF.
 - Framework catalogue entries are **reference metadata**, not licensed
   reproductions. Verify against the official publication before relying on
   them for regulatory attestation, and import your licensed copies to replace
-  them.
+  them — *Frameworks* → open a framework → **Import licensed copy**, which
+  accepts a spreadsheet of the publication's own controls, previews what it
+  would change, and deletes nothing.
 - SQLite suits a single-node deployment. A multi-node deployment needs
   PostgreSQL; the data access layer is confined to `server/src/db/`.
 - Imported PDFs must contain a text layer. Scanned documents need OCR first.

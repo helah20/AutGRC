@@ -255,7 +255,31 @@ export default {
 
   frameworks: {
     title: 'Frameworks and Regulations',
-    subtitle: 'The authoritative sources adopted by the organisation, with requirement coverage by organisational control.'
+    subtitle: 'The authoritative sources adopted by the organisation, with requirement coverage by organisational control.',
+    importCatalogue: 'Import licensed copy',
+    importIntro: "The catalogue shipped with the platform is reference metadata: identifiers and titles compiled for mapping. If your organisation holds the publication, import it here to put the publisher's own wording in its place.",
+    importSchemaTitle: 'Accepted columns',
+    importSchemaBody: 'A spreadsheet with a control reference column — "Control Number", "Reference" or "Clause" — and a title or statement column. The structured five-field layout (Policy Statement, Purpose, Relevant Standards, Control Number, Capability Name) is recognised as well.',
+    importReading: 'Reading the file…',
+    importApply: 'Import {inserts} new and replace {updates}',
+    importNew: 'New requirements',
+    importReplaced: 'Replaced text',
+    importRejected: 'Rejected rows',
+    importRejectedTitle: 'Rows that will not be imported',
+    importRow: 'Row',
+    importLayout: 'Layout',
+    importNotCovered: '{count} catalogue rows are not in this file',
+    importNotCoveredBody: 'They are left exactly as they are. Nothing is deleted, so the control mappings, gap items and crosswalks built on them stay intact — they simply remain reference metadata.',
+    importUnmatched: 'Capability names with no matching domain',
+    importUnmatchedBody: 'these rows are imported without a domain rather than filed under the nearest guess.',
+    importCandidates: '{count} cross-framework references were found',
+    importCandidatesBody: 'They are not written. A named standard in a spreadsheet cell is not a reviewed equivalence, so add the ones you accept through Framework Mapping.'
+  },
+
+  sourceStatus: {
+    reference: 'Reference metadata',
+    verified_official: 'Verified against the publication',
+    user_imported: 'Imported licensed copy'
   },
 
   mappings: {
@@ -777,6 +801,47 @@ export default {
     raci: 'RACI / RASCI',
     control_matrix: 'Control Matrix',
     work_instruction: 'Work Instruction'
+  },
+
+  scorecard: {
+    title: 'Quality profile',
+    subtitle: 'The same findings split across the five assessment criteria, so a weak dimension is visible instead of disappearing into one number. Scored per document, so a domain of eleven documents is comparable with a domain of three; the readiness score beside it is the domain total.',
+    engineBasis: 'Platform checks',
+    reviewerBasis: 'Reviewer panel',
+    outOfFive: '{score} of 5',
+    overall: 'Overall',
+    weakest: 'Weakest dimension',
+    statusOk: 'Within tolerance',
+    statusAttention: 'Needs attention',
+    statusBreach: 'Below threshold',
+    noFindings: 'No findings',
+    findingCount: '{count} findings',
+    criterionPa: 'Policy Alignment',
+    criterionRc: 'Role Clarity',
+    criterionAp: 'Applicability',
+    criterionGc: 'Governance and Compliance',
+    criterionCc: 'Completeness of Controls',
+    derived: 'Derived from the platform quality checks, not a regulatory rating.',
+    panelTitle: 'Reviewer assessment',
+    panelSubtitle: 'Each reviewer rates the document from 1 to 5 on the five criteria. Ratings are held separately so disagreement is visible.',
+    panelEmpty: 'No reviewer has assessed this version',
+    panelEmptyBody: 'A single verdict on generated governance text is a weak quality signal. Two or more independent assessments show where judgements differ.',
+    panelSize: '{count} reviewers',
+    meanTotal: 'Mean total',
+    range: 'Range',
+    divergence: 'Reviewers disagree materially',
+    divergenceBody: 'The panel spans {range} bands on {count} of the five criteria. Reconcile the assessment before treating the mean as the document quality.',
+    submit: 'Record my assessment',
+    update: 'Update my assessment',
+    myAssessment: 'My assessment',
+    commentLabel: 'Comment (optional)',
+    commentPlaceholder: 'What drove these scores?',
+    saved: 'Assessment recorded',
+    compareTitle: 'Checks against reviewers',
+    compareSubtitle: 'Where the two disagree by two bands or more, either a check is missing or a check is firing on something a reader does not care about.',
+    engineBand: 'Checks',
+    reviewerMean: 'Reviewers',
+    delta: 'Difference'
   },
 
   rating: {

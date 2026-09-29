@@ -560,3 +560,39 @@ a.worklist-title:hover { color: var(--accent); }
 }
 .auth-lang-option.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
 .auth-lang-option:hover:not(.on) { border-color: var(--border-strong); color: var(--text); }
+
+/* ======================================================== quality profile == */
+
+/* Five criterion rows. A grid rather than a table: the side column carries a
+   badge and a figure, not tabular data, and it needs to wrap under the bar on a
+   phone instead of scrolling sideways. */
+.scorecard { display: grid; gap: 2px; }
+.scorecard-row {
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-sunken);
+}
+.scorecard-row-main { flex: 1 1 260px; min-width: 0; }
+.scorecard-row-side {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  text-align: end; flex: 0 0 auto;
+}
+
+.scorecard-reviewer {
+  gap: 12px; flex-wrap: wrap;
+  padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+}
+
+.scorecard-form {
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
+  display: grid; gap: 11px;
+}
+.scorecard-form-row {
+  display: flex; gap: 14px; align-items: center; justify-content: space-between;
+  flex-wrap: wrap;
+}
+/* The 1-5 buttons must not compress the labels on a narrow screen. */
+.scorecard-form-row > .btn-group { flex: 0 0 auto; }
+
+/* A reference tag with its source status underneath, in a table cell. */
+.stack-tiny { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }

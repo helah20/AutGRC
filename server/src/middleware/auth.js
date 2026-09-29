@@ -34,6 +34,13 @@ export const PERMISSIONS = {
   'document:submit': ['admin', 'grc_manager', 'cyber_user'],
   'document:review': ['admin', 'grc_manager', 'reviewer'],
   'document:approve': ['admin', 'approver'],
+  // Recording a five-criterion assessment is a judgement about the document,
+  // not a lifecycle decision, so it is wider than document:review: the panel
+  // whose disagreement this is meant to expose is the CISO, the auditor and the
+  // GRC function, and restricting it to the assigned reviewer would leave a
+  // panel of one. The author's own role is excluded on purpose, and the route
+  // additionally refuses the document's own owner.
+  'assessment:write': ['admin', 'grc_manager', 'reviewer', 'approver', 'auditor'],
   'document:publish': ['admin', 'grc_manager'],
   'document:retire': ['admin', 'grc_manager'],
   'comment:write': ['admin', 'grc_manager', 'cyber_user', 'reviewer', 'approver', 'auditor'],

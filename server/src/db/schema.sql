@@ -208,6 +208,48 @@ CREATE TABLE IF NOT EXISTS document_approvals (
 );
 CREATE INDEX IF NOT EXISTS idx_appr_doc ON document_approvals(document_id, created_at DESC);
 
+-- One reviewer's rating of one document against the five assessment criteria.
+--
+-- The lifecycle in document_approvals records that a review happened and what
+-- it decided. It does not record what the reviewer thought of the document, so
+-- two reviewers who reach opposite judgements leave identical traces.
+--
+-- That matters because Alharthi et al. (Grant CRPG-25-1063) had three domain
+-- experts score the same twenty generated policy packages and measured their
+-- agreement at or below chance across all five criteria (Table 9, page 29):
+-- Krippendorff's alpha between -0.194 and 0.025, Fleiss' kappa between -0.120
+-- and -0.011, and one output (EXP-19) scored 23, 24 and 10 out of 25 by the
+-- three of them. Whatever that says about the outputs, it says a single
+-- reviewer's verdict on generated governance text is not a reliable measure of
+-- its quality. Recording the ratings per reviewer is what makes the
+-- disagreement visible instead of averaging it away.
+--
+-- Scores are 1 (very poor) to 5 (excellent) on each criterion, so a package
+-- totals 25 -- the same scale the paper's expert panel used, kept deliberately
+-- so an organisation can compare its own review data against published work.
+CREATE TABLE IF NOT EXISTS document_reviews (
+  id                    TEXT PRIMARY KEY,
+  document_id           TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  reviewer_id           TEXT REFERENCES users(id) ON DELETE SET NULL,
+  reviewer_name         TEXT NOT NULL,
+  reviewer_role         TEXT,
+  -- The document version the rating was given against. A rating of wording
+  -- that has since been rewritten is history, not a current assessment.
+  document_version      TEXT NOT NULL,
+  policy_alignment      INTEGER NOT NULL CHECK (policy_alignment      BETWEEN 1 AND 5),
+  role_clarity          INTEGER NOT NULL CHECK (role_clarity          BETWEEN 1 AND 5),
+  applicability         INTEGER NOT NULL CHECK (applicability         BETWEEN 1 AND 5),
+  governance_compliance INTEGER NOT NULL CHECK (governance_compliance BETWEEN 1 AND 5),
+  control_completeness  INTEGER NOT NULL CHECK (control_completeness  BETWEEN 1 AND 5),
+  comment               TEXT,
+  created_at            TEXT NOT NULL,
+  updated_at            TEXT NOT NULL,
+  -- One standing rating per reviewer per version. Changing your mind replaces
+  -- your own rating; it never adds a second voice to the panel.
+  UNIQUE (document_id, reviewer_id, document_version)
+);
+CREATE INDEX IF NOT EXISTS idx_docreview_doc ON document_reviews(document_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS comments (
   id           TEXT PRIMARY KEY,
   document_id  TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,

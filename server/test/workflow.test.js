@@ -278,6 +278,107 @@ test('AutGRC end-to-end governance workflow', {
   assert.ok(review.body.provider, 'review records the provider used');
 });
 
+  await t.test('the quality profile splits the same findings across five criteria', async () => {
+  const review = await api('POST', `/api/ai/review/document/${state.docs.policy.id}`);
+  assert.equal(review.status, 200);
+  const card = review.body.scorecard;
+  assert.ok(card, 'the review reports a criterion profile beside the score');
+  assert.equal(card.criteria.length, 5);
+  assert.deepEqual(card.unmapped, [],
+    'a live review emitted a finding category the profile cannot place, so those findings scored nothing');
+  for (const c of card.criteria) {
+    assert.ok(c.band >= 1 && c.band <= 5, `${c.short} band in range`);
+    assert.ok(['ok', 'attention', 'breach'].includes(c.status));
+  }
+  // The two figures come from one finding list, so a clean document cannot be
+  // reported as ready by one and unready by the other.
+  if (review.body.score.score === 100) assert.equal(card.overall, 5);
+});
+
+  await t.test('reviewers assess a document separately and disagreement is reported', async () => {
+  const docId = state.docs.standard.id;
+
+  const empty = await api('GET', `/api/documents/${docId}/assessment`);
+  assert.equal(empty.status, 200);
+  assert.equal(empty.body.assessment.panelSize, 0);
+  assert.equal(empty.body.assessment.divergence.material, false,
+    'an unrated document must not be reported as reviewers agreeing');
+  assert.equal(empty.body.comparison, null, 'nothing to compare without a panel');
+
+  const first = await api('PUT', `/api/documents/${docId}/assessment`, {
+    as: 'reviewer@autgrc.demo',
+    body: {
+      policy_alignment: 5, role_clarity: 5, applicability: 4,
+      governance_compliance: 5, control_completeness: 5, comment: 'Reads correctly.'
+    }
+  });
+  assert.equal(first.status, 200);
+  assert.equal(first.body.assessment.panelSize, 1);
+  assert.equal(first.body.assessment.meanTotal, 24);
+  assert.equal(first.body.assessment.divergence.material, false,
+    'one rating is not a panel agreeing');
+
+  // The shape the paper found among its three experts: two near the top of the
+  // scale and one near the bottom on the same text (Table 9, page 29).
+  const second = await api('PUT', `/api/documents/${docId}/assessment`, {
+    as: 'auditor@autgrc.demo',
+    body: {
+      policy_alignment: 2, role_clarity: 2, applicability: 2,
+      governance_compliance: 2, control_completeness: 3
+    }
+  });
+  assert.equal(second.status, 200);
+  assert.equal(second.body.assessment.panelSize, 2);
+  assert.equal(second.body.assessment.divergence.material, true);
+  assert.ok(second.body.assessment.divergence.maxRange >= 2);
+  assert.ok(second.body.comparison, 'the two bases are compared once there is a panel');
+
+  // Replacing your own rating must not add a second voice to the panel.
+  const again = await api('PUT', `/api/documents/${docId}/assessment`, {
+    as: 'reviewer@autgrc.demo',
+    body: {
+      policy_alignment: 3, role_clarity: 3, applicability: 3,
+      governance_compliance: 3, control_completeness: 3
+    }
+  });
+  assert.equal(again.body.assessment.panelSize, 2, 'a revised rating replaces, it does not accumulate');
+
+  const outOfRange = await api('PUT', `/api/documents/${docId}/assessment`, {
+    as: 'reviewer@autgrc.demo',
+    body: {
+      policy_alignment: 9, role_clarity: 3, applicability: 3,
+      governance_compliance: 3, control_completeness: 3
+    }
+  });
+  assert.equal(outOfRange.status, 400, 'a score off the five-point scale is rejected');
+
+  const readOnly = await api('PUT', `/api/documents/${docId}/assessment`, {
+    as: 'viewer@autgrc.demo',
+    body: {
+      policy_alignment: 5, role_clarity: 5, applicability: 5,
+      governance_compliance: 5, control_completeness: 5
+    }
+  });
+  assert.equal(readOnly.status, 403, 'a read-only account cannot record an assessment');
+});
+
+  await t.test('a document cannot be assessed by its own owner', async () => {
+  // The owner of the seeded package is the GRC manager, and the same reasoning
+  // that stops them approving their own document stops them rating it.
+  const owned = await api('PUT', `/api/documents/${state.docs.standard.id}/assessment`, {
+    as: 'grc@autgrc.demo',
+    body: {
+      policy_alignment: 5, role_clarity: 5, applicability: 5,
+      governance_compliance: 5, control_completeness: 5
+    }
+  });
+  assert.equal(owned.status, 409);
+  assert.match(owned.body.error, /segregation of duties/i);
+
+  const view = await api('GET', `/api/documents/${state.docs.standard.id}/assessment`, { as: 'grc@autgrc.demo' });
+  assert.equal(view.body.canAssess, false, 'the form is not offered to someone the route would refuse');
+});
+
   await t.test('AI rewrite replaces unmeasurable wording', async () => {
   const result = await api('POST', '/api/ai/rewrite', {
     body: { text: '<p>Access reviews shall be performed regularly and appropriately by the owner.</p>', mode: 'improve' }
@@ -735,6 +836,90 @@ test('AutGRC end-to-end governance workflow', {
       as: 'auditor@autgrc.demo',
       body: { supersedesCode: 'ISO-27005', code: `${code}-B`, name: 'Unauthorised edition', version: 'test' }
     });
+    assert.equal(denied.status, 403);
+  });
+
+  await t.test('a licensed catalogue replaces the reference text without deleting anything', async () => {
+    // Imported into a throwaway edition, not into the shipped catalogue: this
+    // route rewrites source material, and a test that mutated NCA-ECC would
+    // change what every later assertion reads.
+    const code = `CAT-TEST-${Date.now()}`;
+    const created = await api('POST', '/api/frameworks/editions', {
+      as: 'admin@autgrc.demo',
+      body: {
+        supersedesCode: 'CIS-V8', code, name: 'Catalogue import test edition',
+        version: 'test', copyRequirements: true
+      }
+    });
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    const carriedForward = created.body.requirementsCopied;
+    assert.ok(carriedForward > 0);
+
+    const detailBefore = await api('GET', `/api/frameworks/${code}/requirements`, { as: 'admin@autgrc.demo' });
+    const firstRef = detailBefore.body.requirements[0].ref;
+    const firstId = detailBefore.body.requirements[0].id;
+
+    // The five-field schema from the paper, section 5.3.1 page 10, in a CSV so
+    // the fixture is readable here.
+    const csv = [
+      'Control Number,Capability Name,Purpose,Policy Statement,Relevant Standards',
+      `${firstRef},Identity & Access Management,Licensed purpose text,"The licensed statement for this control.","ISO 27001 A.5.15"`,
+      'ZZ-9-1,Governance,A control only the licensed copy carries,"A statement absent from the shipped catalogue.",'
+    ].join('\n');
+
+    const previewForm = new FormData();
+    previewForm.append('file', new Blob([csv], { type: 'text/csv' }), 'catalogue.csv');
+    const preview = await upload(`/api/frameworks/${code}/catalogue`, previewForm, { as: 'admin@autgrc.demo' });
+    assert.equal(preview.status, 200, JSON.stringify(preview.body));
+    assert.equal(preview.body.applied, false, 'the default is a dry run, because the target is source material');
+    assert.equal(preview.body.layout, 'structured_five_field');
+    assert.equal(preview.body.inserts, 1);
+    assert.equal(preview.body.updates, 1);
+    assert.equal(preview.body.notCovered.length, carriedForward - 1);
+    assert.equal(preview.body.crosswalkCandidates.length, 1);
+
+    // Nothing was written by the preview.
+    const afterPreview = await api('GET', `/api/frameworks/${code}/requirements`, { as: 'admin@autgrc.demo' });
+    assert.equal(afterPreview.body.requirements.length, carriedForward);
+    assert.ok(!afterPreview.body.requirements.some((r) => r.ref === 'ZZ-9-1'));
+
+    const applyForm = new FormData();
+    applyForm.append('file', new Blob([csv], { type: 'text/csv' }), 'catalogue.csv');
+    applyForm.append('confirm', 'true');
+    const applied = await upload(`/api/frameworks/${code}/catalogue`, applyForm, { as: 'admin@autgrc.demo' });
+    assert.equal(applied.status, 200, JSON.stringify(applied.body));
+    assert.equal(applied.body.applied, true);
+    assert.deepEqual(applied.body.written, { inserted: 1, updated: 1 });
+    assert.match(applied.body.note, /Nothing was deleted/);
+
+    const afterApply = await api('GET', `/api/frameworks/${code}/requirements`, { as: 'admin@autgrc.demo' });
+    assert.equal(afterApply.body.requirements.length, carriedForward + 1, 'nothing was deleted');
+    const rewritten = afterApply.body.requirements.find((r) => r.ref === firstRef);
+    assert.equal(rewritten.id, firstId, 'the requirement id survived, so anything mapped to it survived');
+    assert.equal(rewritten.title, 'Licensed purpose text');
+    assert.equal(rewritten.source_status, 'user_imported');
+    const untouched = afterApply.body.requirements.find((r) => r.ref !== firstRef && r.ref !== 'ZZ-9-1');
+    assert.equal(untouched.source_status, 'reference',
+      'a row the file did not mention is still reference metadata, not promoted by association');
+
+    // A PDF is not a control set this route will guess at.
+    const pdfForm = new FormData();
+    pdfForm.append('file', new Blob(['%PDF-1.4'], { type: 'application/pdf' }), 'controls.pdf');
+    const wrongType = await upload(`/api/frameworks/${code}/catalogue`, pdfForm, { as: 'admin@autgrc.demo' });
+    assert.equal(wrongType.status, 400);
+
+    // And the edition this one superseded must not be rewritable: an
+    // organisation stays assessed against the edition it was certified under.
+    const supersededForm = new FormData();
+    supersededForm.append('file', new Blob([csv], { type: 'text/csv' }), 'catalogue.csv');
+    supersededForm.append('confirm', 'true');
+    const superseded = await upload('/api/frameworks/CIS-V8/catalogue', supersededForm, { as: 'admin@autgrc.demo' });
+    assert.equal(superseded.status, 409);
+    assert.match(superseded.body.error, /superseded/i);
+
+    const deniedForm = new FormData();
+    deniedForm.append('file', new Blob([csv], { type: 'text/csv' }), 'catalogue.csv');
+    const denied = await upload(`/api/frameworks/${code}/catalogue`, deniedForm, { as: 'auditor@autgrc.demo' });
     assert.equal(denied.status, 403);
   });
 

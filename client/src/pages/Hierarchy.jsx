@@ -7,6 +7,7 @@ import {
   Card, Loading, ErrorNote, Empty, Badge, Select, useToast, StatusBadge
 } from '../components/ui.jsx';
 import FindingCard from '../components/FindingCard.jsx';
+import { Scorecard } from '../components/Scorecard.jsx';
 import { IconLink, IconArrowDown, IconSparkles, IconWand, IconAlert } from '../components/Icons.jsx';
 import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
@@ -159,6 +160,11 @@ export default function Hierarchy() {
       {review && (
         <Card title="Consistency findings" style={{ marginTop: 14 }}
           subtitle={`Readiness score ${review.score.score}/100 across ${review.documents} documents in this domain.`}>
+          {review.scorecard && (
+            <div style={{ marginBottom: 14 }}>
+              <Scorecard scorecard={review.scorecard} />
+            </div>
+          )}
           {review.findings.length ? (
             <div className="stack-sm">
               {review.findings.map((f, i) => (

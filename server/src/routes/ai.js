@@ -7,6 +7,7 @@ import { id } from '../utils/ids.js';
 import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound } from '../middleware/errors.js';
 import { reviewDocument, reviewDomain, scoreOf } from '../services/review.js';
+import { scorecard } from '../services/scorecard.js';
 import { aiReview, rewriteText, draftSection, providerInfo } from '../services/ai.js';
 import { notifyFindings } from '../services/notify.js';
 import { buildParameterSet, domainName } from '../knowledge/index.js';
@@ -90,6 +91,10 @@ router.post('/review/document/:id', requirePermission('ai:use'), asyncHandler(as
     model: ai.model,
     summary: ai.summary,
     score: scoreOf(all),
+    // Built from the combined list, not from `engine.scorecard`: the provider's
+    // findings are part of the picture the reader is shown, and a profile that
+    // silently excluded them would disagree with the score printed beside it.
+    scorecard: scorecard(all, { documents: 1 }),
     findings: stored,
     durationMs: Date.now() - started
   });
@@ -107,6 +112,7 @@ router.post('/review/domain/:key', requirePermission('ai:use'), asyncHandler(asy
     domain: { key: req.params.key, name: domainName(req.params.key) },
     documents: result.documents,
     score: result.score,
+    scorecard: result.scorecard,
     findings: stored
   });
 }));

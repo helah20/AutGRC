@@ -14,6 +14,7 @@
 import { q, fromJson } from '../db/index.js';
 import { htmlToText } from './html.js';
 import { DOMAIN_MODELS, domainName, resolveText } from '../knowledge/index.js';
+import { scorecard } from './scorecard.js';
 
 // ------------------------------------------------------- required sections --
 
@@ -804,7 +805,12 @@ export function reviewDocument(documentId) {
     ...checkConsistency(loaded.doc.domain_key)
   ]);
 
-  return { document: loaded.doc, findings, score: scoreOf(findings) };
+  return {
+    document: loaded.doc,
+    findings,
+    score: scoreOf(findings),
+    scorecard: scorecard(findings, { documents: 1 })
+  };
 }
 
 /** Domain-wide review across every document in the domain. */
@@ -823,7 +829,13 @@ export function reviewDomain(domainKey) {
     findings.push(...checkAuditability({ doc: docs[0] }), ...checkCompliance({ doc: docs[0] }));
   }
   findings = dedupe(findings);
-  return { domainKey, documents: docs.length, findings, score: scoreOf(findings) };
+  return {
+    domainKey,
+    documents: docs.length,
+    findings,
+    score: scoreOf(findings),
+    scorecard: scorecard(findings, { documents: docs.length })
+  };
 }
 
 const SEVERITY_WEIGHT = { critical: 25, high: 12, medium: 5, low: 2, info: 0 };

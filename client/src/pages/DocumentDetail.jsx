@@ -10,6 +10,7 @@ import {
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import FlowDiagram, { DecisionList } from '../components/FlowDiagram.jsx';
 import FindingCard from '../components/FindingCard.jsx';
+import { Scorecard, AssessmentPanel } from '../components/Scorecard.jsx';
 import { formatDate, relativeTime, titleCase, daysUntil } from '../lib/format.js';
 import {
   IconDownload, IconEdit, IconSparkles, IconHistory, IconComment, IconCheck, IconAlert,
@@ -323,6 +324,8 @@ export default function DocumentDetail() {
                   </div>
                 )}
 
+                {review?.scorecard && <Scorecard scorecard={review.scorecard} />}
+
                 {openFindings.length === 0 ? (
                   <Empty icon={IconCheck} title="No findings" >This document passed every check the quality engine performs.</Empty>
                 ) : (
@@ -342,6 +345,10 @@ export default function DocumentDetail() {
                 )}
               </div>
             )}
+
+            <div style={{ marginTop: 18 }}>
+              <AssessmentPanel documentId={id} showEngine={!review?.scorecard} />
+            </div>
           </div>
         )}
 
