@@ -25,6 +25,37 @@ import {
 
 const SOURCES = [ACCESS_DOMAINS, OPERATE_DOMAINS, DATA_DOMAINS, GOVERN_DOMAINS, TECH_DOMAINS, RESILIENCE_DOMAINS];
 
+/**
+ * The clauses of one requirement's Standard, each with the role accountable
+ * for it.
+ *
+ * A Standard paragraph states several separate requirements, and until now the
+ * document rendered the paragraph whole. That leaves a reader to work out how
+ * many obligations a requirement actually contains, and it names one
+ * accountable role for all of them — when in practice the party who approves
+ * an exception is rarely the party who configures the platform. The clause is
+ * the unit an auditor cites and the unit somebody has to answer for, so it is
+ * the unit the document renders.
+ *
+ * The text comes from the prose, so there is one source of truth for it and
+ * the two languages stay comparable. Only the owners are authored, one role
+ * code per clause, in `clauseOwners`. A count that does not match the clauses
+ * derived from the prose is a load-time failure rather than a document that
+ * silently attributes a clause to the wrong function.
+ */
+function clausesFor(domainKey, requirement, text) {
+  const texts = splitClauses(text);
+  const owners = requirement.clauseOwners || [];
+  return texts.map((clause, i) => ({
+    n: i + 1,
+    text: clause,
+    // Null rather than a fallback: an unauthored owner is reported by
+    // validateKnowledgeBase and rendered as unassigned, because guessing one
+    // from the requirement's default would read as a decision somebody made.
+    owner: owners[i] || null
+  }));
+}
+
 /** Normalise both authoring formats into a single domain-model shape. */
 function assemble() {
   const models = {};
@@ -51,7 +82,9 @@ function assemble() {
         description: meta.description,
         objectives: raw.objectives,
         parameters: raw.parameters || {},
-        requirements: raw.requirements.map((r, i) => ({ ...r, index: i + 1 })),
+        requirements: raw.requirements.map((r, i) => ({
+          ...r, index: i + 1, clauses: clausesFor(key, r, r.standard)
+        })),
         procedure,
         roles,
         raciActivities: raw.raciActivities
@@ -107,6 +140,22 @@ export function validateKnowledgeBase() {
           }
         }
       }
+      // Every clause must name the role accountable for it. A missing owner is
+      // reported rather than defaulted: the point of the clause list is that
+      // the reader can see who answers for each obligation, and a guessed role
+      // reads exactly like one somebody decided.
+      if (!Array.isArray(req.clauseOwners)) {
+        problems.push(`${model.key}.${req.key}: no clauseOwners for its ${req.clauses.length} Standard clause(s)`);
+      } else if (req.clauseOwners.length !== req.clauses.length) {
+        problems.push(
+          `${model.key}.${req.key}: ${req.clauseOwners.length} clauseOwners for ${req.clauses.length} Standard clause(s)`
+        );
+      } else {
+        for (const [i, code] of req.clauseOwners.entries()) {
+          if (!ROLE_INDEX[code]) problems.push(`${model.key}.${req.key}: clause ${i + 1} names unknown role "${code}"`);
+        }
+      }
+
       for (const [code, refs] of Object.entries(req.refs || {})) {
         if (!frameworkCodes.has(code)) {
           problems.push(`${model.key}.${req.key}: unknown framework "${code}"`);
@@ -431,6 +480,17 @@ export function localisedModel(domainKey, language = 'en') {
     }
     const evidence = arText(domainKey, requirement.key, 'evidence');
     if (Array.isArray(evidence) && evidence.length) out.evidence = evidence;
+    // The clauses are derived from the Standard's prose, so a translated
+    // Standard has to derive its own. Leaving the ones built at assembly time
+    // in place rendered the English clause text inside the Arabic document —
+    // and, because the Arabic subject terms then had English prose to match
+    // against, it also stopped the consistency engine attributing any clause of
+    // an Arabic Standard. The accountable roles are language-independent codes,
+    // so they carry across unchanged and the clause count is already asserted
+    // equal in both languages.
+    if (out.standard !== requirement.standard) {
+      out.clauses = clausesFor(domainKey, requirement, out.standard);
+    }
     // A test frequency comes from a vocabulary shared by every domain, so it
     // is translated centrally rather than restated per requirement. A value
     // that is only a placeholder is already Arabic through its parameter.

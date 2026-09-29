@@ -306,19 +306,38 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
   const mandatory = reqs.map((r, i) => ({
     ref: `3.${i + 1}`,
     title: r.title,
-    text: resolveText(r.standard, params),
     policyRef: `5.${i + 1}`,
     req: r
   }));
 
-  const mandatoryBody = `<ol class="clause-list">${mandatory
-    .map(
-      (c) =>
-        `<li><span class="clause-ref">${escapeHtml(c.ref)}</span> <strong>${escapeHtml(c.title)}.</strong> ` +
-        `${escapeHtml(c.text)} ` +
-        `<span class="clause-source">[Policy §${escapeHtml(c.policyRef)} · ${escapeHtml(refLabel(applicableRefs(c.req, frameworkCodes)))}]</span></li>`
-    )
-    .join('')}</ol>`;
+  // Each requirement states several separate obligations, and rendering the
+  // paragraph whole left the reader to work out how many, and named one
+  // accountable role for all of them. The clause is the unit an auditor cites
+  // and the unit somebody answers for, so each requirement renders as its own
+  // numbered clause table with the accountable role beside every clause. The
+  // clause text is derived from the same prose, so there is still one source
+  // of truth for what the requirement says.
+  const mandatoryBody = mandatory
+    .map((c) => joinBlocks(
+      `<p class="clause-heading"><span class="clause-ref">${escapeHtml(c.ref)}</span> `
+      + `<strong>${escapeHtml(c.title)}</strong> `
+      + `<span class="clause-source">[${escapeHtml(TP('mandatory.policyRef', 'Policy'))} §${escapeHtml(c.policyRef)} · `
+      + `${escapeHtml(refLabel(applicableRefs(c.req, frameworkCodes)))}]</span></p>`,
+      // A list and not a table, deliberately. htmlToText renders table cells
+      // tab-separated and the consistency engine skips tabbed lines, because a
+      // control-matrix row listing an attribute is not a statement of
+      // commitment. Putting the clauses in a table therefore hid every one of
+      // them from the cross-document check — the engine went on reporting a
+      // clean result on documents it was no longer reading. The clause stays
+      // prose; the accountable role follows it.
+      `<ol class="clause-list">${c.req.clauses
+        .map((clause) => `<li><span class="clause-ref">${escapeHtml(`${c.ref}.${clause.n}`)}</span> `
+          + `${escapeHtml(resolveText(clause.text, params))} `
+          + `<span class="clause-owner">${escapeHtml(TP('mandatory.colAccountable', 'Accountable'))}: `
+          + `${escapeHtml(clause.owner ? RN(clause.owner) : TP('mandatory.unassigned', 'Not yet assigned'))}</span></li>`)
+        .join('')}</ol>`
+    ))
+    .join('\n');
 
   const technical = reqs.filter((r) => r.controlNature === 'technical' || r.controlNature === 'hybrid');
   const administrative = reqs.filter((r) => r.controlNature === 'administrative' || r.controlNature === 'physical');
@@ -348,7 +367,11 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
           h.p(TP('standard.scopePlatforms', 'Technical requirements apply to every platform capable of enforcing them. Where a platform cannot enforce a requirement, a documented exception with compensating controls is required before the platform enters or remains in service.'))
         ), P.STANDARD, []),
 
-      section('mandatory', 'Mandatory Requirements', mandatoryBody, P.STANDARD,
+      section('mandatory', 'Mandatory Requirements',
+        joinBlocks(
+          h.p(TP('mandatory.lead', 'Each requirement below is stated as separately numbered clauses. A clause is one obligation, testable on its own, and names the single role accountable for it. Where a clause cites a defined value, that value is the agreed figure recorded under Defined Values.')),
+          mandatoryBody
+        ), P.STANDARD,
         reqs.flatMap((r) => refsForRequirement(model.key, r, frameworkCodes))),
 
       section('parameters', 'Defined Values',
