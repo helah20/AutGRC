@@ -120,11 +120,68 @@ test('AutGRC end-to-end governance workflow', {
   assert.match(body.error, /incorrect/i);
 });
 
+  await t.test('applicable frameworks are an organisation setting, not a per-document choice', async () => {
+    const before = await api('GET', '/api/admin/org');
+    assert.equal(before.status, 200);
+    const original = before.body.applicable_frameworks;
+    assert.ok(Array.isArray(original) && original.length, 'the seeded organisation has adopted sources');
+
+    // Only someone who can change settings may change them.
+    const denied = await api('PUT', '/api/admin/org/frameworks', {
+      as: 'analyst@autgrc.demo', body: { codes: ['ISO-27001'] }
+    });
+    assert.equal(denied.status, 403);
+
+    // A code that is not in the catalogue is refused rather than stored.
+    const bogus = await api('PUT', '/api/admin/org/frameworks', { body: { codes: ['NOT-A-FRAMEWORK'] } });
+    assert.equal(bogus.status, 400);
+    assert.match(bogus.body.error, /catalogue/i);
+
+    // The generator takes the set from the organisation. Asking for something
+    // else in the request body does not change what the package cites.
+    const narrowed = await api('PUT', '/api/admin/org/frameworks', { body: { codes: ['ISO-27001'] } });
+    assert.equal(narrowed.status, 200);
+    assert.deepEqual(narrowed.body.applicable_frameworks, ['ISO-27001']);
+
+    const preview = await api('POST', '/api/generator/preview', {
+      body: {
+        domainKey: 'network_security',
+        docTypes: ['control_matrix'],
+        frameworkCodes: ['NCA-ECC', 'NIST-800-53', 'CIS-V8']
+      }
+    });
+    assert.equal(preview.status, 200);
+    // The preview states each control's mapping as a label, so the check is on
+    // which framework codes appear in it.
+    const cited = preview.body.controls.map((c) => c.mappingLabel).join('; ');
+    assert.match(cited, /ISO-27001/, 'the adopted source is cited');
+    for (const code of ['NCA-ECC', 'NIST-800-53', 'CIS-V8']) {
+      assert.ok(!cited.includes(code), `${code} was asked for in the body but is not adopted, so must not be cited`);
+    }
+
+    // An empty list is an answer, and is distinguishable from never answering.
+    const none = await api('PUT', '/api/admin/org/frameworks', { body: { codes: [] } });
+    assert.equal(none.status, 200);
+    assert.deepEqual(none.body.applicable_frameworks, [], 'empty means no source applies, not unanswered');
+
+    // Saving the profile without the field leaves the choice alone. Sent as the
+    // Settings form sends it — the whole profile minus this setting — so the
+    // test does not quietly blank the other fields for everything after it.
+    const { applicable_frameworks: _omitted, ...profileBody } = before.body;
+    const profile = await api('PUT', '/api/admin/org', { body: profileBody });
+    assert.equal(profile.status, 200);
+    assert.deepEqual(profile.body.applicable_frameworks, [], 'a profile save must not clear the setup answer');
+
+    const restored = await api('PUT', '/api/admin/org/frameworks', { body: { codes: original } });
+    assert.equal(restored.status, 200);
+    assert.deepEqual(restored.body.applicable_frameworks.slice().sort(), original.slice().sort());
+  });
+
   await t.test('role-based access control blocks unauthorised actions', async () => {
   // Read-only cannot generate.
   const denied = await api('POST', '/api/generator/generate', {
     as: 'viewer@autgrc.demo',
-    body: { domainKey: 'cryptography', docTypes: ['policy'], frameworkCodes: ['ISO-27001'] }
+    body: { domainKey: 'cryptography', docTypes: ['policy'] }
   });
   assert.equal(denied.status, 403);
   assert.equal(denied.body.required, 'generate:run');
@@ -134,12 +191,11 @@ test('AutGRC end-to-end governance workflow', {
   assert.equal(cannotApprove.status, 403, 'GRC manager should not manage users');
 });
 
-  await t.test('step 1-3: generate a full governance package for a domain and framework', async () => {
+  await t.test('step 1-3: generate a full governance package for a domain', async () => {
   const preview = await api('POST', '/api/generator/preview', {
     body: {
       domainKey: 'cryptography',
-      docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'],
-      frameworkCodes: ['NCA-ECC', 'ISO-27001', 'NIST-800-53']
+      docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix']
     }
   });
   assert.equal(preview.status, 200);
@@ -150,7 +206,6 @@ test('AutGRC end-to-end governance workflow', {
     body: {
       domainKey: 'cryptography',
       docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'],
-      frameworkCodes: ['NCA-ECC', 'ISO-27001', 'NIST-800-53'],
       classification: 'confidential'
     }
   });

@@ -66,14 +66,37 @@ export function enrichControl(row) {
 
 export function getOrgProfile() {
   const row = q.get('SELECT * FROM org_profile WHERE id = 1');
-  if (!row) return { org_name: 'Your Organisation' };
+  if (!row) return { org_name: 'Your Organisation', applicable_frameworks: null };
   return {
     ...row,
     regulators: fromJson(row.regulators, []),
     technology_env: fromJson(row.technology_env, []),
     data_classifications: fromJson(row.data_classifications, []),
+    // Null and empty mean different things here. Null is "nobody has said which
+    // frameworks apply", which is what sends a new installation through setup;
+    // an empty list is a decision that none do, and generates documents with no
+    // framework traceability rather than stopping to ask again.
+    applicable_frameworks: row.applicable_frameworks === null || row.applicable_frameworks === undefined
+      ? null
+      : fromJson(row.applicable_frameworks, []),
     mfa_required_roles: mfaRequiredRoles()
   };
+}
+
+/**
+ * The framework codes a generated package cites.
+ *
+ * Taken from the organisation profile rather than from the request: which
+ * authoritative sources an organisation is subject to is a fact about the
+ * organisation, not a choice to be made again on every document. Made per
+ * package it drifted — two policies in the same library could cite different
+ * source sets with nothing recording why.
+ */
+export function applicableFrameworkCodes() {
+  const codes = getOrgProfile().applicable_frameworks;
+  if (!Array.isArray(codes) || !codes.length) return [];
+  const known = new Set(q.all('SELECT code FROM frameworks').map((f) => f.code));
+  return codes.filter((code) => known.has(code));
 }
 
 export function domainOptions() {

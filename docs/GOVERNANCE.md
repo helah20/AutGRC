@@ -98,6 +98,15 @@ requirements. A framework requirement does not: rendering an NCA ECC control
 into Arabic and presenting it as the framework's own wording would be writing
 regulatory text, which rule 1 forbids whatever the language.
 
+Which sources apply is a property of the organisation, not of a document. It
+is recorded once, at setup, and every package cites the same set. Asked per
+package it drifted: two policies in one library could cite different sources
+with nothing recording why one was narrower, and a compliance position
+assembled from documents that each chose their own scope is not a position at
+all. Selecting none is still a legitimate answer, and is stored as one —
+distinct from never having been asked, which is what sends a new installation
+through setup rather than letting it generate untraceable documents.
+
 The same rule decides what happens to the gap that leaves. The catalogue holds
 51 of the 114 controls the NCA ECC entry itself describes, and thirteen of its
 subdomains carry no controls at all. The tempting fix — writing the missing

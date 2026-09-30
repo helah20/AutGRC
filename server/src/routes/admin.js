@@ -197,29 +197,76 @@ router.put('/org', requirePermission('settings:write'), validate(z.object({
   risk_appetite: z.string().max(100).nullable().optional(),
   business_requirements: z.string().max(4000).nullable().optional(),
   data_classifications: z.array(z.string().max(60)).optional(),
-  mfa_required_roles: z.array(z.enum(Object.keys(ROLES))).optional()
+  mfa_required_roles: z.array(z.enum(Object.keys(ROLES))).optional(),
+  applicable_frameworks: z.array(z.string().max(60)).optional()
 })), asyncHandler(async (req, res) => {
   const b = req.body;
   const at = nowIso();
+  // Omitting the field leaves the setting alone. The profile form does not
+  // carry it, and a PUT that replaced everything would silently clear a choice
+  // made during setup and send the installation back through it.
+  const current = getOrgProfile().applicable_frameworks;
+  const frameworks = b.applicable_frameworks === undefined
+    ? (current === null ? null : toJson(current))
+    : toJson(b.applicable_frameworks);
   q.run(
     `INSERT INTO org_profile (id, org_name, org_type, industry, size, country, regulators, operating_model,
-       technology_env, risk_appetite, business_requirements, data_classifications, mfa_required_roles, updated_at)
-     VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       technology_env, risk_appetite, business_requirements, data_classifications, mfa_required_roles,
+       applicable_frameworks, updated_at)
+     VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(id) DO UPDATE SET
        org_name = excluded.org_name, org_type = excluded.org_type, industry = excluded.industry,
        size = excluded.size, country = excluded.country, regulators = excluded.regulators,
        operating_model = excluded.operating_model, technology_env = excluded.technology_env,
        risk_appetite = excluded.risk_appetite, business_requirements = excluded.business_requirements,
        data_classifications = excluded.data_classifications,
-       mfa_required_roles = excluded.mfa_required_roles, updated_at = excluded.updated_at`,
+       mfa_required_roles = excluded.mfa_required_roles,
+       applicable_frameworks = excluded.applicable_frameworks, updated_at = excluded.updated_at`,
     b.org_name, b.org_type || null, b.industry || null, b.size || null, b.country || null,
     toJson(b.regulators || []), b.operating_model || null, toJson(b.technology_env || []),
     b.risk_appetite || null, b.business_requirements || null, toJson(b.data_classifications || []),
-    b.mfa_required_roles ? b.mfa_required_roles.join(',') : mfaRequiredRoles().join(','), at
+    b.mfa_required_roles ? b.mfa_required_roles.join(',') : mfaRequiredRoles().join(','), frameworks, at
   );
   audit(req, { action: 'settings:org', entityType: 'org_profile', summary: `Updated the organisation profile for ${b.org_name}` });
   res.json(getOrgProfile());
 }));
+
+/**
+ * Record which frameworks and regulations the organisation is subject to.
+ *
+ * Separate from the profile PUT because this is the question a new
+ * installation is asked before it generates anything, and the setup screen
+ * should not have to send a whole organisation profile to answer it.
+ *
+ * An empty list is a legitimate answer and is stored as one: it means the
+ * organisation has decided no external source applies, and documents generate
+ * without framework traceability. That is different from never having been
+ * asked, which is what the null the column starts at means.
+ */
+router.put('/org/frameworks', requirePermission('settings:write'),
+  validate(z.object({ codes: z.array(z.string().max(60)) })), asyncHandler(async (req, res) => {
+    const known = new Map(q.all('SELECT code, name FROM frameworks').map((f) => [f.code, f.name]));
+    const unknown = req.body.codes.filter((code) => !known.has(code));
+    if (unknown.length) {
+      throw new HttpError(400, `Not in the framework catalogue: ${unknown.join(', ')}`);
+    }
+    // De-duplicated and ordered by the catalogue so the stored list does not
+    // depend on the order the boxes happened to be ticked in.
+    const codes = [...known.keys()].filter((code) => req.body.codes.includes(code));
+
+    const existing = q.get('SELECT id FROM org_profile WHERE id = 1');
+    if (!existing) throw new HttpError(409, 'Set the organisation profile before choosing its frameworks.');
+    q.run('UPDATE org_profile SET applicable_frameworks = ?, updated_at = ? WHERE id = 1', toJson(codes), nowIso());
+
+    audit(req, {
+      action: 'settings:frameworks', entityType: 'org_profile',
+      summary: codes.length
+        ? `Recorded ${codes.length} applicable framework(s): ${codes.join(', ')}`
+        : 'Recorded that no external framework applies to this organisation',
+      detail: { codes }
+    });
+    res.json(getOrgProfile());
+  }));
 
 // ----------------------------------------------------------- audit log -----
 

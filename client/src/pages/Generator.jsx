@@ -1,12 +1,18 @@
 /**
  * Document generation wizard.
  *
- * Step 1 document types · Step 2 domain · Step 3 frameworks ·
- * Step 4 organisation context and agreed values · Step 5 preview and generate.
+ * Step 1 document types · Step 2 domain ·
+ * Step 3 organisation context and agreed values · Step 4 preview and generate.
+ *
+ * There is no framework step. Which authoritative sources apply is a fact about
+ * the organisation, recorded once under Settings, so the wizard reports the
+ * adopted set rather than asking again — asked per package it drifted, and two
+ * policies in one library could cite different sources with nothing recording
+ * why.
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -21,7 +27,7 @@ import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
 import { useI18n } from '../i18n/index.jsx';
 
-const STEPS = ['Document types', 'Domain', 'Frameworks', 'Context', 'Review & generate'];
+const STEPS = ['Document types', 'Domain', 'Context', 'Review & generate'];
 
 const DEFAULT_TYPES = ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'];
 
@@ -36,7 +42,6 @@ export default function Generator() {
   const [step, setStep] = useState(0);
   const [docTypes, setDocTypes] = useState(DEFAULT_TYPES);
   const [domainKey, setDomainKey] = useState('');
-  const [frameworkCodes, setFrameworkCodes] = useState([]);
   const [classification, setClassification] = useState('internal');
   // Generated in whichever language the reader is working in by default.
   const [docLanguage, setDocLanguage] = useState(language);
@@ -81,10 +86,14 @@ export default function Generator() {
   if (loading) return <Loading label="Preparing the generator…" />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
+  // The adopted sources, reported rather than chosen. A domain cites only the
+  // ones it maps to, so this is the set the package draws from, not the set it
+  // will necessarily show.
+  const frameworkCodes = (options.frameworks || []).map((f) => f.code);
+
   const canAdvance = [
     docTypes.length > 0,
     Boolean(domainKey),
-    true,                     // frameworks may legitimately be empty
     true,
     Boolean(preview)
   ][step];
@@ -96,12 +105,12 @@ export default function Generator() {
     setBusy(true);
     try {
       const res = await api.post('/generator/preview', {
-        domainKey, docTypes, frameworkCodes, parameterOverrides: overrides, classification,
+        domainKey, docTypes, parameterOverrides: overrides, classification,
         language: docLanguage
       });
       setPreview(res);
       setPreviewTab(res.documents[0]?.docType || 'policy');
-      setStep(4);
+      setStep(3);
     } catch (err) {
       toast.error('Preview failed', err.message);
     } finally {
@@ -113,7 +122,7 @@ export default function Generator() {
     setBusy(true);
     try {
       const res = await api.post('/generator/generate', {
-        domainKey, docTypes, frameworkCodes, parameterOverrides: overrides,
+        domainKey, docTypes, parameterOverrides: overrides,
         classification, ownerId: ownerId || null, approverId: approverId || null,
         language: docLanguage
       });
@@ -203,45 +212,7 @@ export default function Generator() {
         </Card>
       )}
 
-      {step === 2 && (
-        <>
-          <Card title="Select the authoritative sources"
-            subtitle="Framework requirements are source material. The generator references them; it never rewrites them.">
-            <div className="callout">
-              <strong>How sources are treated</strong>
-              <p style={{ marginBottom: 0 }}>
-                Selected requirements are mapped to the controls this package creates and cited in each policy clause.
-                Catalogue entries are reference metadata — verify against the official publication before relying on
-                them for regulatory attestation.
-              </p>
-            </div>
-            <div className="grid grid-2" style={{ marginTop: 12 }}>
-              {options.frameworks.map((f) => (
-                <label key={f.code} className={`option-card ${frameworkCodes.includes(f.code) ? 'selected' : ''}`}>
-                  <input type="checkbox" checked={frameworkCodes.includes(f.code)}
-                    onChange={() => toggle(frameworkCodes, setFrameworkCodes, f.code)} />
-                  <span className="option-card-body">
-                    <span className="option-card-title">
-                      {f.code}
-                      {f.is_mandatory ? <Badge tone="critical">Regulatory</Badge> : <Badge tone="neutral">Framework</Badge>}
-                    </span>
-                    <span className="option-card-desc">{f.name}</span>
-                    <span className="tiny faint" style={{ display: 'block', marginTop: 3 }}>{f.publisher}{f.version ? ` · ${f.version}` : ''}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </Card>
-          {!frameworkCodes.length && (
-            <div className="callout" data-callout="warning" style={{ marginTop: 12 }}>
-              <strong>No source selected</strong>
-              <p style={{ marginBottom: 0 }}>Documents will still generate, but without framework traceability or compliance mapping.</p>
-            </div>
-          )}
-        </>
-      )}
-
-      {step === 3 && domainDetail && (
+      {step === 2 && domainDetail && (
         <div className="stack">
           <Card title="Organisation context" subtitle="Used to tailor the generated content. Maintained under Settings.">
             <div className="definition">
@@ -309,7 +280,7 @@ export default function Generator() {
         </div>
       )}
 
-      {step === 4 && preview && (
+      {step === 3 && preview && (
         <div className="stack">
           <Card title="Package summary">
             <div className="grid grid-4" style={{ marginBottom: 14 }}>
@@ -318,9 +289,16 @@ export default function Generator() {
               <div><div className="kpi-label">Controls</div><div className="strong">{preview.controls.length}</div></div>
               <div><div className="kpi-label">Evidence items</div><div className="strong">{preview.controls.reduce((a, c) => a + c.evidenceItems.length, 0)}</div></div>
             </div>
-            <div className="row">
+            {/* The adopted sources, shown so the reader knows what this package
+                will be traced to — not offered for change here, because it is a
+                property of the organisation rather than of this document. */}
+            <div className="row" style={{ alignItems: 'center' }}>
+              <span className="tiny muted">{t('generator.adoptedSources')}</span>
               {frameworkCodes.map((code) => <Badge key={code} tone="info">{code}</Badge>)}
-              {!frameworkCodes.length && <span className="muted small">No authoritative source selected.</span>}
+              {!frameworkCodes.length && (
+                <span className="small" style={{ color: 'var(--warn)' }}>{t('generator.noAdoptedSources')}</span>
+              )}
+              <Link className="tiny" to="/settings">{t('generator.changeSources')}</Link>
             </div>
           </Card>
 
@@ -391,11 +369,11 @@ export default function Generator() {
 
       <div className="between" style={{ marginTop: 18 }}>
         <button className="btn" disabled={step === 0 || busy}
-          onClick={() => { setStep((s) => Math.max(0, s - 1)); if (step === 4) setPreview(null); }}>
+          onClick={() => { setStep((s) => Math.max(0, s - 1)); if (step === 3) setPreview(null); }}>
           <IconChevronLeft />Back
         </button>
         <div className="row-tight">
-          {step === 4 ? (
+          {step === 3 ? (
             <>
               <button className="btn" onClick={() => { setPreview(null); setStep(3); }} disabled={busy}>
                 <IconEye />Change inputs
@@ -404,7 +382,7 @@ export default function Generator() {
                 {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />Generating…</> : <><IconSparkles />Generate package</>}
               </button>
             </>
-          ) : step === 3 ? (
+          ) : step === 2 ? (
             <button className="btn btn-primary" onClick={runPreview} disabled={busy || !canAdvance}>
               {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />Building preview…</> : <><IconEye />Preview package</>}
             </button>

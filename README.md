@@ -109,14 +109,20 @@ hot-reloading client on <http://localhost:5173>.
 
 ## Try the workflow
 
-1. **Generate** — *Generate* → Identity & Access Management → NCA ECC and
-   ISO/IEC 27001 → review the preview and the recorded assumptions → generate.
-2. **Inspect consistency** — *Hierarchy* → Identity & Access Management →
+1. **Set the applicable sources once** — a new installation opens on a single
+   question: which frameworks and regulations apply to this organisation. It is
+   answered once, under *Settings* thereafter, not per document. The
+   demonstration data answers it already: NCA ECC, CSCC, DCC, TCC and CCC, the
+   SAMA framework, ISO/IEC 27001 and ISO 22301.
+2. **Generate** — *Generate* → Identity & Access Management → review the
+   preview and the recorded assumptions → generate. The package is traced to
+   the adopted sources, and a domain cites only the ones it maps to.
+3. **Inspect consistency** — *Hierarchy* → Identity & Access Management →
    *Check consistency*. The seeded demo data contains one deliberate conflict
    between the IAM Procedure and the IAM Standard.
-3. **Trace** — *Frameworks* → NCA ECC → open a requirement with a mapped
+4. **Trace** — *Frameworks* → NCA ECC → open a requirement with a mapped
    control to see the full chain down to evidence.
-4. **Approve and export** — open the policy, submit it for review, approve it
+5. **Approve and export** — open the policy, submit it for review, approve it
    as `ciso@autgrc.demo`, publish it, then export to Word or PDF.
 
 ---

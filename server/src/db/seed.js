@@ -9,7 +9,7 @@
  * Run with `npm run seed`. Pass --force to rebuild from an existing database.
  */
 
-import { db, q, nowIso, toJson } from './index.js';
+import { db, q, nowIso, toJson, fromJson } from './index.js';
 import { id, padNumber } from '../utils/ids.js';
 import config from '../config.js';
 import { hashPassword } from '../middleware/auth.js';
@@ -112,8 +112,9 @@ export function seedOrg() {
   const at = nowIso();
   q.run(
     `INSERT INTO org_profile (id, org_name, org_type, industry, size, country, regulators, operating_model,
-       technology_env, risk_appetite, business_requirements, data_classifications, updated_at)
-     VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?)
+       technology_env, risk_appetite, business_requirements, data_classifications,
+       applicable_frameworks, updated_at)
+     VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(id) DO NOTHING`,
     'Najd Financial Group', 'Public joint-stock company', 'Banking and financial services',
     '2,500–10,000 employees', 'Saudi Arabia',
@@ -123,6 +124,11 @@ export function seedOrg() {
     'Moderate — low appetite for regulatory and customer-data risk',
     'Maintain continuous compliance with NCA ECC and the SAMA Cyber Security Framework; support digital banking expansion without increasing the customer-data risk profile; achieve ISO/IEC 27001 certification within 18 months.',
     toJson(['Public', 'Internal', 'Confidential', 'Secret']),
+    // The sources this organisation is actually subject to, recorded once. A
+    // Saudi bank is bound by the NCA controls and the SAMA framework, and is
+    // working towards ISO/IEC 27001; the rest of the catalogue stays available
+    // for mapping without being cited as though the organisation had adopted it.
+    toJson(['NCA-ECC', 'NCA-CSCC', 'NCA-DCC', 'NCA-TCC', 'NCA-CCC', 'SAMA-CSF', 'ISO-27001', 'ISO-22301']),
     at
   );
   return q.get('SELECT * FROM org_profile WHERE id = 1');
@@ -130,31 +136,41 @@ export function seedOrg() {
 
 // ------------------------------------------------------------ demo data ---
 
-/** The five domains the brief calls out, plus governance for the framework tier. */
+/**
+ * The five domains the brief calls out, plus governance for the framework tier.
+ *
+ * No per-package framework list. Which authoritative sources apply is recorded
+ * once on the organisation profile, so every package cites the same adopted
+ * set and a domain shows only the ones it actually maps to.
+ */
 const DEMO_PACKAGES = [
-  { domain: 'iam', frameworks: ['NCA-ECC', 'ISO-27001', 'NIST-CSF', 'SAMA-CSF', 'CIS-V8'],
+  { domain: 'iam',
     docTypes: ['policy', 'standard', 'procedure', 'guideline', 'roles', 'raci', 'control_matrix', 'framework'],
     classification: 'confidential' },
-  { domain: 'asset_management', frameworks: ['NCA-ECC', 'ISO-27001', 'NIST-CSF', 'CIS-V8'],
+  { domain: 'asset_management',
     docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'], classification: 'internal' },
-  { domain: 'incident_management', frameworks: ['NCA-ECC', 'ISO-27001', 'NIST-CSF', 'SAMA-CSF'],
+  { domain: 'incident_management',
     docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'], classification: 'confidential' },
-  { domain: 'vulnerability_management', frameworks: ['NCA-ECC', 'ISO-27001', 'CIS-V8', 'NIST-800-53'],
+  { domain: 'vulnerability_management',
     docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'], classification: 'internal' },
-  { domain: 'third_party', frameworks: ['NCA-ECC', 'ISO-27001', 'SAMA-CSF', 'NIST-CSF'],
+  { domain: 'third_party',
     docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'], classification: 'confidential' },
-  { domain: 'governance', frameworks: ['NCA-ECC', 'ISO-27001', 'NIST-CSF', 'COBIT-2019'],
+  { domain: 'governance',
     docTypes: ['policy', 'standard', 'roles', 'raci'], classification: 'internal' }
 ];
 
 export function seedDemoPackages(users, org) {
   const results = [];
+  // The organisation's adopted sources, restricted to what is in the catalogue.
+  const adopted = fromJson(org?.applicable_frameworks, []);
+  const known = new Set(q.all('SELECT code FROM frameworks').map((f) => f.code));
+  const applicable = adopted.filter((code) => known.has(code));
   for (const spec of DEMO_PACKAGES) {
     if (q.get('SELECT id FROM documents WHERE domain_key = ? LIMIT 1', spec.domain)) continue;
     results.push(generatePackage({
       domainKey: spec.domain,
       docTypes: spec.docTypes,
-      frameworkCodes: spec.frameworks,
+      frameworkCodes: applicable,
       org,
       userId: users.grc_manager?.id,
       ownerId: users.grc_manager?.id,

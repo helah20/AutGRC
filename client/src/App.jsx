@@ -28,6 +28,7 @@ import Imports from './pages/Imports.jsx';
 import Reports from './pages/Reports.jsx';
 import SearchPage from './pages/SearchPage.jsx';
 import Settings from './pages/Settings.jsx';
+import Setup from './pages/Setup.jsx';
 
 export default function App() {
   const { session, loading, accountBlock } = useAuth();
@@ -48,6 +49,12 @@ export default function App() {
   // The server refuses every other route while an account block stands, so the
   // client shows the one screen that clears it rather than a wall of 403s.
   if (accountBlock) return <AccountAction block={accountBlock} />;
+
+  // Which frameworks apply is asked once, before anything is generated: until
+  // it is answered every document would come out without the traceability that
+  // is the point of generating it. Null means the question has not been asked;
+  // an empty list is an answer, and passes.
+  if (session.org && session.org.applicable_frameworks === null) return <Setup />;
 
   return (
     <Shell>

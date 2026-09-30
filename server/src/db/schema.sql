@@ -71,6 +71,10 @@ CREATE TABLE IF NOT EXISTS org_profile (
   size                  TEXT,
   country               TEXT,
   regulators            TEXT,      -- JSON array
+  -- Which frameworks and regulations the organisation is subject to, chosen
+  -- once at setup rather than per document. NULL means never chosen, which
+  -- is not the same as an empty list meaning deliberately none.
+  applicable_frameworks TEXT,      -- JSON array of framework codes
   operating_model       TEXT,
   technology_env        TEXT,      -- JSON array
   risk_appetite         TEXT,

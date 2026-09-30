@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, qs } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
+import FrameworkPicker from '../components/FrameworkPicker.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import {
   Card, Loading, ErrorNote, Empty, Badge, Tabs, Field, Select, Modal,
@@ -188,7 +189,61 @@ function OrgSettings({ canEdit }) {
           }}><IconCheck width={13} height={13} />Save profile</button>
         </div>
       )}
+
+      <ApplicableFrameworks canEdit={canEdit} current={form.applicable_frameworks || []} onSaved={reload} />
     </div>
+  );
+}
+
+/* ------------------------------------------------ applicable frameworks -- */
+
+/**
+ * The sources every generated package cites.
+ *
+ * Kept as its own section with its own save, because it is answered once at
+ * setup and rarely changed, and because changing it changes what every future
+ * document claims compliance with — which is not a thing to alter incidentally
+ * while editing an address.
+ */
+function ApplicableFrameworks({ canEdit, current, onSaved }) {
+  const toast = useToast();
+  const { refreshOrg } = useAuth();
+  const { data, loading, error, reload } = useFetch('/frameworks');
+  const [selected, setSelected] = useState(current);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => { setSelected(current); }, [current.join(',')]);
+
+  if (loading) return <Loading />;
+  if (error) return <ErrorNote error={error} onRetry={reload} />;
+
+  const changed = selected.slice().sort().join(',') !== current.slice().sort().join(',');
+
+  return (
+    <Card title="Applicable frameworks and regulations"
+      subtitle="Chosen once for the organisation. Every generated package cites this set; a domain shows only the sources it maps to.">
+      <FrameworkPicker frameworks={data.items} selected={selected} onChange={setSelected} disabled={!canEdit || busy} />
+      {!selected.length && (
+        <p className="tiny" style={{ color: 'var(--warn)' }}>
+          Nothing selected. Documents will still generate, but without framework traceability or compliance mapping.
+        </p>
+      )}
+      {canEdit && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button className="btn btn-primary" disabled={busy || !changed} onClick={async () => {
+            setBusy(true);
+            try {
+              await api.put('/admin/org/frameworks', { codes: selected });
+              await refreshOrg();
+              toast.success('Applicable frameworks saved');
+              onSaved?.();
+            } catch (err) { toast.error('Could not save', err.message); }
+            finally { setBusy(false); }
+          }}><IconCheck width={13} height={13} />Save applicable sources</button>
+          {changed && <span className="tiny muted">Applies to packages generated from now on. Existing documents keep the mapping they were generated with.</span>}
+        </div>
+      )}
+    </Card>
   );
 }
 

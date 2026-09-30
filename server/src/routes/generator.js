@@ -8,7 +8,7 @@ import { asyncHandler, validate, HttpError } from '../middleware/errors.js';
 import { generatePackage, previewPackage, DOC_TYPE_LABEL } from '../services/generator.js';
 import { DOMAIN_META, DOMAIN_MODELS, FRAMEWORKS, buildParameterSet, ROLE_LIBRARY } from '../knowledge/index.js';
 import { providerInfo } from '../services/ai.js';
-import { getOrgProfile, enrichDocuments } from './_shared.js';
+import { applicableFrameworkCodes, getOrgProfile, enrichDocuments } from './_shared.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -36,7 +36,11 @@ router.get('/options', asyncHandler(async (req, res) => {
       activities: DOMAIN_MODELS[d.key]?.raciActivities.length || 0,
       existingDocuments: q.get('SELECT COUNT(*) AS n FROM documents WHERE domain_key = ?', d.key).n
     })),
-    frameworks: q.all('SELECT id, code, name, publisher, version, kind, jurisdiction, is_mandatory, description FROM frameworks ORDER BY kind, code'),
+    // The adopted set, not the catalogue: the wizard reports which sources the
+    // package will cite rather than asking again.
+    frameworks: q.all('SELECT id, code, name, publisher, version, kind, jurisdiction, is_mandatory, description FROM frameworks ORDER BY kind, code')
+      .filter((f) => applicableFrameworkCodes().includes(f.code)),
+    frameworksChosen: org.applicable_frameworks !== null,
     roles: ROLE_LIBRARY.map((r) => ({ code: r.code, name: r.name, shortName: r.shortName, category: r.category })),
     org,
     ai: providerInfo(),
@@ -69,7 +73,10 @@ router.get('/domains/:key', asyncHandler(async (req, res) => {
 const generateSchema = z.object({
   domainKey: z.string().min(2),
   docTypes: z.array(z.enum(['policy', 'standard', 'procedure', 'guideline', 'framework', 'roles', 'raci', 'control_matrix'])).min(1),
-  frameworkCodes: z.array(z.string()).default([]),
+  // No frameworkCodes: which authoritative sources apply is a fact about the
+  // organisation, recorded once under Settings, not a choice remade on every
+  // document. Made per package it drifted, and two policies in one library
+  // could cite different source sets with nothing recording why.
   parameterOverrides: z.record(z.string()).default({}),
   classification: z.enum(['public', 'internal', 'confidential', 'secret', 'top_secret']).default('internal'),
   ownerId: z.string().nullable().optional(),
@@ -84,7 +91,7 @@ router.post('/preview', requirePermission('generate:run'), validate(generateSche
   const preview = previewPackage({
     domainKey: req.body.domainKey,
     docTypes: req.body.docTypes,
-    frameworkCodes: req.body.frameworkCodes,
+    frameworkCodes: applicableFrameworkCodes(),
     org: getOrgProfile(),
     parameterOverrides: req.body.parameterOverrides,
     language: req.body.language
@@ -97,7 +104,7 @@ router.post('/generate', requirePermission('generate:run'), validate(generateSch
   const result = generatePackage({
     domainKey: req.body.domainKey,
     docTypes: req.body.docTypes,
-    frameworkCodes: req.body.frameworkCodes,
+    frameworkCodes: applicableFrameworkCodes(),
     org,
     parameterOverrides: req.body.parameterOverrides,
     userId: req.user.id,
@@ -113,7 +120,7 @@ router.post('/generate', requirePermission('generate:run'), validate(generateSch
     action: 'generate:package', entityType: 'package', entityId: result.packageId,
     summary: `Generated ${result.documents.length} ${req.body.language === 'ar' ? 'Arabic ' : ''}document(s) for ${req.body.domainKey}`,
     detail: {
-      domain: req.body.domainKey, docTypes: req.body.docTypes, frameworks: req.body.frameworkCodes,
+      domain: req.body.domainKey, docTypes: req.body.docTypes, frameworks: applicableFrameworkCodes(),
       controls: result.controls, language: req.body.language
     }
   });

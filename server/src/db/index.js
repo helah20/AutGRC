@@ -34,6 +34,10 @@ const ADDED_COLUMNS = [
   ['users', 'must_change_password', 'INTEGER NOT NULL DEFAULT 0'],
   // Which roles may not sign in without a second factor.
   ['org_profile', 'mfa_required_roles', 'TEXT'],
+  // The frameworks the organisation is subject to, recorded once at setup.
+  // Null on an existing database means the question has not been asked yet,
+  // which is what puts an upgraded installation through the setup step.
+  ['org_profile', 'applicable_frameworks', 'TEXT'],
   // Framework editions: a new release of a standard coexists with the one the
   // organisation is still certified against.
   ['frameworks', 'edition_status',

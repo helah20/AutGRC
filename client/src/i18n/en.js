@@ -179,7 +179,32 @@ export default {
     exportPdf: 'PDF'
   },
 
+  setup: {
+    title: 'Which frameworks and regulations apply to you?',
+    subtitle: 'Answered once for the organisation. Every generated policy, standard and control is traced to the sources you select here.',
+    calloutTitle: 'Why this is asked now',
+    calloutBody: 'Framework requirements are source material: the generator cites them and maps controls to them, and never rewrites them. Selecting them once keeps every document in your library traceable to the same set, instead of each one citing whatever was ticked on the day it was made.',
+    regulatory: 'Regulatory',
+    framework: 'Framework',
+    regulatoryTitle: 'Regulations',
+    regulatoryHint: 'These apply by law or by supervision. Select the ones your organisation is subject to.',
+    frameworkTitle: 'Frameworks and standards',
+    frameworkHint: 'These apply because the organisation adopts them — for certification, for assurance, or as good practice.',
+    confirm: 'Continue with {n} source(s)',
+    none: 'None apply to us',
+    noneConfirm: 'Confirm: generate without framework traceability',
+    changeLater: 'You can change this at any time under Settings.',
+    saved: 'Recorded {n} applicable source(s)',
+    savedNone: 'Recorded that no external framework applies',
+    saveFailed: 'Could not save',
+    loading: 'Loading the framework catalogue…',
+    blockedTitle: 'Setup is not complete',
+    blockedBody: 'An administrator or GRC manager needs to record which frameworks and regulations apply to this organisation before documents can be generated. Ask them to sign in and complete setup.'
+  },
   generator: {
+    adoptedSources: 'Traced to',
+    noAdoptedSources: 'No source adopted — this package will carry no framework traceability.',
+    changeSources: 'Change under Settings',
     title: 'Document Generator',
     subtitle: 'Every document in a package renders from one requirement model, so the policy, standard, procedure, RACI and control library state the same commitments by construction.',
     languageTitle: 'Document language',
