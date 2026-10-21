@@ -392,6 +392,7 @@ export const AR_PARAMETER_LABELS = {
   criticalSupplierReviewFrequency: 'تكرار مراجعة المورّدين الحرجين',
   criticalSupplierCriteria: 'معايير تحديد المورّد الحرج',
   supplierIncidentNotificationSla: 'مستوى خدمة إشعار المورّد بالحوادث',
+  managedSecurityLocation: 'موقع مراكز العمليات الأمنية المُدارة',
   supplierRemoteWorkRule: 'قاعدة العمل عن بُعد للمورّدين',
   subProcessorRule: 'قاعدة المعالجين من الباطن',
   offboardingSla: 'مستوى خدمة إنهاء التعامل',

@@ -8,8 +8,8 @@ export const TECH_DOMAINS = {
     requirements: [
       { key: 'approved_crypto', title: 'Approved cryptographic algorithms',
         policy: 'Only cryptographic algorithms, protocols and key lengths approved by {{orgName}} shall be used to protect information.',
-        standard: 'Approved cryptography comprises {{approvedAlgorithms}}. Network transmission shall use {{minTlsVersion}}. Deprecated algorithms and protocols shall be disabled. The approved list shall be reviewed {{cryptoReviewFrequency}} against national and international guidance.',
-        clauseOwners: ['security_architect', 'it_manager', 'it_manager', 'security_architect'],
+        standard: 'Approved cryptography comprises {{approvedAlgorithms}}. Network transmission shall use {{minTlsVersion}}. Deprecated algorithms and protocols shall be disabled. The approved list shall be reviewed {{cryptoReviewFrequency}} against national and international guidance. Approved cryptography shall meet at least the National Cryptographic Standards (NCS) published by the NCA, and the NCS level applied to each system shall be chosen on the basis of the sensitivity of the data, systems and networks it protects and the risk assessment.',
+        clauseOwners: ['security_architect', 'it_manager', 'it_manager', 'security_architect', 'security_architect'],
         guidance: 'Maintain an inventory of where each algorithm is used; algorithm retirement is otherwise impossible to plan or verify.',
         controlName: 'Approved cryptographic standards', controlType: 'preventive', controlNature: 'technical',
         frequency: 'Reviewed {{cryptoReviewFrequency}}', kpi: '% of in-scope services using approved algorithms and protocol versions (target: 98%)',
