@@ -224,7 +224,8 @@ for fw in catalogue:
             if a != b and a not in b and b not in a:
                 title_mismatch.append((r['ref'], r['title'], realsub[r['ref']]))
     report['per_framework'][fw['code']] = {
-        'site_version': fw['site_version'], 'file_version': fw['version'],
+        'site_version': next((f['version'] for f in site['frameworks'] if f['code'] == fw['code']), None),
+        'file_version': fw['version'],
         'site_rows': len(srows), 'real_rows': len(real),
         'site_controls': sum(1 for r in srows if r['level'] >= 3),
         'real_controls': len(fw['controls']),

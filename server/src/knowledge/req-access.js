@@ -70,7 +70,7 @@ export const ACCESS_DOMAINS = {
           'Role-to-entitlement catalogue (current version)',
           'Sample reconciliation of granted entitlements against approvals'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-3'] }
+        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-1'] }
       },
       {
         key: 'segregation_of_duties',
@@ -260,7 +260,7 @@ export const ACCESS_DOMAINS = {
           'Remote access gateway logs for third-party sessions',
           'Privileged session recordings for third-party administrative access'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-2', '4-1-1'], 'ISO-27001': ['A.5.19', 'A.8.2'], 'NIST-800-53': ['AC-17'], 'NCA-TCC': ['2-1'] }
+        refs: { 'NCA-ECC': ['2-2-3-2', '4-1-1'], 'ISO-27001': ['A.5.19', 'A.8.2'], 'NIST-800-53': ['AC-17'], 'NCA-TCC': ['2-2'] }
       },
       {
         key: 'iam_logging',
