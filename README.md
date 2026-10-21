@@ -161,6 +161,13 @@ The validator refuses to start on a broken model: unknown framework
 references, placeholders with no parameter, duplicate requirement keys, and
 RACI matrices without exactly one accountable role all fail fast.
 
+### Local document knowledge base (n8n)
+
+[`knowledge-base/`](knowledge-base/README.md) is a separate, self-contained
+stack — n8n, Qdrant and Ollama in Docker — for asking questions of your own
+policy documents in Arabic or English, fully offline. It does not depend on
+the AutGRC server.
+
 ### How consistency is guaranteed
 
 A domain model holds one requirement set and one parameter set. Each
