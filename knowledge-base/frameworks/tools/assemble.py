@@ -28,7 +28,7 @@ META = [
          site_version='DCC-1:2022', ocr=True,
          note='Applicability is stated per data classification level: Public, Confidential, Secret, Top Secret.'),
     dict(key='otcc', code='NCA-OTCC', abbr='OTCC', version='OTCC-1:2022', name='Operational Technology Cybersecurity Controls',
-         file='otcc_en.pdf', domains={**DOMAINS4, '4': 'Third-Party and Cloud Computing Cybersecurity'},
+         file='otcc_en.pdf', domains={**DOMAINS4, '4': 'Third-Party Cybersecurity'},
          stated=dict(subdomains=23, main=47, sub=122, L1=151, L2=117, L3=56), site_version=None,
          note='Applicability is stated per facility level L1 (high criticality) to L3 (low).'),
     dict(key='tcc', code='NCA-TCC', abbr='TCC', version='TCC-1:2021', name='Telework Cybersecurity Controls',

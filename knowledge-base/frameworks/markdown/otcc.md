@@ -283,7 +283,7 @@ Objective: To ensure the inclusion of the cybersecurity resiliency requirements 
   - **OTCC 3-1-1-6**: Periodic testing and simulation exercises (e.g. tabletop exercises "TTX”) must be conducted to test the effectiveness of OT/ICS related DRP and BCP and complete incident root cause analysis. [applicability: L1, L2]
 - **OTCC 3-1-2**: With reference to the ECC control 3-1-4, the cybersecurity requirements for cybersecurity resilience aspects of business continuity management in OT/ICS environment must be reviewed, and their implementation effectiveness is measured and evaluated periodically. [applicability: L1, L2]
 
-## OTCC domain 4: Third-Party and Cloud Computing Cybersecurity
+## OTCC domain 4: Third-Party Cybersecurity
 
 ### OTCC 4-1 Third-Party Cybersecurity
 

@@ -6,8 +6,8 @@
  * part. Keys are dotted paths into the dictionaries in ./en.js and ./ar.js.
  *
  * Arabic is not a translation layer bolted onto an English product here. The
- * platform is built around Saudi frameworks — NCA ECC, CSCC, DCC, TCC, CCC and
- * SAMA CSF — whose audiences read Arabic, so direction is a first-class part
+ * platform is built around Saudi frameworks — NCA ECC, CSCC, DCC, TCC, CCC,
+ * OTCC, OSMACC and SAMA CSF — whose audiences read Arabic, so direction is a first-class part
  * of the layout rather than a mirrored afterthought.
  */
 

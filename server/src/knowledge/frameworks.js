@@ -79,6 +79,30 @@ export const FRAMEWORKS = [
     provenance: 'regulatory_requirement'
   },
   {
+    code: 'NCA-OTCC',
+    name: 'NCA Operational Technology Cybersecurity Controls (OTCC-1:2022)',
+    publisher: 'National Cybersecurity Authority (Saudi Arabia)',
+    version: 'OTCC-1:2022',
+    kind: 'regulation',
+    jurisdiction: 'Saudi Arabia',
+    isMandatory: 1,
+    description:
+      'Cybersecurity controls for operational technology and industrial control systems, applied on top of the ECC and replacing its former fifth domain. Each control applies by facility level, L1 (highest criticality) to L3.',
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'NCA-OSMACC',
+    name: 'NCA Organizations\' Social Media Accounts Cybersecurity Controls (OSMACC-1:2021)',
+    publisher: 'National Cybersecurity Authority (Saudi Arabia)',
+    version: 'OSMACC-1:2021',
+    kind: 'regulation',
+    jurisdiction: 'Saudi Arabia',
+    isMandatory: 1,
+    description:
+      'Cybersecurity controls for an organisation\'s official social media accounts, applied on top of the ECC.',
+    provenance: 'regulatory_requirement'
+  },
+  {
     code: 'SAMA-CSF',
     name: 'SAMA Cyber Security Framework',
     publisher: 'Saudi Central Bank (SAMA)',
@@ -382,6 +406,54 @@ export const REQUIREMENTS = {
     ['3-1', 'Cybersecurity Resilience Aspects of Business Continuity Management (BCM)', 'business_continuity', 2, '3'],
     ['4', 'Third-Party Cybersecurity', 'third_party', 1],
     ['4-1', 'Supply Chain and Third-Party Cybersecurity', 'third_party', 2, '4']
+  ],
+
+  'NCA-OTCC': [
+    ['1', 'Cybersecurity Governance', 'governance', 1],
+    ['1-1', 'Cybersecurity Policies and Procedures', 'governance', 2, '1'],
+    ['1-2', 'Cybersecurity Roles and Responsibilities', 'governance', 2, '1'],
+    ['1-3', 'Cybersecurity Risk Management', 'risk_management', 2, '1'],
+    ['1-4', 'Cybersecurity in Industrial Control System Project Management', 'change_management', 2, '1'],
+    ['1-5', 'Cybersecurity in Change Management', 'change_management', 2, '1'],
+    ['1-6', 'Periodical Cybersecurity Review and Audit', 'governance', 2, '1'],
+    ['1-7', 'Cybersecurity in Human Resources', 'security_awareness', 2, '1'],
+    ['1-8', 'Cybersecurity Awareness and Training Program', 'security_awareness', 2, '1'],
+    ['2', 'Cybersecurity Defense', 'security_operations', 1],
+    ['2-1', 'Asset Management', 'asset_management', 2, '2'],
+    ['2-2', 'Identity and Access Management', 'iam', 2, '2'],
+    ['2-3', 'System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
+    ['2-4', 'Networks Security Management', 'network_security', 2, '2'],
+    ['2-5', 'Mobile Devices Security', 'endpoint_security', 2, '2'],
+    ['2-6', 'Data and Information Protection', 'data_protection', 2, '2'],
+    ['2-7', 'Cryptography', 'cryptography', 2, '2'],
+    ['2-8', 'Backup and Recovery Management', 'backup_recovery', 2, '2'],
+    ['2-9', 'Vulnerabilities Management', 'vulnerability_management', 2, '2'],
+    ['2-10', 'Penetration Testing', 'vulnerability_management', 2, '2'],
+    ['2-11', 'Cybersecurity Event Logs and Monitoring Management', 'logging_monitoring', 2, '2'],
+    ['2-12', 'Cybersecurity Incident and Threat Management', 'incident_management', 2, '2'],
+    ['2-13', 'Physical Security', 'physical_security', 2, '2'],
+    ['3', 'Cybersecurity Resilience', 'business_continuity', 1],
+    ['3-1', 'Cybersecurity Resilience Aspects of Business Continuity Management', 'business_continuity', 2, '3'],
+    ['4', 'Third-Party Cybersecurity', 'third_party', 1],
+    ['4-1', 'Third-Party Cybersecurity', 'third_party', 2, '4']
+  ],
+
+  'NCA-OSMACC': [
+    ['1', 'Cybersecurity Governance', 'governance', 1],
+    ['1-1', 'Cybersecurity Policies and Procedures', 'governance', 2, '1'],
+    ['1-2', 'Cybersecurity Risk Management', 'risk_management', 2, '1'],
+    ['1-3', 'Cybersecurity in Human Resources', 'security_awareness', 2, '1'],
+    ['1-4', 'Cybersecurity Awareness and Training Program', 'security_awareness', 2, '1'],
+    ['2', 'Cybersecurity Defense', 'security_operations', 1],
+    ['2-1', 'Asset Management', 'asset_management', 2, '2'],
+    ['2-2', 'Identity and Access Management', 'iam', 2, '2'],
+    ['2-3', 'Information System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
+    ['2-4', 'Mobile Device Security', 'endpoint_security', 2, '2'],
+    ['2-5', 'Data and Information Protection', 'data_protection', 2, '2'],
+    ['2-6', 'Cybersecurity Events Logs and Monitoring Management', 'logging_monitoring', 2, '2'],
+    ['2-7', 'Cybersecurity Incident and Threat Management', 'incident_management', 2, '2'],
+    ['3', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
+    ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3']
   ],
 
   'SAMA-CSF': [

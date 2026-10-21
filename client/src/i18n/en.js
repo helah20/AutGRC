@@ -564,7 +564,7 @@ export default {
     featureTraceTitle: 'Traceable to the source',
     featureTraceBody: 'Every requirement traces from the regulation through the control, policy clause and procedure step to the evidence that proves it.',
     featureFrameworksTitle: 'Fourteen frameworks mapped',
-    featureFrameworksBody: 'NCA ECC, CSCC, DCC, TCC and CCC, SAMA CSF, ISO/IEC 27001, 27002, 27005 and 22301, NIST CSF and 800-53, CIS v8 and COBIT 2019.',
+    featureFrameworksBody: 'NCA ECC, CSCC, DCC, TCC, CCC, OTCC and OSMACC, SAMA CSF, ISO/IEC 27001, 27002, 27005 and 22301, NIST CSF and 800-53, CIS v8 and COBIT 2019.',
     featureAuditTitle: 'Audit-ready by construction',
     featureAuditBody: 'Controls carry evidence requirements, owners and indicators. Gap assessments start from your real coverage position.',
     sourceCaveat: 'Framework catalogue entries are reference metadata for mapping. Verify against the official publication before relying on them for regulatory attestation.',

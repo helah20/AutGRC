@@ -41,9 +41,9 @@
    "subdomain_title_mismatch": []
   },
   "NCA-OTCC": {
-   "site_version": null,
+   "site_version": "OTCC-1:2022",
    "file_version": "OTCC-1:2022",
-   "site_rows": 0,
+   "site_rows": 27,
    "real_rows": 196,
    "site_controls": 0,
    "real_controls": 169,
@@ -61,9 +61,9 @@
    "subdomain_title_mismatch": []
   },
   "NCA-OSMACC": {
-   "site_version": null,
+   "site_version": "OSMACC-1:2021",
    "file_version": "OSMACC-1:2021",
-   "site_rows": 0,
+   "site_rows": 15,
    "real_rows": 68,
    "site_controls": 0,
    "real_controls": 53,
@@ -97,8 +97,8 @@
    "requirements_affected": []
   },
   "NCA-OTCC": {
-   "refs_used": 0,
-   "distinct": 0,
+   "refs_used": 23,
+   "distinct": 23,
    "not_in_publication": [],
    "requirements_affected": []
   },
@@ -109,8 +109,8 @@
    "requirements_affected": []
   },
   "NCA-OSMACC": {
-   "refs_used": 0,
-   "distinct": 0,
+   "refs_used": 12,
+   "distinct": 12,
    "not_in_publication": [],
    "requirements_affected": []
   }

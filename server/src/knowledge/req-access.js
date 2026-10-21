@@ -70,7 +70,7 @@ export const ACCESS_DOMAINS = {
           'Role-to-entitlement catalogue (current version)',
           'Sample reconciliation of granted entitlements against approvals'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-1'] }
+        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-1'], 'NCA-OTCC': ['2-2'] }
       },
       {
         key: 'segregation_of_duties',
@@ -134,7 +134,7 @@ export const ACCESS_DOMAINS = {
           'Breached-password screening service configuration',
           'Account lockout configuration evidence'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-1'], 'ISO-27001': ['A.5.17', 'A.8.5'], 'NIST-800-53': ['IA-5'], 'NIST-CSF': ['PR.AA-01'] }
+        refs: { 'NCA-ECC': ['2-2-3-1'], 'ISO-27001': ['A.5.17', 'A.8.5'], 'NIST-800-53': ['IA-5'], 'NIST-CSF': ['PR.AA-01'], 'NCA-OSMACC': ['2-2'] }
       },
       {
         key: 'joiner_mover_leaver',
