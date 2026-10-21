@@ -204,7 +204,7 @@
     {
      "ref": "3-1",
      "title": "Cybersecurity Resilience Aspects of Business Continuity Management (BCM)",
-     "objective": "To ensure the inclusion of cybersecurity resilience requirements in the entity’s business continuity management and remediate and minimize the impacts of disruptions on the entity’s critical e-services and information processing systems and facilities caused by cyber risks. Cybersecurity requirements for business continuity management within the",
+     "objective": "To ensure the inclusion of cybersecurity resilience requirements in the entity’s business continuity management and remediate and minimize the impacts of disruptions on the entity’s critical e-services and information processing systems and facilities caused by cyber risks.",
      "domain": "3",
      "note": null
     },
@@ -1654,7 +1654,7 @@
      "parent": "3-1",
      "subdomain": "3-1",
      "domain": "3",
-     "text": "entity shall be identified, documented, and approved."
+     "text": "Cybersecurity requirements for business continuity management within the entity shall be identified, documented, and approved."
     },
     {
      "ref": "3-1-2",
@@ -1662,7 +1662,7 @@
      "parent": "3-1",
      "subdomain": "3-1",
      "domain": "3",
-     "text": "Cybersecurity requirements for business continuity management within the entity shall be implemented. Cybersecurity requirements for business continuity management within the"
+     "text": "Cybersecurity requirements for business continuity management within the entity shall be implemented."
     },
     {
      "ref": "3-1-3",
@@ -1670,7 +1670,7 @@
      "parent": "3-1",
      "subdomain": "3-1",
      "domain": "3",
-     "text": "entity shall include the following as a minimum:"
+     "text": "Cybersecurity requirements for business continuity management within the entity shall include the following as a minimum:"
     },
     {
      "ref": "3-1-3-1",
@@ -3880,7 +3880,7 @@
     {
      "ref": "4-2",
      "title": "Cloud Computing and Hosting Cybersecurity",
-     "objective": "To ensure the proper and efficient remediation of cyber risks and the implementation of cybersecurity requirements related to hosting and cloud computing as per organizational policies and procedures, and related laws and regulations. It is also to ensure the protection the organization’s information technology assets hosted on the cloud or processed/ managed by third parties.",
+     "objective": "To ensure the proper and efficient remediation of cyber risks and the implementation of cybersecurity requirements related to hosting and cloud computing as per organizational policies and procedures, and related laws and regulations. It is also to ensure the protection of the organization’s information technology assets hosted on the cloud or processed/ managed by third parties.",
      "domain": "4",
      "note": null
     }
@@ -3892,7 +3892,7 @@
      "parent": "1-1",
      "subdomain": "1-1",
      "domain": "1",
-     "text": "addition to the controls in ECC subdomain 1-1, the organization’s cybersecurity strategy must prioritize the support of protecting its critical systems.",
+     "text": "In addition to the controls in ECC subdomain 1-1, the organization’s cybersecurity strategy must prioritize the support of protecting its critical systems.",
      "ecc_refs": [
       "1-1"
      ]
@@ -3930,7 +3930,7 @@
      "parent": "1-3",
      "subdomain": "1-3",
      "domain": "1",
-     "text": "addition to the subcontrols in ECC control 1-6-2, cybersecurity requirements of project management and asset (information technology) change management of the organization’s critical systems must include at least the following:",
+     "text": "In addition to the subcontrols in ECC control 1-6-2, cybersecurity requirements of project management and asset (information technology) change management of the organization’s critical systems must include at least the following:",
      "ecc_refs": [
       "1-6-2"
      ]
@@ -5983,7 +5983,7 @@
      "parent": "1-1",
      "subdomain": "1-1",
      "domain": "1",
-     "text": "With reference to the ECC control 1-3-4, OT/ICS cybersecuripolicies and procedures must be reviewed periodically and/ or when there is a change in the risks landscape, organizational structure, and/or process changes.",
+     "text": "With reference to the ECC control 1-3-4, OT/ICS cybersecurity policies and procedures must be reviewed periodically and/ or when there is a change in the risks landscape, organizational structure, and/or process changes.",
      "applicability": {
       "L1": true,
       "L2": true,
@@ -6122,7 +6122,7 @@
      "parent": "1-3-1",
      "subdomain": "1-3",
      "domain": "1",
-     "text": "In the event of risk acceptance, alternative cybersecuricontrols must be clearly defined, documented, approved by the Authorizing Official, and implemented effectively for a definedperiod of time while reassessing the risk continuously.",
+     "text": "In the event of risk acceptance, alternative cybersecurity controls must be clearly defined, documented, approved by the Authorizing Official, and implemented effectively for a definedperiod of time while reassessing the risk continuously.",
      "applicability": {
       "L1": true,
       "L2": true,
@@ -7080,7 +7080,7 @@
      "parent": "2-5",
      "subdomain": "2-5",
      "domain": "2",
-     "text": "addition to subcontrols in the ECC control 2-6-3, cybersecurity requirements for mobile device security in OT/ICS must cover, at minimum, the following:",
+     "text": "In addition to subcontrols in the ECC control 2-6-3, cybersecurity requirements for mobile device security in OT/ICS must cover, at a minimum, the following:",
      "ecc_refs": [
       "2-6-3"
      ]
@@ -7138,7 +7138,7 @@
      "parent": "2-5-1",
      "subdomain": "2-5",
      "domain": "2",
-     "text": "Encryptions mechanisms must be used for mobile devicauthorized to access the OT/ICS assets.",
+     "text": "Encryptions mechanisms must be used for mobile devices authorized to access the OT/ICS assets.",
      "applicability": {
       "L1": true
      }
@@ -7269,7 +7269,7 @@
      "parent": "2-8",
      "subdomain": "2-8",
      "domain": "2",
-     "text": "addition to subcontrols in the ECC control 2-9-3, cybersecurirequirements for backup and recovery management in OT/ICS must include, at a minimum, the following:",
+     "text": "In addition to subcontrols in the ECC control 2-9-3, cybersecurity requirements for backup and recovery management in OT/ICS must include, at a minimum, the following:",
      "ecc_refs": [
       "2-9-3"
      ]
@@ -7280,7 +7280,7 @@
      "parent": "2-8-1",
      "subdomain": "2-8",
      "domain": "2",
-     "text": "Backups for all OT/ICS assets must be covered and stored centralized and offline locations.",
+     "text": "Backups for all OT/ICS assets must be covered and stored in centralized and offline locations.",
      "applicability": {
       "L1": true,
       "L2": true,
@@ -7332,7 +7332,7 @@
      "parent": "2-8",
      "subdomain": "2-8",
      "domain": "2",
-     "text": "With reference to the ECC control 2-9-4, the cybersecurity requirements for backup and recovery management in OT/ICS environment must be reviewed, and their implementation effectiveness measured and evaluated periodically.",
+     "text": "With reference to the ECC control 2-9-4, the cybersecurity requirements for backup and recovery management in OT/ICS environment must be reviewed, and their implementation effectiveness is measured and evaluated periodically.",
      "applicability": {
       "L1": true,
       "L2": true
@@ -7347,7 +7347,7 @@
      "parent": "2-9",
      "subdomain": "2-9",
      "domain": "2",
-     "text": "addition to subcontrols in the ECC control 2-10-3, cybersecurity requirements for vulnerability management in OT/ICS must cover, at a minimum, the following:",
+     "text": "In addition to subcontrols in the ECC control 2-10-3, cybersecurity requirements for vulnerability management in OT/ICS must cover, at a minimum, the following:",
      "ecc_refs": [
       "2-10-3"
      ]
@@ -8008,10 +8008,10 @@
      "parent": "4-1",
      "subdomain": "4-1",
      "domain": "4",
-     "text": "In addition to the ECC subcontrols within controls 4-1-2 and 4-1 cybersecurity requirements for third-party cybersecurity in OT/ ICS must include, at a minimum, the following:",
+     "text": "In addition to the ECC subcontrols within controls 4-1-2 and 4-1-3, cybersecurity requirements for third-party cybersecurity in OT/ ICS must include, at a minimum, the following:",
      "ecc_refs": [
-      "4-1",
-      "4-1-2"
+      "4-1-2",
+      "4-1-3"
      ]
     },
     {
@@ -8057,7 +8057,7 @@
      "parent": "4-1-1",
      "subdomain": "4-1",
      "domain": "4",
-     "text": "Periodic cybersecurity assessment and audits of third-parproviders must be conducted to ensure the mitigation of any identified cyber threats.",
+     "text": "Periodic cybersecurity assessment and audits of third-party providers must be conducted to ensure the mitigation of any identified cyber threats.",
      "applicability": {
       "L1": true
      }
@@ -8956,7 +8956,7 @@
      "parent": "1-3",
      "subdomain": "1-3",
      "domain": "1",
-     "text": "In addition to the subcontrols within control 1-9-4 in the ECC, the cybersecurity requirements for personnel responsible for managing the organization’s social media accounts should include at least the following: Cybersecurity awareness about social media accounts.",
+     "text": "In addition to the subcontrols within control 1-9-4 in the ECC, the cybersecurity requirements for personnel responsible for managing the organization’s social media accounts should include at least the following:",
      "ecc_refs": [
       "1-9-4"
      ]
@@ -8967,7 +8967,7 @@
      "parent": "1-3-1",
      "subdomain": "1-3",
      "domain": "1",
-     "text": "Implementation of and compliance with the cybersecurity requirements"
+     "text": "Cybersecurity awareness about social media accounts."
     },
     {
      "ref": "1-3-1-2",
@@ -8975,7 +8975,7 @@
      "parent": "1-3-1",
      "subdomain": "1-3",
      "domain": "1",
-     "text": "as per the organizational cybersecurity policies and procedures for the organization’s social media accounts."
+     "text": "Implementation of and compliance with the cybersecurity requirements as per the organizational cybersecurity policies and procedures for the organization’s social media accounts."
     },
     {
      "ref": "1-4-1",

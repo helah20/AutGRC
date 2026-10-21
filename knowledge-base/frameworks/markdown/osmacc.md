@@ -24,9 +24,9 @@ Objective: To ensure managing cybersecurity risks in a methodological approach i
 
 Objective: To ensure that cybersecurity risks and requirements related to personnel (employees and contractors) are managed efficiently prior to employment, during employment and after termination/separation as per organizational policies and procedures, and related laws and regulations.
 
-- **OSMACC 1-3-1**: In addition to the subcontrols within control 1-9-4 in the ECC, the cybersecurity requirements for personnel responsible for managing the organization’s social media accounts should include at least the following: Cybersecurity awareness about social media accounts.
-  - **OSMACC 1-3-1-1**: Implementation of and compliance with the cybersecurity requirements
-  - **OSMACC 1-3-1-2**: as per the organizational cybersecurity policies and procedures for the organization’s social media accounts.
+- **OSMACC 1-3-1**: In addition to the subcontrols within control 1-9-4 in the ECC, the cybersecurity requirements for personnel responsible for managing the organization’s social media accounts should include at least the following:
+  - **OSMACC 1-3-1-1**: Cybersecurity awareness about social media accounts.
+  - **OSMACC 1-3-1-2**: Implementation of and compliance with the cybersecurity requirements as per the organizational cybersecurity policies and procedures for the organization’s social media accounts.
 
 ### OSMACC 1-4 Cybersecurity Awareness and Training Program
 

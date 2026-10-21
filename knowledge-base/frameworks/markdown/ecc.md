@@ -313,11 +313,11 @@ Objective: To ensure the protection of external web applications of the entity a
 
 ### ECC 3-1 Cybersecurity Resilience Aspects of Business Continuity Management (BCM)
 
-Objective: To ensure the inclusion of cybersecurity resilience requirements in the entity’s business continuity management and remediate and minimize the impacts of disruptions on the entity’s critical e-services and information processing systems and facilities caused by cyber risks. Cybersecurity requirements for business continuity management within the
+Objective: To ensure the inclusion of cybersecurity resilience requirements in the entity’s business continuity management and remediate and minimize the impacts of disruptions on the entity’s critical e-services and information processing systems and facilities caused by cyber risks.
 
-- **ECC 3-1-1**: entity shall be identified, documented, and approved.
-- **ECC 3-1-2**: Cybersecurity requirements for business continuity management within the entity shall be implemented. Cybersecurity requirements for business continuity management within the
-- **ECC 3-1-3**: entity shall include the following as a minimum:
+- **ECC 3-1-1**: Cybersecurity requirements for business continuity management within the entity shall be identified, documented, and approved.
+- **ECC 3-1-2**: Cybersecurity requirements for business continuity management within the entity shall be implemented.
+- **ECC 3-1-3**: Cybersecurity requirements for business continuity management within the entity shall include the following as a minimum:
   - **ECC 3-1-3-1**: Ensuring the continuity of cybersecurity systems and procedures.
   - **ECC 3-1-3-2**: Developing plans for response to cybersecurity incidents that may affect the entity’s business continuity.
   - **ECC 3-1-3-3**: Developing disaster recovery plans.

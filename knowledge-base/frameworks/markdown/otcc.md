@@ -12,7 +12,7 @@ Objective: To ensure that OT/ICS cybersecurity requirements are documented, and 
 
 - **OTCC 1-1-1**: With reference to the ECC controls 1-3-1 and 1-3-2, the organization must document, approve, and implement a customized set of cybersecurity policies and procedures for OT/ICS systems or assets. [applicability: L1, L2, L3]
 - **OTCC 1-1-2**: With reference to the ECC control 1-3-3, the cybersecurity OT/ ICS policies and procedures must be supported by cybersecurity requirements such as vendor recommendations, implementation guidelines, and configuration management guidelines. [applicability: L1, L2, L3]
-- **OTCC 1-1-3**: With reference to the ECC control 1-3-4, OT/ICS cybersecuripolicies and procedures must be reviewed periodically and/ or when there is a change in the risks landscape, organizational structure, and/or process changes. [applicability: L1, L2, L3]
+- **OTCC 1-1-3**: With reference to the ECC control 1-3-4, OT/ICS cybersecurity policies and procedures must be reviewed periodically and/ or when there is a change in the risks landscape, organizational structure, and/or process changes. [applicability: L1, L2, L3]
 
 ### OTCC 1-2 Cybersecurity Roles and Responsibilities
 
@@ -33,7 +33,7 @@ Objective: To ensure managing cybersecurity risks in a methodological approach p
   - **OTCC 1-3-1-4**: Appropriate level assignment to facilities which include (OT/ICS) must be conducted based on approved methodology. [applicability: L1, L2, L3]
   - **OTCC 1-3-1-5**: Include a qualitative analysis of cybersecurity risks within the Process Hazard Analysis (PHA) which is applied with any change in operations and/or procedures in Plants. [applicability: L1]
   - **OTCC 1-3-1-6**: In the event that cybersecurity requirements cannot be implemented within the OT/ICS environment, the specific justifications for not applying those requirements must be documented and approved by the respective cybersecurity function and the Authorizing Official. [applicability: L1, L2, L3]
-  - **OTCC 1-3-1-7**: In the event of risk acceptance, alternative cybersecuricontrols must be clearly defined, documented, approved by the Authorizing Official, and implemented effectively for a definedperiod of time while reassessing the risk continuously. [applicability: L1, L2, L3]
+  - **OTCC 1-3-1-7**: In the event of risk acceptance, alternative cybersecurity controls must be clearly defined, documented, approved by the Authorizing Official, and implemented effectively for a definedperiod of time while reassessing the risk continuously. [applicability: L1, L2, L3]
 
 ### OTCC 1-4 Cybersecurity in Industrial Control System Project Management
 
@@ -162,12 +162,12 @@ Objective: To ensure the protection of the organization’s OT/ICS networks from
 
 Objective: To ensure the protection of mobile devices (including laptops, handheld devices, network test devices, etc.) from cyber risks and to ensure of sensitive data and the organization’s information.
 
-- **OTCC 2-5-1**: addition to subcontrols in the ECC control 2-6-3, cybersecurity requirements for mobile device security in OT/ICS must cover, at minimum, the following:
+- **OTCC 2-5-1**: In addition to subcontrols in the ECC control 2-6-3, cybersecurity requirements for mobile device security in OT/ICS must cover, at a minimum, the following:
   - **OTCC 2-5-1-1**: Usage of mobile devices for OT/ICS must be restricted unless specifically required. A cybersecurity risk assessment must be conducted where risks must be defined and managed. A management approval must be granted by respective cybersecurity function for a defined period of time only in alignment with organization’s formal access management mechanisms. [applicability: L1, L2]
   - **OTCC 2-5-1-2**: Mobile devices must only be used for their intended purposes and in compliance with cybersecurity requirements of its respective zones prior to being connected to OT/ICS environment, and are hardened and updated with the latest security patches and scanned against malware and APT. [applicability: L1, L2]
   - **OTCC 2-5-1-3**: Limited and approved list of mobile devices must be defined while ensuring that only these mobile devices can be connected to OT/ICS environment. [applicability: L1, L2]
   - **OTCC 2-5-1-4**: Centralized management of mobile devices must be deployed. [applicability: L1]
-  - **OTCC 2-5-1-5**: Encryptions mechanisms must be used for mobile devicauthorized to access the OT/ICS assets. [applicability: L1]
+  - **OTCC 2-5-1-5**: Encryptions mechanisms must be used for mobile devices authorized to access the OT/ICS assets. [applicability: L1]
 - **OTCC 2-5-2**: With reference to the ECC control 2-6-4, the cybersecurity requirements for mobile devices security in OT/ICS environment must be reviewed, and their implementation effectiveness is measured and evaluated periodically. [applicability: L1, L2]
 
 ### OTCC 2-6 Data and Information Protection
@@ -192,18 +192,18 @@ Objective: To ensure the proper and efficient use of cryptography to protect inf
 
 Objective: To ensure the protection of organization’s data and information, including information systems and software configurations from cyber risks organizational policies and procedures, and related laws and regulations.
 
-- **OTCC 2-8-1**: addition to subcontrols in the ECC control 2-9-3, cybersecurirequirements for backup and recovery management in OT/ICS must include, at a minimum, the following:
-  - **OTCC 2-8-1-1**: Backups for all OT/ICS assets must be covered and stored centralized and offline locations. [applicability: L1, L2, L3]
+- **OTCC 2-8-1**: In addition to subcontrols in the ECC control 2-9-3, cybersecurity requirements for backup and recovery management in OT/ICS must include, at a minimum, the following:
+  - **OTCC 2-8-1-1**: Backups for all OT/ICS assets must be covered and stored in centralized and offline locations. [applicability: L1, L2, L3]
   - **OTCC 2-8-1-2**: OT/ICS assets’ critical configuration files and engineering files must be included in the backup’s scope. [applicability: L1, L2, L3]
   - **OTCC 2-8-1-3**: Backups must be performed periodically as per the defined OT/ICS assets classification and their associated risks. [applicability: L1, L2, L3]
   - **OTCC 2-8-1-4**: Access, storage, and transfer of backups and their mediums must be secured to ensure their protection against damage, change, or unauthorized access. [applicability: L1, L2, L3]
-- **OTCC 2-8-2**: With reference to the ECC control 2-9-4, the cybersecurity requirements for backup and recovery management in OT/ICS environment must be reviewed, and their implementation effectiveness measured and evaluated periodically. [applicability: L1, L2]
+- **OTCC 2-8-2**: With reference to the ECC control 2-9-4, the cybersecurity requirements for backup and recovery management in OT/ICS environment must be reviewed, and their implementation effectiveness is measured and evaluated periodically. [applicability: L1, L2]
 
 ### OTCC 2-9 Vulnerabilities Management
 
 Objective: To ensure timely detection and effective remediation of technical prevent or minimize the probability of exploiting these vulnerabilities ber-attacks against the organization.
 
-- **OTCC 2-9-1**: addition to subcontrols in the ECC control 2-10-3, cybersecurity requirements for vulnerability management in OT/ICS must cover, at a minimum, the following:
+- **OTCC 2-9-1**: In addition to subcontrols in the ECC control 2-10-3, cybersecurity requirements for vulnerability management in OT/ICS must cover, at a minimum, the following:
   - **OTCC 2-9-1-1**: Scope and activities of vulnerability assessments must be defined for OT/ICS environment as part of organization’s formal vulnerability management while ensuring limited or no impact on the production environment. [applicability: L1, L2, L3]
   - **OTCC 2-9-1-2**: With reference to the ECC subcontrol 2-10-3-3, remediation of newly discovered critical vulnerabilities presenting significant risks to the OT/ICS environment must be performed in a timely manner. [applicability: L1]
   - **OTCC 2-9-1-3**: With reference to the ECC subcontrol 2-10-3-1, vulnerability assessment for OT/ICS systems must be conducted periodi- Months cally. [applicability: L1 (At least every 3 months), L2 (At least every 6 months), L3 (At least every 12 months)]
@@ -289,9 +289,9 @@ Objective: To ensure the inclusion of the cybersecurity resiliency requirements 
 
 Objective: To ensure the protection of organizational assets against the cybersecurity to third-parties, including manufactures of OT/ICS-related hardware vendors of OT/ICS products and suppliers of OT/ICS-related services tional policies and procedures, and related laws and regulations.
 
-- **OTCC 4-1-1**: In addition to the ECC subcontrols within controls 4-1-2 and 4-1 cybersecurity requirements for third-party cybersecurity in OT/ ICS must include, at a minimum, the following:
+- **OTCC 4-1-1**: In addition to the ECC subcontrols within controls 4-1-2 and 4-1-3, cybersecurity requirements for third-party cybersecurity in OT/ ICS must include, at a minimum, the following:
   - **OTCC 4-1-1-1**: Cybersecurity requirements are included during procurement lifecycle for OT/ICS products and services. [applicability: L1, L2, L3]
   - **OTCC 4-1-1-2**: Cybersecurity requirements for third-party evaluation, selection, and information sharing must be defined. [applicability: L1, L2]
   - **OTCC 4-1-1-3**: Third-party contractors and vendors must use formal and documented Secure Development Life Cycle (SDLC) practices for systems and components designed or deployed in OT/ICS environment. [applicability: L1, L2]
-  - **OTCC 4-1-1-4**: Periodic cybersecurity assessment and audits of third-parproviders must be conducted to ensure the mitigation of any identified cyber threats. [applicability: L1]
+  - **OTCC 4-1-1-4**: Periodic cybersecurity assessment and audits of third-party providers must be conducted to ensure the mitigation of any identified cyber threats. [applicability: L1]
 - **OTCC 4-1-2**: With reference to the ECC control 4-1-4, the cybersecurity requirements for third-party cybersecurity in OT/ICS environment must be reviewed, and their implementation effectiveness is measured and evaluated periodically. [applicability: L1, L2]

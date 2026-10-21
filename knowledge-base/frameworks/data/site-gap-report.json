@@ -909,14 +909,14 @@
   {
    "framework": "OTCC",
    "control": "4-1-1",
-   "ecc_ref": "4-1",
-   "status": "objective modified in ECC-2:2024"
+   "ecc_ref": "4-1-2",
+   "status": "unchanged"
   },
   {
    "framework": "OTCC",
    "control": "4-1-1",
-   "ecc_ref": "4-1-2",
-   "status": "unchanged"
+   "ecc_ref": "4-1-3",
+   "status": "modified in ECC-2:2024"
   },
   {
    "framework": "OTCC",

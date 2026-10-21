@@ -8,7 +8,7 @@ Publisher: National Cybersecurity Authority (NCA), Saudi Arabia. Source file: Cr
 
 Objective: To ensure that cybersecurity plans, goals, initiatives and projects are contributing to compliance with related laws and regulations.
 
-- **CSCC 1-1-1**: addition to the controls in ECC subdomain 1-1, the organization’s cybersecurity strategy must prioritize the support of protecting its critical systems.
+- **CSCC 1-1-1**: In addition to the controls in ECC subdomain 1-1, the organization’s cybersecurity strategy must prioritize the support of protecting its critical systems.
 
 ### CSCC 1-2 Cybersecurity Risk Management
 
@@ -22,7 +22,7 @@ Objective: To ensure managing cybersecurity risks in a methodological approach i
 
 Objective: To ensure that cybersecurity requirements are included in project management methodology and procedures in order to protect the confidentiality, integrity and availability of information technology assets as per organization policies, and procedures, and related laws and regulations.
 
-- **CSCC 1-3-1**: addition to the subcontrols in ECC control 1-6-2, cybersecurity requirements of project management and asset (information technology) change management of the organization’s critical systems must include at least the following:
+- **CSCC 1-3-1**: In addition to the subcontrols in ECC control 1-6-2, cybersecurity requirements of project management and asset (information technology) change management of the organization’s critical systems must include at least the following:
   - **CSCC 1-3-1-1**: Conducting a stress test to ensure the capacity of the various components.
   - **CSCC 1-3-1-2**: Ensuring the implementation of business continuity requirements.
 - **CSCC 1-3-2**: In addition to the subcontrols in ECC control 1-6-3, cybersecurity requirements related to software and application development projects of the organization’s critical systems must include at least the following:
@@ -215,7 +215,7 @@ Objective: To ensure the protection of assets against cybersecurity risks relate
 
 ### CSCC 4-2 Cloud Computing and Hosting Cybersecurity
 
-Objective: To ensure the proper and efficient remediation of cyber risks and the implementation of cybersecurity requirements related to hosting and cloud computing as per organizational policies and procedures, and related laws and regulations. It is also to ensure the protection the organization’s information technology assets hosted on the cloud or processed/ managed by third parties.
+Objective: To ensure the proper and efficient remediation of cyber risks and the implementation of cybersecurity requirements related to hosting and cloud computing as per organizational policies and procedures, and related laws and regulations. It is also to ensure the protection of the organization’s information technology assets hosted on the cloud or processed/ managed by third parties.
 
 - **CSCC 4-2-1**: In addition to the subcontrols in ECC control 4-2-3, cybersecurity requirements related to the use of hosting and cloud computing services must include at least the following:
   - **CSCC 4-2-1-1**: Hosting of critical systems and any part of their technical components must be inside the organization or within cloud computing services provided by government organizations or Saudi companies that are in compliance with NCA’s Cloud Cybersecurity Controls (CCC), taking into account the classification of the hosted data.

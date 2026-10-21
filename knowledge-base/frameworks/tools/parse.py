@@ -34,11 +34,26 @@ def lines_of(page, body_x, right_max):
             rows[-1]['words'].append(w)
         else:
             rows.append({'top': w['top'], 'words': [w]})
+    # The text column moves between facing pages, so find its left edge here:
+    # the x most lines' text starts at, near the configured position.
+    from collections import Counter
+    starts = Counter()
+    for r in rows:
+        for w in sorted(r['words'], key=lambda w: w['x0']):
+            if body_x - 25 <= w['x0'] <= body_x + 20 and not ID.match(w['text']):
+                starts[round(w['x0'])] += 1
+                break
+    if starts:
+        top = starts.most_common(1)[0][1]
+        edge = min(x for x, n in starts.items() if n >= max(1, top // 3))
+        body_x = edge + 2
     out = []
     for r in rows:
         ws = sorted(r['words'], key=lambda w: w['x0'])
-        left = [w for w in ws if w['x1'] <= body_x - 4]
-        body = [w for w in ws if w['x1'] > body_x - 4 and w['x0'] < right_max]
+        # Column labels sit left of the text even where the column edge moves.
+        label = lambda w: w['text'] in ('Objective', 'objective', 'Controls') and w['x0'] < body_x - 2
+        left = [w for w in ws if w['x1'] <= body_x - 4 or label(w)]
+        body = [w for w in ws if w['x1'] > body_x - 4 and w['x0'] < right_max and not label(w)]
         lt = ' '.join(w['text'] for w in left)
         bt = ' '.join(w['text'] for w in body)
         if BOILER.search((lt + ' ' + bt).strip()):
@@ -81,7 +96,10 @@ def parse(pdf_path, body_x, right_max=10_000, first_page=1, last_page=None, gap_
             # Horizontal table rules: a rule between two lines is a cell boundary.
             rules = sorted({round(r['top']) for r in page.rects + page.lines
                             if r['width'] > 150 and (r['bottom'] - r['top']) < 4})
-            spacings = [b['top'] - a['top'] for a, b in zip(ls, ls[1:]) if 0 < b['top'] - a['top'] < 30]
+            # Line spacing from body text only: reference lines in the left column
+            # sit between text lines and would halve the estimate.
+            bl = [l for l in ls if l['body'].strip()]
+            spacings = [b['top'] - a['top'] for a, b in zip(bl, bl[1:]) if 0 < b['top'] - a['top'] < 30]
             step = median(spacings) if spacings else 15
             prev = None
             heads = [ln['top'] for ln in ls
@@ -121,6 +139,11 @@ def parse(pdf_path, body_x, right_max=10_000, first_page=1, last_page=None, gap_
                     prev = None
                     continue
                 bw = body.split()
+                # A reference alone on its line is centred against a multi-line
+                # cell, not the start of one: anchor it like a left-column one.
+                if len(bw) == 1 and ID.match(bw[0]) and norm(bw[0]).count('-') >= 2:
+                    anchors.append((y, 'id', norm(bw[0]), ''))
+                    continue
                 inline = norm(bw[0]) if ID.match(bw[0]) and norm(bw[0]).count('-') >= 2 else None
                 if inline:
                     body = ' '.join(bw[1:])
