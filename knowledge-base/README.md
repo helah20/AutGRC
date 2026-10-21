@@ -86,6 +86,20 @@ docker compose --profile cpu logs -f ollama-pull-cpu
 
 التفاصيل والتحليل في [`frameworks/README.md`](frameworks/README.md).
 
+## عينات السياسات والنماذج (من جهازك)
+
+العينات مواد مرخّصة أو من أطراف أخرى. لذلك لا تُرفع إلى المستودع: تُحوَّل محلياً إلى `documents/samples/`، وهذا المجلد مستثنى من git، ثم تُرفع إلى قاعدة المعرفة:
+
+```bash
+pip install python-docx openpyxl pdfplumber
+python3 scripts/convert-samples.py "/path/to/ISO27001-Policies and Procedures and Forms and Templates"
+./scripts/ingest-folder.sh documents/samples
+```
+
+السكربت يتخطى الملفات الشخصية بحسب الاسم، مثل الفواتير ونتائج الاختبارات والشهادات، ويطبع كل ملف تخطّاه مع السبب.
+
+نتيجة مقارنة العينات بالموقع في [`samples-comparison.md`](samples-comparison.md). ومراجعة ملف الربط بين ISO والهيئة في [`frameworks/iso-nca-mapping.md`](frameworks/iso-nca-mapping.md).
+
 ## التخصيص
 
 | ما تريد تغييره | أين |
@@ -127,6 +141,8 @@ knowledge-base/
 ├── credentials/credentials.template.json
 ├── scripts/import.sh             # يستورد بيانات الاعتماد وسير العمل عند التشغيل
 ├── scripts/ingest-folder.sh      # رفع مجلد كامل
+├── scripts/convert-samples.py    # تحويل العينات إلى Markdown محلياً
+├── samples-comparison.md         # مقارنة العينات بالموقع
 └── documents/                    # ضع ملفاتك هنا (لا تُرفع إلى Git)
 ```
 

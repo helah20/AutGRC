@@ -721,7 +721,7 @@ consolidation".
 > the same reasoning keeps framework text untranslated under rule 6. AutGRC
 > achieves the analytical benefit differently and, in my assessment, more
 > safely: each publisher's own wording is preserved and equivalence is asserted
-> **outside** the text, in 86 curated cross-framework crosswalks, where it can
+> **outside** the text, in 126 curated cross-framework crosswalks, where it can
 > be reviewed, disputed and versioned. Normalisation bakes an interpretation
 > into the record; a crosswalk states it as a claim.
 
@@ -773,7 +773,7 @@ ISO/IEC 27005, ISO 22301 and NCA ECC-2:2024.
 | Grounding: no statement unsupported by source (§5.4.6, p. 17) | GOVERNANCE.md rule 3; the load-time validator rejects a placeholder with no parameter | ISO 27001 7.5.3 | **Already stronger** — enforced structurally, not by instruction |
 | Bilingual AR/EN generation (Table 1, p. 7; §6.1.1, p. 20) | `server/src/knowledge/ar/`, `doc-strings.js`, RTL Word export | — | **Equivalent**, with a stricter rule: framework text is never translated (GOVERNANCE.md rule 6) |
 | Organisational contextualisation (§6.1.2, p. 22) | `org_profile`, `{{orgName}}`, domain parameter sets, plus a recorded assumption where an input was missing | ISO 27001 4.1, 4.2 | **Already stronger** — assumptions are explicit |
-| Multi-framework selection (§6.1.3, p. 22) | 16 frameworks, 533 requirement references, 86 crosswalks | ISO 27001 Annex A; ISO 22301 8.1 | **Equivalent** |
+| Multi-framework selection (§6.1.3, p. 22) | 16 frameworks, 533 requirement references, 126 crosswalks | ISO 27001 Annex A; ISO 22301 8.1 | **Equivalent** |
 | Capability categories as the retrieval unit (§6.1.4, pp. 22-23) | 24 domains in `server/src/knowledge/domains.js` | NCA ECC domain structure | **Equivalent** — 24 against 21 |
 | Regulatory audit mode (§6.5.2, p. 27) | `server/src/services/import.js` analysis; the gap assessment module | ISO 27001 9.2; NCA ECC 1-8 | **Already stronger** — findings carry severity, an owner and a corrective action |
 | Version control, approval workflow, authorisation tracking — named as **missing** from the paper's output (§6.9.1, p. 32) | `documents` lifecycle, `document_versions`, `document_approvals`, `audit_log`, SoD on approval | ISO 27001 7.5.3(b)(c); NCA ECC 1-3 | **Already stronger — this is the paper's stated gap and AutGRC's strength** |

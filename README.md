@@ -151,7 +151,7 @@ server/                 Node.js + Express + SQLite (better-sqlite3)
 
 | File | Contents |
 | --- | --- |
-| `frameworks.js` | 16 frameworks, 533 requirement references, 86 cross-framework equivalences |
+| `frameworks.js` | 16 frameworks, 533 requirement references, 126 cross-framework equivalences |
 | `domains.js` | 24 cybersecurity domains and the placeholder resolver |
 | `req-*.js` | Canonical requirement models: 218 requirements across 24 domains, every one traced to at least one framework requirement |
 | `roles.js` | 14 cybersecurity roles with authority, approvals and escalations |
