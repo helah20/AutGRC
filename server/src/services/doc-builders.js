@@ -227,6 +227,14 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks }) 
             TP('governance.maintainer', 'The Cybersecurity GRC Manager maintains the Policy, its supporting Standard and Procedure, and the control library that implements it.'),
             TP('governance.reporting', 'Control performance is reported to the Cybersecurity Steering Committee on the agreed reporting cycle.'),
             TP('governance.assurance', 'Internal Audit provides independent assurance over the controls implementing this Policy.')
+          ]),
+          // The four document roles NCA's policy templates name, so an
+          // auditor used to those templates finds them where they expect.
+          h.table([T('Document role'), T('Assigned to')], [
+            [TP('governance.roleOwner', 'Policy owner'), RN('ciso')],
+            [TP('governance.roleReview', 'Policy review and update'), RN('grc_manager')],
+            [TP('governance.roleImplement', 'Policy implementation and execution'), implementers(model).map(RN).join(activeT.language === 'ar' ? '، ' : ', ')],
+            [TP('governance.roleCompliance', 'Policy compliance measurement'), RN('grc_manager')]
           ])
         ), P.POLICY, []),
 
@@ -454,6 +462,22 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
 }
 
 /** The role carrying 'R' for the activity most closely matching the control. */
+/**
+ * The roles that carry out most of a domain's activities: those holding R on
+ * the most RACI rows, governance roles aside, since owning and measuring the
+ * Policy are named separately.
+ */
+function implementers(model) {
+  const counts = new Map();
+  for (const a of model.raciActivities) {
+    for (const [code, value] of Object.entries(a.assign)) {
+      if (value === 'R' && code !== 'ciso' && code !== 'grc_manager') counts.set(code, (counts.get(code) || 0) + 1);
+    }
+  }
+  const ranked = [...counts].sort((a, b) => b[1] - a[1]).map(([code]) => code);
+  return ranked.length ? ranked.slice(0, 2) : ['ciso'];
+}
+
 function defaultResponsible(model, req) {
   const words = req.controlName.toLowerCase().split(/\W+/).filter((w) => w.length > 4);
   let best = null;

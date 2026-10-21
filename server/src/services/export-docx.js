@@ -50,6 +50,10 @@ const FURNITURE = {
     approver: 'Approver',
     effective: 'Effective date',
     nextReview: 'Next review date',
+    reviewCycle: 'Review cycle',
+    reviewCycleValue: 'At least annually, and on any change to the relevant legislative or regulatory requirements',
+    lastReviewed: 'Last reviewed',
+    notYetReviewed: 'Not yet reviewed',
     issuer: 'Issuing organisation',
     notAssigned: 'Not assigned',
     onApproval: 'On approval',
@@ -86,6 +90,10 @@ const FURNITURE = {
     approver: 'المعتمِد',
     effective: 'تاريخ السريان',
     nextReview: 'تاريخ المراجعة القادمة',
+    reviewCycle: 'دورية المراجعة',
+    reviewCycleValue: 'سنوياً على الأقل، وعند أي تغيّر في المتطلبات التشريعية أو التنظيمية ذات العلاقة',
+    lastReviewed: 'تاريخ آخر مراجعة',
+    notYetReviewed: 'لم تُراجَع بعد',
     issuer: 'الجهة المُصدِرة',
     notAssigned: 'غير مُسنَد',
     onApproval: 'عند الاعتماد',
@@ -268,6 +276,17 @@ function coverPage({ doc, org, classification, rtl = false, L }) {
 }
 
 /**
+ * The date the document last passed review: its latest approval or
+ * publication. NCA templates carry this beside the review cycle, so a reader
+ * can see the cycle being kept, not only the next date it falls due.
+ */
+export function lastReviewed(approvals = []) {
+  const dates = approvals.filter((a) => a.action === 'approved' || a.action === 'published')
+    .map((a) => (a.created_at || '').slice(0, 10)).filter(Boolean).sort();
+  return dates.at(-1) || null;
+}
+
+/**
  * @param {object} data  { document, sections, org, owner, approver, versions, approvals, frameworks }
  * @returns {Promise<Buffer>}
  */
@@ -298,6 +317,8 @@ export async function buildDocx(data) {
       [L.owner, owner?.name ? `${owner.name}${owner.job_title ? `, ${owner.job_title}` : ''}` : L.notAssigned],
       [L.approver, approver?.name ? `${approver.name}${approver.job_title ? `, ${approver.job_title}` : ''}` : L.notAssigned],
       [L.effective, doc.effective_date || L.onApproval],
+      [L.reviewCycle, L.reviewCycleValue],
+      [L.lastReviewed, lastReviewed(approvals) || L.notYetReviewed],
       [L.nextReview, doc.review_date || L.toBeSet],
       [L.issuer, org?.org_name || '—']
     ]),
