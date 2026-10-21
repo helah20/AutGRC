@@ -49,7 +49,7 @@ export const OPERATE_DOMAINS = {
         risk: 'Uniform protection is applied to assets of very different sensitivity, over-spending on trivial assets and under-protecting critical ones.',
         riskRating: 'medium',
         evidence: ['Classification field populated in the asset register', 'Labelling samples for media and equipment', 'Classification review records'],
-        refs: { 'NCA-ECC': ['2-1-4'], 'ISO-27001': ['A.5.12', 'A.5.13'], 'NCA-DCC': ['2-4'], 'NIST-CSF': ['ID.AM-05'] } },
+        refs: { 'NCA-ECC': ['2-1-5'], 'ISO-27001': ['A.5.12', 'A.5.13'], 'NCA-DCC': ['2-4'], 'NIST-CSF': ['ID.AM-05'] } },
       { key: 'acceptable_use', title: 'Acceptable use',
         policy: 'An Acceptable Use Policy shall define the permitted and prohibited use of {{orgName}} information and technology assets, and shall be acknowledged by all personnel before access is granted.',
         standard: 'Acceptable use shall address corporate device use, personal use limits, removable media, cloud storage, software installation, and the prohibition of circumventing security controls. Acknowledgement shall be recorded at onboarding and re-acknowledged annually.',
@@ -103,7 +103,7 @@ export const OPERATE_DOMAINS = {
         frequency: '{{assetRequirementReview}}', kpi: 'Independently sampled inventory accuracy against {{inventoryAccuracyTarget}}',
         risk: 'The inventory is maintained diligently against a scope that no longer matches what the organisation runs.', riskRating: 'medium',
         evidence: ['Review records covering scope, classification and disposal standard', 'Independent sample test results of inventory accuracy', 'Improvement actions with owners and closure'],
-        refs: { 'NCA-ECC': ['2-1-5'], 'NCA-CSCC': ['2-1'], 'ISO-27001': ['A.5.9', 'A.5.35'], 'COBIT-2019': ['BAI09'] } },
+        refs: { 'NCA-ECC': ['2-1-6'], 'NCA-CSCC': ['2-1'], 'ISO-27001': ['A.5.9', 'A.5.35'], 'COBIT-2019': ['BAI09'] } },
       { key: 'critical_asset_baseline', title: 'Enhanced requirements for critical assets',
         policy: 'Assets supporting a critical system shall be identifiable in the inventory and shall carry an enhanced baseline.',
         standard: 'Critical assets shall be flagged in the inventory and shall meet {{criticalAssetBaseline}}. Any change of designation shall trigger reassessment of the applicable controls. Reconciliation for critical assets shall run at {{discoveryFrequency}} and discrepancies shall be investigated within {{unauthorisedAssetSla}} rather than at the next cycle. A critical asset without a named business owner shall be escalated to the CISO rather than recorded as a gap.',
@@ -113,7 +113,7 @@ export const OPERATE_DOMAINS = {
         frequency: '{{discoveryFrequency}}', kpi: '% of critical assets flagged in the inventory with the enhanced baseline applied (target: 100%)',
         risk: 'Assets supporting critical systems receive general-estate treatment because nothing in the inventory distinguishes them.', riskRating: 'high',
         evidence: ['Inventory records showing critical asset flags', 'Enhanced baseline compliance evidence per critical asset', 'Investigation records for critical asset discrepancies'],
-        refs: { 'NCA-CSCC': ['2-1'], 'NCA-ECC': ['2-1-5'], 'ISO-27001': ['A.5.9', 'A.8.9'], 'COBIT-2019': ['BAI09'] } },
+        refs: { 'NCA-CSCC': ['2-1'], 'NCA-ECC': ['2-1-6'], 'ISO-27001': ['A.5.9', 'A.8.9'], 'COBIT-2019': ['BAI09'] } },
       { key: 'asset_lifecycle_support', title: 'Licence position and end of support',
         policy: 'Assets shall be maintained within vendor support, and their licence position shall be known.',
         standard: 'Reconciliation shall run {{licenceReconciliation}}, covering installed software and subscription services, so that both under-licensing and expenditure on unused entitlement are visible. End-of-support dates shall be recorded in the inventory, and replacement planned {{endOfLifeHorizon}}. An asset that passes end of support shall carry a time-bound exception with compensating controls, owned by the business owner rather than by the technology team that inherited it.',
@@ -123,7 +123,7 @@ export const OPERATE_DOMAINS = {
         frequency: '{{licenceReconciliation}}', kpi: '% of assets within vendor support or covered by a time-bound exception (target: 95%)',
         risk: 'Unsupported assets accumulate without patches, and the organisation carries licensing exposure it has not measured.', riskRating: 'high',
         evidence: ['Licence reconciliation against entitlements', 'Inventory records with end-of-support dates', 'Time-bound exceptions with compensating controls and business owners'],
-        refs: { 'NCA-ECC': ['2-1-5', '2-10-3'], 'ISO-27001': ['A.5.9', 'A.5.32', 'A.8.8'], 'COBIT-2019': ['BAI09'] } }
+        refs: { 'NCA-ECC': ['2-1-6', '2-10-3'], 'ISO-27001': ['A.5.9', 'A.5.32', 'A.8.8'], 'COBIT-2019': ['BAI09'] } }
     ],
     procedure: {
       purpose: 'To define how information and technology assets are identified, registered, classified, maintained and securely disposed of at {{orgName}}.',

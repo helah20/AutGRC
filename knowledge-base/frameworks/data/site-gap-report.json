@@ -1,29 +1,14 @@
 {
  "per_framework": {
   "NCA-ECC": {
-   "site_version": "ECC-1:2018",
+   "site_version": "ECC-2:2024",
    "file_version": "ECC-2:2024",
-   "site_rows": 85,
+   "site_rows": 82,
    "real_rows": 232,
-   "site_controls": 51,
+   "site_controls": 50,
    "real_controls": 200,
-   "site_refs_not_in_publication": [
-    "1-4-3",
-    "5",
-    "5-1"
-   ],
-   "subdomain_title_mismatch": [
-    [
-     "1-6",
-     "Cybersecurity in Information Technology Projects",
-     "Cybersecurity in Information and Technology Project Management"
-    ],
-    [
-     "2-3",
-     "Information System and Information Processing Facilities Protection",
-     "Information System and Processing Facilities Protection"
-    ]
-   ]
+   "site_refs_not_in_publication": [],
+   "subdomain_title_mismatch": []
   },
   "NCA-CCC": {
    "site_version": "CCC-2:2024",
@@ -89,16 +74,9 @@
  "site_model_refs": {
   "NCA-ECC": {
    "refs_used": 287,
-   "distinct": 67,
-   "not_in_publication": [
-    "1-4-3",
-    "5-1"
-   ],
-   "requirements_affected": [
-    "change_management/change_segregation",
-    "governance/roles_authority",
-    "security_operations/ics_ot_protection"
-   ]
+   "distinct": 65,
+   "not_in_publication": [],
+   "requirements_affected": []
   },
   "NCA-CCC": {
    "refs_used": 32,
@@ -1169,32 +1147,17 @@
   [
    "2-7-2",
    "Modification",
+   "data_protection/classification_scheme"
+  ],
+  [
+   "2-7-2",
+   "Modification",
    "data_protection/data_leakage_prevention"
   ],
   [
    "2-7-2",
    "Modification",
    "data_protection/data_masking"
-  ],
-  [
-   "2-7-3",
-   "Deletion",
-   "data_protection/classification_scheme"
-  ],
-  [
-   "2-7-3",
-   "Deletion",
-   "data_protection/data_ownership"
-  ],
-  [
-   "2-7-3",
-   "Deletion",
-   "data_protection/data_retention"
-  ],
-  [
-   "2-7-3",
-   "Deletion",
-   "data_protection/privacy_protection"
   ],
   [
    "2-8-3",
@@ -1275,11 +1238,6 @@
    "4-1-3",
    "Modification",
    "third_party/supplier_risk_tiering"
-  ],
-  [
-   "5-1",
-   "Deletion (domain 5)",
-   "security_operations/ics_ot_protection"
   ]
  ]
 }

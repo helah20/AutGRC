@@ -151,7 +151,7 @@ server/                 Node.js + Express + SQLite (better-sqlite3)
 
 | File | Contents |
 | --- | --- |
-| `frameworks.js` | 14 frameworks, 494 requirement references, 89 cross-framework equivalences |
+| `frameworks.js` | 14 frameworks, 491 requirement references, 86 cross-framework equivalences |
 | `domains.js` | 24 cybersecurity domains and the placeholder resolver |
 | `req-*.js` | Canonical requirement models: 218 requirements across 24 domains, every one traced to at least one framework requirement |
 | `roles.js` | 14 cybersecurity roles with authority, approvals and escalations |
@@ -343,11 +343,11 @@ save the PDF.
   device security, penetration testing, web application security and ICS
   protection — are requirements inside existing domains rather than domains of
   their own, because that is where the controls that implement them already
-  live. Every one of the thirteen ECC subdomains carried at heading level has
+  live. Every one of the twelve ECC subdomains carried at heading level has
   at least one requirement mapped to it.
-- The reference catalogue is not the publication. It holds 51 of the 114
-  controls the NCA ECC entry describes, and thirteen of that framework's
-  twenty-nine subdomains are carried at heading level only — so a generated
+- The reference catalogue is not the publication. It holds 50 of the 200
+  controls and subcontrols in ECC-2:2024, and twelve of that framework's
+  twenty-eight subdomains are carried at heading level only — so a generated
   compliance table can cite "ECC 2-4" where the obligation lives in a control
   beneath it. The Frameworks page and `verify:knowledge` both state the
   shortfall per framework and name the subdomains. The missing titles are not

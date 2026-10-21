@@ -108,7 +108,7 @@ distinct from never having been asked, which is what sends a new installation
 through setup rather than letting it generate untraceable documents.
 
 The same rule decides what happens to the gap that leaves. The catalogue holds
-51 of the 114 controls the NCA ECC entry itself describes, and thirteen of its
+50 of the 200 controls and subcontrols ECC-2:2024 sets out, and twelve of its
 subdomains carry no controls at all. The tempting fix — writing the missing
 titles — is the prohibited one, because a title composed here and displayed
 beside real identifiers is indistinguishable from the publication to everyone
