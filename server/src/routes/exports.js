@@ -10,6 +10,7 @@ import {
   buildControlWorkbook, buildRaciWorkbook, buildMappingWorkbook,
   buildGapWorkbook, buildRegisterWorkbook, buildSoaWorkbook, buildRiskTreatmentWorkbook
 } from '../services/export-xlsx.js';
+import { evaluateApplicability } from '../services/applicability.js';
 import { enrichRisk } from '../services/risk.js';
 import { validateMatrix } from '../services/review.js';
 import { domainName } from '../knowledge/index.js';
@@ -202,6 +203,7 @@ router.get('/soa.xlsx', asyncHandler(async (req, res) => {
   const decisions = Object.fromEntries(
     q.all('SELECT * FROM soa_decisions WHERE framework_id = ?', framework.id).map((d) => [d.requirement_id, d])
   );
+  const org = getOrgProfile();
   const rows = q.all('SELECT * FROM framework_requirements WHERE framework_id = ? ORDER BY ref', framework.id)
     .map((requirement) => {
       const controls = q.all(
@@ -220,6 +222,7 @@ router.get('/soa.xlsx', asyncHandler(async (req, res) => {
         justification: decision?.justification || null,
         decided_by_name: decision?.decided_by_name || null,
         decided_at: decision?.decided_at || null,
+        publication: evaluateApplicability(requirement.applicability, org),
         controls,
         implementation: !applicable ? 'excluded'
           : !controls.length ? 'not_implemented'
@@ -238,6 +241,8 @@ router.get('/soa.xlsx', asyncHandler(async (req, res) => {
     planned: applicable.filter((r) => r.implementation === 'planned').length,
     notImplemented: applicable.filter((r) => r.implementation === 'not_implemented').length,
     exclusionsWithoutJustification: rows.filter((r) => !r.applicable && !r.justification).length,
+    publicationExcludes: rows.filter((r) => r.applicable && r.publication?.applies === false).length,
+    excludedButPublicationApplies: rows.filter((r) => !r.applicable && r.publication?.applies === true).length,
     decisionsRecorded: Object.keys(decisions).length
   };
 

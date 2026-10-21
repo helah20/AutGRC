@@ -139,9 +139,42 @@ function OrgSettings({ canEdit }) {
           <textarea className="textarea" disabled={!canEdit} value={listField('technology_env')}
             onChange={(e) => setList('technology_env', e.target.value)} />
         </Field>
-        <Field label="Data classification levels" hint="One per line.">
+        <Field label="Data classification levels"
+          hint="One per line. NCA DCC scopes controls by Public, Confidential, Secret and Top Secret; levels named that way are evaluated against it.">
           <textarea className="textarea" disabled={!canEdit} value={listField('data_classifications')}
             onChange={(e) => setList('data_classifications', e.target.value)} />
+        </Field>
+      </div>
+
+      <div className="field-row">
+        <Field label="Operational technology facility level"
+          hint="NCA OTCC applies each control to facility levels L1 (highest criticality) to L3. Leave unset if the organisation operates no OT/ICS facility.">
+          <Select value={form.ot_facility_level || ''} disabled={!canEdit} placeholder="Not set"
+            onChange={(v) => setForm((f) => ({ ...f, ot_facility_level: v || null }))}
+            options={[
+              { value: 'L1', label: 'L1 — high criticality' },
+              { value: 'L2', label: 'L2 — moderate criticality' },
+              { value: 'L3', label: 'L3 — low criticality' }
+            ]} />
+        </Field>
+        <Field label="Cloud services role"
+          hint="NCA CCC addresses each control to the cloud service provider (CSP) or the cloud service tenant (CST).">
+          <div className="checkbox-row">
+            {[['CSP', 'Provides cloud services (CSP)'], ['CST', 'Uses cloud services (CST)']].map(([value, label]) => {
+              const selected = (form.cloud_roles || []).includes(value);
+              return (
+                <label key={value} className={`checkbox-chip ${selected ? 'on' : ''}`}>
+                  <input type="checkbox" checked={selected} disabled={!canEdit}
+                    onChange={(e) => setForm((f) => {
+                      const current = new Set(f.cloud_roles || []);
+                      if (e.target.checked) current.add(value); else current.delete(value);
+                      return { ...f, cloud_roles: [...current] };
+                    })} />
+                  {label}
+                </label>
+              );
+            })}
+          </div>
         </Field>
       </div>
 

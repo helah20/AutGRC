@@ -343,6 +343,15 @@ export async function buildGenericWorkbook({ title, subtitle, headers, rows, org
  * same reason the API does — one is a judgement, the other is a fact about
  * what has been built.
  */
+/** One cell's worth of the publication's own scoping, evaluated against the profile. */
+function publicationScope(p) {
+  if (!p) return '';
+  const levels = Object.keys(p.levels).join(', ');
+  if (p.applies === null) return `Applies to ${levels}; profile does not say`;
+  if (!p.applies) return `Does not apply (publication: ${levels})`;
+  return `Applies (${p.matched.join(', ')})${p.frequency ? ` — ${p.frequency}` : ''}`;
+}
+
 export async function buildSoaWorkbook({ framework, rows, summary, orgName }) {
   const wb = newWorkbook(orgName);
   coverSheet(wb, {
@@ -352,22 +361,27 @@ export async function buildSoaWorkbook({ framework, rows, summary, orgName }) {
     note: SOURCE_NOTE
   });
 
-  const headers = ['Reference', 'Control', 'Applicable', 'Justification', 'Implementation',
+  const headers = ['Reference', 'Control', 'Applicable', 'Justification', 'Scope per Publication', 'Implementation',
     'Mapped Controls', 'Decision Recorded By', 'Decision Date'];
   const sheet = wb.addWorksheet('Statement of Applicability');
-  styleSheet(sheet, headers, [14, 52, 12, 52, 18, 26, 24, 14]);
+  styleSheet(sheet, headers, [14, 52, 12, 52, 36, 18, 26, 24, 14]);
   rows.forEach((r) => {
     const row = sheet.addRow([
       r.ref,
       r.title,
       r.applicable ? 'Yes' : 'No',
       r.justification || (r.applicable ? '' : 'NOT JUSTIFIED'),
+      publicationScope(r.publication),
       r.implementation.replace(/_/g, ' '),
       r.controls.map((c) => c.control_id).join(', '),
       r.decided_by_name || '',
       r.decided_at ? String(r.decided_at).slice(0, 10) : ''
     ]);
-    tint(sheet, row.number, 5, STATUS_FILL[r.implementation] || null);
+    tint(sheet, row.number, 6, STATUS_FILL[r.implementation] || null);
+    // The decision and the publication disagree: worth a second look either way.
+    if (r.publication && r.publication.applies !== null && r.publication.applies !== r.applicable) {
+      tint(sheet, row.number, 5, RISK_FILL.medium);
+    }
     // An unjustified exclusion is the first thing an auditor looks for.
     if (!r.applicable && !r.justification) tint(sheet, row.number, 4, RISK_FILL.critical);
   });
@@ -380,6 +394,8 @@ export async function buildSoaWorkbook({ framework, rows, summary, orgName }) {
     ['Applicable', summary.applicable],
     ['Excluded', summary.excluded],
     ['Exclusions without a justification', summary.exclusionsWithoutJustification],
+    ['In scope, though the publication does not apply it to this organisation', summary.publicationExcludes ?? 0],
+    ['Excluded, though the publication applies it to this organisation', summary.excludedButPublicationApplies ?? 0],
     ['Implemented', summary.implemented],
     ['Partially implemented', summary.partial],
     ['Planned', summary.planned],

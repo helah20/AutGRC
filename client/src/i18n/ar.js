@@ -539,7 +539,18 @@ export default {
     mappedControls: 'الضوابط المرتبطة بهذا المتطلب',
     recordedApplicable: 'سُجّل كمنطبق',
     recordedExcluded: 'سُجّل كمستثنى',
-    couldNotRecord: 'تعذّر تسجيل القرار'
+    couldNotRecord: 'تعذّر تسجيل القرار',
+    columnPublication: 'حسب الوثيقة',
+    publicationYes: 'ينطبق ({levels})',
+    publicationNo: 'لا ينطبق على ملفكم',
+    publicationUnknown: 'مقيّد بـ {levels}',
+    publicationSays: 'ما تقوله الوثيقة',
+    publicationFrequency: 'التكرار الذي تحدده الوثيقة: {frequency}',
+    usePublicationBasis: 'استثناء مع الاستناد إلى الوثيقة',
+    publicationFilter: 'قرار يخالف نطاق الوثيقة',
+    publicationDisagrees: '{count} قرار يخالف نطاق الانطباق الذي تحدده الوثيقة',
+    publicationDisagreesBody: '{excludes} ضمن النطاق والوثيقة لا تطبّقها على ملف منظمتكم، و{applies} مستثناة والوثيقة تطبّقها. النطاق مأخوذ من الكتالوج المستورد وملف المنظمة.',
+    showThem: 'اعرضها'
   },
 
   auth: {

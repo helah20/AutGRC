@@ -44,6 +44,7 @@ export default function Soa() {
     if (filter === 'applicable' && !r.applicable) return false;
     if (filter === 'undecided' && r.decision_recorded) return false;
     if (filter === 'not_implemented' && r.implementation !== 'not_implemented') return false;
+    if (filter === 'publication' && !disagrees(r)) return false;
     if (!debounced) return true;
     const needle = debounced.toLowerCase();
     return r.ref.toLowerCase().includes(needle) || r.title.toLowerCase().includes(needle);
@@ -86,6 +87,21 @@ export default function Soa() {
 
       {s && (
         <>
+          {(s.publicationExcludes > 0 || s.excludedButPublicationApplies > 0) && (
+            <div className="callout" data-callout="warning" style={{ marginBottom: 14 }}>
+              <div className="row-tight"><IconAlert width={14} height={14} />
+                <strong style={{ margin: 0 }}>{t('soa.publicationDisagrees', {
+                  count: formatNumber(s.publicationExcludes + s.excludedButPublicationApplies)
+                })}</strong></div>
+              <p style={{ marginTop: 4, marginBottom: 0 }}>
+                {t('soa.publicationDisagreesBody', {
+                  excludes: formatNumber(s.publicationExcludes), applies: formatNumber(s.excludedButPublicationApplies)
+                })}{' '}
+                <button className="btn btn-ghost btn-sm" onClick={() => setFilter('publication')}>{t('soa.showThem')}</button>
+              </p>
+            </div>
+          )}
+
           {s.exclusionsWithoutJustification > 0 && (
             <div className="callout" data-callout="danger" style={{ marginBottom: 14 }}>
               <div className="row-tight"><IconAlert width={14} height={14} />
@@ -116,7 +132,8 @@ export default function Soa() {
               { value: 'applicable', label: t('soa.applicableOnly') },
               { value: 'excluded', label: t('soa.excludedOnly') },
               { value: 'undecided', label: t('soa.undecided') },
-              { value: 'not_implemented', label: t('soa.notImplementedOnly') }
+              { value: 'not_implemented', label: t('soa.notImplementedOnly') },
+              { value: 'publication', label: t('soa.publicationFilter') }
             ]} />
           {(search || filter) && (
             <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setFilter(''); }}>
@@ -144,6 +161,10 @@ export default function Soa() {
                   : <Badge tone="neutral" title={r.justification || t('soa.justificationError')}>{t('common.no')}</Badge>)
               },
               {
+                key: 'publication', header: t('soa.columnPublication'), nowrap: true,
+                render: (r) => <PublicationBadge publication={r.publication} />
+              },
+              {
                 key: 'implementation', header: t('soa.columnImplementation'), nowrap: true,
                 render: (r) => <Badge tone={IMPLEMENTATION_TONE[r.implementation]}>{labels.implementation(r.implementation)}</Badge>
               },
@@ -168,12 +189,38 @@ export default function Soa() {
         )}
       </Card>
 
-      <DecisionModal row={editing} onClose={() => setEditing(null)} onSave={decide} />
+      <DecisionModal row={editing} code={code} onClose={() => setEditing(null)} onSave={decide} />
     </>
   );
 }
 
-function DecisionModal({ row, onClose, onSave }) {
+/** The decision and the publication's own scope point different ways. */
+function disagrees(r) {
+  return r.publication && r.publication.applies !== null && r.publication.applies !== r.applicable;
+}
+
+/**
+ * What the publication itself says about scope, for the controls it scopes:
+ * DCC by data classification, OTCC by facility level, CCC by provider or tenant.
+ */
+function PublicationBadge({ publication }) {
+  const { t } = useI18n();
+  if (!publication) return <span className="tiny muted">—</span>;
+  const levels = Object.keys(publication.levels).join(', ');
+  if (publication.applies === null) {
+    return <Badge tone="neutral" title={publication.reason}>{t('soa.publicationUnknown', { levels })}</Badge>;
+  }
+  if (!publication.applies) {
+    return <Badge tone="info" title={publication.reason}>{t('soa.publicationNo')}</Badge>;
+  }
+  return (
+    <Badge tone="ok" title={[publication.reason, publication.frequency].filter(Boolean).join(' — ')}>
+      {t('soa.publicationYes', { levels: publication.matched.join(', ') })}
+    </Badge>
+  );
+}
+
+function DecisionModal({ row, code, onClose, onSave }) {
   const labels = useLabels();
   const { t, formatNumber } = useI18n();
   const [applicable, setApplicable] = useState(true);
@@ -203,6 +250,25 @@ function DecisionModal({ row, onClose, onSave }) {
       {row && (
         <div className="stack">
           {row.statement && <p className="small muted ltr-content">{row.statement}</p>}
+
+          {row.publication && (
+            <div className="callout" data-callout="decision">
+              <div className="row-tight"><strong style={{ margin: 0 }}>{t('soa.publicationSays')}</strong>
+                <PublicationBadge publication={row.publication} /></div>
+              <p className="small" style={{ marginTop: 4, marginBottom: 0 }}>{row.publication.reason}</p>
+              {row.publication.frequency && (
+                <p className="small" style={{ marginTop: 4, marginBottom: 0 }}>
+                  {t('soa.publicationFrequency', { frequency: row.publication.frequency })}
+                </p>
+              )}
+              {row.publication.applies === false && (
+                <button className="btn btn-sm" style={{ marginTop: 8 }}
+                  onClick={() => { setApplicable(false); setJustification(`${code} ${row.ref}: ${row.publication.reason}`); }}>
+                  {t('soa.usePublicationBasis')}
+                </button>
+              )}
+            </div>
+          )}
 
           <Field label={t('soa.appliesQuestion')}>
             <div className="checkbox-row">

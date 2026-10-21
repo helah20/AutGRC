@@ -537,7 +537,18 @@ export default {
     mappedControls: 'Controls mapped to this requirement',
     recordedApplicable: 'Recorded as applicable',
     recordedExcluded: 'Recorded as excluded',
-    couldNotRecord: 'Could not record the decision'
+    couldNotRecord: 'Could not record the decision',
+    columnPublication: 'Per publication',
+    publicationYes: 'Applies ({levels})',
+    publicationNo: 'Not for your profile',
+    publicationUnknown: 'Scoped to {levels}',
+    publicationSays: 'What the publication says',
+    publicationFrequency: 'Frequency set by the publication: {frequency}',
+    usePublicationBasis: 'Exclude, citing the publication',
+    publicationFilter: 'Decision differs from the publication',
+    publicationDisagrees: '{count} decision(s) differ from the publication\'s own scope',
+    publicationDisagreesBody: '{excludes} in scope that the publication does not apply to your profile, and {applies} excluded that it does. The scope comes from the imported catalogue and your organisation profile.',
+    showThem: 'Show them'
   },
 
   auth: {

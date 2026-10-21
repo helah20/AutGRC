@@ -122,7 +122,19 @@ way it replaces any reference catalogue entry with its licensed copy. Until
 then the English reference text is shown as English text, bidi-isolated so it
 reads correctly inside an Arabic page, and visibly not a translation.
 
-**7. A translation carries the same commitment, not a similar one.**
+**7. A publication's scope advises a decision; it does not make one.**
+Where a publication applies a control only to some organisations — DCC by
+data classification level, OTCC by facility level, CCC by provider or tenant —
+that scope arrives with the imported catalogue and is evaluated against the
+organisation profile. The Statement of Applicability shows the result beside
+each control and counts the decisions that disagree with it, but it never
+excludes a control by itself: exclusion stays a recorded decision with a
+justification, which the evaluation can pre-fill and a person has to submit.
+When the profile does not say enough, the answer is "unknown", not a guess,
+because a wrong "does not apply" invites an exclusion nobody would make with
+the facts.
+
+**8. A translation carries the same commitment, not a similar one.**
 Arabic and English are two expressions of one decision. A numeric value is
 never written into a translated sentence: both languages carry the same
 `{{placeholder}}`, and the value comes from the one agreed parameter set, in

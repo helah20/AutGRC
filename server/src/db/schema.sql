@@ -82,6 +82,11 @@ CREATE TABLE IF NOT EXISTS org_profile (
   mfa_required_roles    TEXT,
   business_requirements TEXT,
   data_classifications  TEXT,      -- JSON array
+  -- Scoping inputs for publications that apply controls selectively: the
+  -- operational technology facility level (NCA OTCC) and whether the
+  -- organisation provides or consumes cloud services (NCA CCC).
+  ot_facility_level     TEXT CHECK (ot_facility_level IN ('L1','L2','L3')),
+  cloud_roles           TEXT,      -- JSON array of 'CSP' and/or 'CST'
   logo_data_url         TEXT,
   updated_at            TEXT NOT NULL
 );
@@ -124,6 +129,9 @@ CREATE TABLE IF NOT EXISTS framework_requirements (
                   CHECK (provenance IN ('regulatory_requirement','framework_guidance')),
   source_status TEXT NOT NULL DEFAULT 'reference'
                   CHECK (source_status IN ('reference','verified_official','user_imported')),
+  -- Who the publication applies this control to, where it scopes it: JSON
+  -- {basis, levels}. See services/applicability.js.
+  applicability TEXT,
   created_at    TEXT NOT NULL,
   UNIQUE (framework_id, ref)
 );
