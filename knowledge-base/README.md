@@ -75,6 +75,17 @@ docker compose --profile cpu logs -f ollama-pull-cpu
     -d '{"action":"sendMessage","sessionId":"me","chatInput":"ما مدة تغيير كلمة المرور؟"}'
   ```
 
+## أطر الهيئة الوطنية للأمن السيبراني (جاهزة)
+
+في مجلد `frameworks/` سبعة أطر من NCA (ECC-2024، CCC-2024، CSCC، DCC، OTCC، TCC، OSMACC)
+مستخرجة ومرتبة، مع تقرير مقارنة بموقع AutGRC. لتحميلها في قاعدة المعرفة:
+
+```bash
+./scripts/ingest-folder.sh frameworks/markdown
+```
+
+التفاصيل والتحليل في [`frameworks/README.md`](frameworks/README.md).
+
 ## التخصيص
 
 | ما تريد تغييره | أين |

@@ -1,0 +1,1512 @@
+{
+ "per_framework": {
+  "NCA-ECC": {
+   "site_version": "ECC-1:2018",
+   "file_version": "ECC-2:2024",
+   "site_rows": 85,
+   "real_rows": 232,
+   "site_controls": 51,
+   "real_controls": 200,
+   "site_refs_not_in_publication": [
+    "1-4-3",
+    "5",
+    "5-1"
+   ],
+   "subdomain_title_mismatch": [
+    [
+     "1-6",
+     "Cybersecurity in Information Technology Projects",
+     "Cybersecurity in Information and Technology Project Management"
+    ],
+    [
+     "2-3",
+     "Information System and Information Processing Facilities Protection",
+     "Information System and Processing Facilities Protection"
+    ]
+   ]
+  },
+  "NCA-CCC": {
+   "site_version": "CCC-1:2020",
+   "file_version": "CCC-2:2024",
+   "site_rows": 17,
+   "real_rows": 203,
+   "site_controls": 0,
+   "real_controls": 175,
+   "site_refs_not_in_publication": [
+    "4-2"
+   ],
+   "subdomain_title_mismatch": [
+    [
+     "1-1",
+     "Cloud Cybersecurity Strategy and Policy",
+     "Cybersecurity Roles and Responsibilities"
+    ],
+    [
+     "1-3",
+     "Cloud Cybersecurity Roles and Responsibilities (Shared Responsibility)",
+     "Compliance with Cybersecurity Standards, Laws, and Regulations"
+    ],
+    [
+     "2-3",
+     "Cloud Data Protection and Classification",
+     "Information System and Information Processing Facilities Protection"
+    ],
+    [
+     "2-4",
+     "Cryptography and Key Management for Cloud",
+     "Networks Security Management"
+    ],
+    [
+     "2-5",
+     "Cloud Network and Workload Security",
+     "Mobile Devices Security"
+    ],
+    [
+     "2-6",
+     "Cloud Event Logs, Monitoring and Incident Management",
+     "Data and Information Protection"
+    ],
+    [
+     "2-7",
+     "Cloud Backup and Recovery",
+     "Cryptography"
+    ],
+    [
+     "2-8",
+     "Cloud Vulnerability and Patch Management",
+     "Backup and Recovery Management"
+    ],
+    [
+     "4-1",
+     "Cloud Service Provider Assessment and Contracting",
+     "Supply Chain and Third-Party Cybersecurity"
+    ]
+   ]
+  },
+  "NCA-CSCC": {
+   "site_version": "CSCC-1:2019",
+   "file_version": "CSCC-1:2019",
+   "site_rows": 26,
+   "real_rows": 130,
+   "site_controls": 0,
+   "real_controls": 105,
+   "site_refs_not_in_publication": [
+    "2-14"
+   ],
+   "subdomain_title_mismatch": [
+    [
+     "1-3",
+     "Cybersecurity in Information Technology Projects for Critical Systems",
+     "Cybersecurity in Information Technology Project Management"
+    ],
+    [
+     "2-3",
+     "Information System and Processing Facilities Protection for Critical Systems",
+     "Information System and Information Processing Facilities Protection"
+    ],
+    [
+     "2-12",
+     "Cybersecurity Incident and Threat Management for Critical Systems",
+     "Web Application Security"
+    ],
+    [
+     "2-13",
+     "Physical Security for Critical Systems",
+     "Application Security"
+    ],
+    [
+     "3-1",
+     "Cybersecurity Resilience Aspects of Business Continuity Management for Critical Systems",
+     "Cybersecurity Resilience Aspects of Business Continuity Management (BCM)"
+    ]
+   ]
+  },
+  "NCA-DCC": {
+   "site_version": "DCC-1:2022",
+   "file_version": "DCC-1:2022",
+   "site_rows": 19,
+   "real_rows": 80,
+   "site_controls": 0,
+   "real_controls": 66,
+   "site_refs_not_in_publication": [
+    "1-4",
+    "2-8",
+    "2-9",
+    "4",
+    "4-1",
+    "4-2"
+   ],
+   "subdomain_title_mismatch": [
+    [
+     "1-1",
+     "Data Cybersecurity Strategy and Governance",
+     "Periodical Cybersecurity Review and Audit"
+    ],
+    [
+     "1-2",
+     "Data Cybersecurity Policies and Procedures",
+     "Cybersecurity in Human Resources"
+    ],
+    [
+     "1-3",
+     "Data Cybersecurity Roles and Responsibilities",
+     "Cybersecurity Awareness and Training Program"
+    ],
+    [
+     "2-1",
+     "Data Classification and Labelling",
+     "Identity and Access Management"
+    ],
+    [
+     "2-2",
+     "Data Ownership and Custodianship",
+     "Information System and Information Processing Facilities Protection"
+    ],
+    [
+     "2-3",
+     "Data Access Management",
+     "Mobile Devices Security"
+    ],
+    [
+     "2-4",
+     "Data Encryption and Cryptographic Protection",
+     "Data and Information Protection"
+    ],
+    [
+     "2-5",
+     "Data Leakage Prevention",
+     "Cryptography"
+    ],
+    [
+     "2-6",
+     "Data Retention, Archiving and Secure Disposal",
+     "Secure Data Disposal"
+    ],
+    [
+     "2-7",
+     "Data Transfer and Sharing",
+     "Cybersecurity for Printers, Scanners and Copy Machines"
+    ]
+   ]
+  },
+  "NCA-OTCC": {
+   "site_version": null,
+   "file_version": "OTCC-1:2022",
+   "site_rows": 0,
+   "real_rows": 196,
+   "site_controls": 0,
+   "real_controls": 169,
+   "site_refs_not_in_publication": [],
+   "subdomain_title_mismatch": []
+  },
+  "NCA-TCC": {
+   "site_version": "TCC-1:2021",
+   "file_version": "TCC-1:2021",
+   "site_rows": 12,
+   "real_rows": 82,
+   "site_controls": 0,
+   "real_controls": 63,
+   "site_refs_not_in_publication": [
+    "4"
+   ],
+   "subdomain_title_mismatch": [
+    [
+     "1-1",
+     "Telework Cybersecurity Policy",
+     "Cybersecurity Policies and Procedures"
+    ],
+    [
+     "2-1",
+     "Identity and Access Management for Telework",
+     "Asset Management"
+    ],
+    [
+     "2-2",
+     "Secure Remote Connectivity",
+     "Identity and Access Management"
+    ],
+    [
+     "2-3",
+     "Endpoint Protection for Teleworking Devices",
+     "Information System and Processing Facilities Protection"
+    ],
+    [
+     "2-4",
+     "Data Protection in Telework",
+     "Network Security Management"
+    ],
+    [
+     "2-5",
+     "Event Logs and Monitoring for Telework",
+     "Mobile Device Security"
+    ],
+    [
+     "2-6",
+     "Awareness for Teleworkers",
+     "Data and Information Protection"
+    ]
+   ]
+  },
+  "NCA-OSMACC": {
+   "site_version": null,
+   "file_version": "OSMACC-1:2021",
+   "site_rows": 0,
+   "real_rows": 68,
+   "site_controls": 0,
+   "real_controls": 53,
+   "site_refs_not_in_publication": [],
+   "subdomain_title_mismatch": []
+  }
+ },
+ "site_model_refs": {
+  "NCA-ECC": {
+   "refs_used": 287,
+   "distinct": 65,
+   "not_in_publication": [
+    "1-4-3",
+    "5-1"
+   ],
+   "requirements_affected": [
+    "change_management/change_segregation",
+    "governance/roles_authority",
+    "security_operations/ics_ot_protection"
+   ]
+  },
+  "NCA-CCC": {
+   "refs_used": 22,
+   "distinct": 14,
+   "not_in_publication": [
+    "4-2"
+   ],
+   "requirements_affected": [
+    "cloud_security/data_residency_exit",
+    "third_party/supplier_offboarding"
+   ]
+  },
+  "NCA-CSCC": {
+   "refs_used": 52,
+   "distinct": 22,
+   "not_in_publication": [
+    "2-14"
+   ],
+   "requirements_affected": [
+    "application_security/app_critical_services",
+    "application_security/app_input_output",
+    "application_security/app_threat_modelling"
+   ]
+  },
+  "NCA-DCC": {
+   "refs_used": 26,
+   "distinct": 16,
+   "not_in_publication": [
+    "1-4",
+    "2-8",
+    "2-9",
+    "4-1",
+    "4-2"
+   ],
+   "requirements_affected": [
+    "backup_recovery/backup_encryption_keys",
+    "backup_recovery/backup_restore_governance",
+    "cloud_security/cloud_encryption_keys",
+    "cloud_security/cloud_saas_assurance",
+    "data_protection/data_masking",
+    "risk_management/risk_assessment_triggers",
+    "secure_sdlc/environment_separation",
+    "third_party/supplier_data_protection"
+   ]
+  },
+  "NCA-OTCC": {
+   "refs_used": 0,
+   "distinct": 0,
+   "not_in_publication": [],
+   "requirements_affected": []
+  },
+  "NCA-TCC": {
+   "refs_used": 11,
+   "distinct": 10,
+   "not_in_publication": [
+    "4"
+   ],
+   "requirements_affected": [
+    "third_party/supplier_access_and_remote"
+   ]
+  },
+  "NCA-OSMACC": {
+   "refs_used": 0,
+   "distinct": 0,
+   "not_in_publication": [],
+   "requirements_affected": []
+  }
+ },
+ "cross_refs": [
+  {
+   "framework": "CCC",
+   "control": "1-1-P-1",
+   "ecc_ref": "1-4-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "1-1-T-1",
+   "ecc_ref": "1-4-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "1-2-P-1",
+   "ecc_ref": "1-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "1-2-T-1",
+   "ecc_ref": "1-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "1-3-P-1",
+   "ecc_ref": "1-7-1",
+   "status": "deleted in ECC-2:2024"
+  },
+  {
+   "framework": "CCC",
+   "control": "1-3-T-1",
+   "ecc_ref": "1-7-1",
+   "status": "deleted in ECC-2:2024"
+  },
+  {
+   "framework": "CCC",
+   "control": "1-4-P-1",
+   "ecc_ref": "1-9-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "1-4-P-1",
+   "ecc_ref": "1-9-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "1-4-P-2",
+   "ecc_ref": "1-9-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "1-4-T-1",
+   "ecc_ref": "1-9-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-1-P-1",
+   "ecc_ref": "2-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-1-T-1",
+   "ecc_ref": "2-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-2-P-1",
+   "ecc_ref": "2-2-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-2-T-1",
+   "ecc_ref": "2-2-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-3-P-1",
+   "ecc_ref": "2-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-3-T-1",
+   "ecc_ref": "2-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-4-P-1",
+   "ecc_ref": "2-5-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-4-T-1",
+   "ecc_ref": "2-5-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-5-P-1",
+   "ecc_ref": "2-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-5-T-1",
+   "ecc_ref": "2-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-6-P-1",
+   "ecc_ref": "2-7-3",
+   "status": "deleted in ECC-2:2024"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-6-T-1",
+   "ecc_ref": "2-7-3",
+   "status": "deleted in ECC-2:2024"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-7-P-1",
+   "ecc_ref": "2-8-3",
+   "status": "modified in ECC-2:2024"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-7-T-1",
+   "ecc_ref": "2-8-3",
+   "status": "modified in ECC-2:2024"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-8-P-1",
+   "ecc_ref": "2-9-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-9-P-1",
+   "ecc_ref": "2-10-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-9-T-1",
+   "ecc_ref": "2-10-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-10-P-1",
+   "ecc_ref": "2-11-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-11-P-1",
+   "ecc_ref": "2-12-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-11-T-1",
+   "ecc_ref": "2-12-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-12-P-1",
+   "ecc_ref": "2-13-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-13-P-1",
+   "ecc_ref": "2-14-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-14-P-1",
+   "ecc_ref": "2-15-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-15-P-3",
+   "ecc_ref": "2-8-3-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "2-15-T-3",
+   "ecc_ref": "2-8-3-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "3-1-P-1",
+   "ecc_ref": "3-1-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "3-1-T-1",
+   "ecc_ref": "3-1-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "4-1-P-1",
+   "ecc_ref": "4-1-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CCC",
+   "control": "4-1-P-1",
+   "ecc_ref": "4-1-3",
+   "status": "modified in ECC-2:2024"
+  },
+  {
+   "framework": "CSCC",
+   "control": "1-1-1",
+   "ecc_ref": "1-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "1-2-1",
+   "ecc_ref": "1-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "1-3-1",
+   "ecc_ref": "1-6-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "1-3-2",
+   "ecc_ref": "1-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "1-4-1",
+   "ecc_ref": "1-8-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "1-4-2",
+   "ecc_ref": "1-8-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "1-5-1",
+   "ecc_ref": "1-9-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-1-1",
+   "ecc_ref": "2-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-2-1",
+   "ecc_ref": "2-2-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-2-2",
+   "ecc_ref": "2-2-3-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-3-1",
+   "ecc_ref": "2-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-4-1",
+   "ecc_ref": "2-5-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-5-1",
+   "ecc_ref": "2-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-6-1",
+   "ecc_ref": "2-7-3",
+   "status": "deleted in ECC-2:2024"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-7-1",
+   "ecc_ref": "2-8-3",
+   "status": "modified in ECC-2:2024"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-8-1",
+   "ecc_ref": "2-9-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-8-2",
+   "ecc_ref": "2-9-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-9-1",
+   "ecc_ref": "2-10-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-9-2",
+   "ecc_ref": "2-10-3-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-10-1",
+   "ecc_ref": "2-11-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-10-2",
+   "ecc_ref": "2-11-3-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-11-1",
+   "ecc_ref": "2-12-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-11-2",
+   "ecc_ref": "2-12-3-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-12-1",
+   "ecc_ref": "2-15-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "2-12-2",
+   "ecc_ref": "2-15-3-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "3-1-1",
+   "ecc_ref": "3-1-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "CSCC",
+   "control": "4-1-1",
+   "ecc_ref": "4-1",
+   "status": "objective modified in ECC-2:2024"
+  },
+  {
+   "framework": "CSCC",
+   "control": "4-2-1",
+   "ecc_ref": "4-2-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "DCC",
+   "control": "1-1-1",
+   "ecc_ref": "1-8-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "DCC",
+   "control": "1-1-2",
+   "ecc_ref": "1-8-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "DCC",
+   "control": "1-2-1",
+   "ecc_ref": "1-9-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "DCC",
+   "control": "1-3-1",
+   "ecc_ref": "1-10-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "DCC",
+   "control": "2-1-1",
+   "ecc_ref": "2-2-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "DCC",
+   "control": "2-1-3",
+   "ecc_ref": "2-2-3-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "DCC",
+   "control": "2-2-1",
+   "ecc_ref": "2-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "DCC",
+   "control": "2-3-1",
+   "ecc_ref": "2-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "DCC",
+   "control": "2-4-1",
+   "ecc_ref": "2-7-3",
+   "status": "deleted in ECC-2:2024"
+  },
+  {
+   "framework": "DCC",
+   "control": "2-5-1",
+   "ecc_ref": "2-8-3",
+   "status": "modified in ECC-2:2024"
+  },
+  {
+   "framework": "DCC",
+   "control": "3-1-1",
+   "ecc_ref": "4-1",
+   "status": "objective modified in ECC-2:2024"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-1-1",
+   "ecc_ref": "1-3-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-1-1",
+   "ecc_ref": "1-3-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-1-2",
+   "ecc_ref": "1-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-1-3",
+   "ecc_ref": "1-3-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-2-1",
+   "ecc_ref": "1-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-3-1",
+   "ecc_ref": "1-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-4-1",
+   "ecc_ref": "1-6-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-4-1",
+   "ecc_ref": "1-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-5-3",
+   "ecc_ref": "1-6-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-5-3",
+   "ecc_ref": "1-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-6-1",
+   "ecc_ref": "1-8-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-6-2",
+   "ecc_ref": "1-8-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-7-1",
+   "ecc_ref": "1-9-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-7-2",
+   "ecc_ref": "1-9-6",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-8-1",
+   "ecc_ref": "1-10-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "1-8-2",
+   "ecc_ref": "1-10-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-1-1",
+   "ecc_ref": "2-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-1-2",
+   "ecc_ref": "2-1-6",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-2-1",
+   "ecc_ref": "2-2-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-2-1-10",
+   "ecc_ref": "2-2-3-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-2-2",
+   "ecc_ref": "2-2-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-3-1",
+   "ecc_ref": "2-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-3-2",
+   "ecc_ref": "2-3-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-4-1",
+   "ecc_ref": "2-5-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-4-2",
+   "ecc_ref": "2-5-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-5-1",
+   "ecc_ref": "2-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-5-2",
+   "ecc_ref": "2-6-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-6-1",
+   "ecc_ref": "2-7-3",
+   "status": "deleted in ECC-2:2024"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-6-2",
+   "ecc_ref": "2-7-4",
+   "status": "not in ECC-2:2024"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-7-1",
+   "ecc_ref": "2-8-3",
+   "status": "modified in ECC-2:2024"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-7-2",
+   "ecc_ref": "2-8-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-8-1",
+   "ecc_ref": "2-9-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-8-2",
+   "ecc_ref": "2-9-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-9-1",
+   "ecc_ref": "2-10-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-9-1-2",
+   "ecc_ref": "2-10-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-9-1-3",
+   "ecc_ref": "2-10-3-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-9-2",
+   "ecc_ref": "2-10-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-10-1",
+   "ecc_ref": "2-11-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-10-1-1",
+   "ecc_ref": "2-11-3-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-10-1-2",
+   "ecc_ref": "2-11-3-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-10-1-3",
+   "ecc_ref": "2-11-3-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-10-2",
+   "ecc_ref": "2-11-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-11-1",
+   "ecc_ref": "2-12-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-11-2",
+   "ecc_ref": "2-12-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-12-1",
+   "ecc_ref": "2-13-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-12-2",
+   "ecc_ref": "2-13-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-13-1",
+   "ecc_ref": "2-14-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "2-13-2",
+   "ecc_ref": "2-14-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "3-1-1",
+   "ecc_ref": "3-1-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "3-1-2",
+   "ecc_ref": "3-1-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "4-1-1",
+   "ecc_ref": "4-1",
+   "status": "objective modified in ECC-2:2024"
+  },
+  {
+   "framework": "OTCC",
+   "control": "4-1-1",
+   "ecc_ref": "4-1-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OTCC",
+   "control": "4-1-2",
+   "ecc_ref": "4-1-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "1-1-1",
+   "ecc_ref": "1-3-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "1-2-1",
+   "ecc_ref": "1-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "1-3-1",
+   "ecc_ref": "1-10-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "1-3-2",
+   "ecc_ref": "1-10-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-1-1",
+   "ecc_ref": "2-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-2-1",
+   "ecc_ref": "2-2-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-2-2",
+   "ecc_ref": "2-2-3-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-3-1",
+   "ecc_ref": "2-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-4-1",
+   "ecc_ref": "2-5-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-5-1",
+   "ecc_ref": "2-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-6-1",
+   "ecc_ref": "2-7-3",
+   "status": "deleted in ECC-2:2024"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-7-1",
+   "ecc_ref": "2-8-3",
+   "status": "modified in ECC-2:2024"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-8-1",
+   "ecc_ref": "2-9-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-8-2",
+   "ecc_ref": "2-9-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-9-1",
+   "ecc_ref": "2-10-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-10-1",
+   "ecc_ref": "2-11-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-10-2",
+   "ecc_ref": "2-11-3-2",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-11-1",
+   "ecc_ref": "2-12-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-11-2",
+   "ecc_ref": "2-12-3-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "2-12-1",
+   "ecc_ref": "2-13-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "TCC",
+   "control": "3-1-1",
+   "ecc_ref": "4-2-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "1-1-1",
+   "ecc_ref": "1-3-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "1-2-1",
+   "ecc_ref": "1-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "1-3-1",
+   "ecc_ref": "1-9-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "1-4-1",
+   "ecc_ref": "1-10-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "1-4-2",
+   "ecc_ref": "1-10-4",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "2-1-1",
+   "ecc_ref": "2-1",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "2-2-1",
+   "ecc_ref": "2-2-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "2-2-2",
+   "ecc_ref": "2-2-3-5",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "2-3-1",
+   "ecc_ref": "2-3-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "2-4-1",
+   "ecc_ref": "2-6-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "2-5-1",
+   "ecc_ref": "2-7-3",
+   "status": "deleted in ECC-2:2024"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "2-6-1",
+   "ecc_ref": "2-12-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "2-7-1",
+   "ecc_ref": "2-13-3",
+   "status": "unchanged"
+  },
+  {
+   "framework": "OSMACC",
+   "control": "3-1-2",
+   "ecc_ref": "4-1-2",
+   "status": "unchanged"
+  }
+ ],
+ "site_ecc_refs_touched_by_2024": [
+  [
+   "2-2-3-1",
+   "Modification",
+   "iam/authentication_credentials"
+  ],
+  [
+   "2-2-3-1",
+   "Modification",
+   "iam/unique_identity"
+  ],
+  [
+   "2-2-3-2",
+   "Modification",
+   "application_security/app_authentication"
+  ],
+  [
+   "2-2-3-2",
+   "Modification",
+   "iam/mfa_privileged"
+  ],
+  [
+   "2-2-3-2",
+   "Modification",
+   "iam/third_party_access"
+  ],
+  [
+   "2-2-3-2",
+   "Modification",
+   "network_security/remote_access"
+  ],
+  [
+   "2-7-2",
+   "Modification",
+   "data_protection/data_leakage_prevention"
+  ],
+  [
+   "2-7-2",
+   "Modification",
+   "data_protection/data_masking"
+  ],
+  [
+   "2-7-3",
+   "Deletion",
+   "data_protection/classification_scheme"
+  ],
+  [
+   "2-7-3",
+   "Deletion",
+   "data_protection/data_ownership"
+  ],
+  [
+   "2-7-3",
+   "Deletion",
+   "data_protection/data_retention"
+  ],
+  [
+   "2-7-3",
+   "Deletion",
+   "data_protection/privacy_protection"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "backup_recovery/backup_encryption_keys"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "cloud_security/cloud_encryption_keys"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "cryptography/approved_crypto"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "cryptography/certificate_management"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "cryptography/crypto_critical_systems"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "cryptography/crypto_dual_control"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "cryptography/crypto_in_transit_verification"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "cryptography/encryption_at_rest"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "cryptography/key_management"
+  ],
+  [
+   "2-8-3",
+   "Modification",
+   "endpoint_security/endpoint_encryption_logging"
+  ],
+  [
+   "4-1",
+   "Objective",
+   "cloud_security/cloud_encryption_keys"
+  ],
+  [
+   "4-1",
+   "Objective",
+   "cloud_security/cloud_resilience"
+  ],
+  [
+   "4-1",
+   "Objective",
+   "cloud_security/cloud_saas_assurance"
+  ],
+  [
+   "4-1",
+   "Objective",
+   "cloud_security/cloud_strategy"
+  ],
+  [
+   "4-1",
+   "Objective",
+   "cloud_security/cloud_tenancy_control"
+  ],
+  [
+   "4-1",
+   "Objective",
+   "third_party/critical_supplier_governance"
+  ],
+  [
+   "4-1",
+   "Objective",
+   "third_party/supplier_access_and_remote"
+  ],
+  [
+   "4-1",
+   "Objective",
+   "third_party/supplier_data_protection"
+  ],
+  [
+   "4-1-3",
+   "Modification",
+   "third_party/due_diligence"
+  ],
+  [
+   "4-1-3",
+   "Modification",
+   "third_party/ongoing_assurance"
+  ],
+  [
+   "4-1-3",
+   "Modification",
+   "third_party/supplier_risk_tiering"
+  ],
+  [
+   "5-1",
+   "Deletion (domain 5)",
+   "security_operations/ics_ot_protection"
+  ]
+ ]
+}
