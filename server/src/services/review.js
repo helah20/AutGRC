@@ -389,6 +389,11 @@ const AR_PARAMETER_TOPICS = {
   dueDiligenceValidity: ['عناي', 'واجب'],
   criticalSupplierReviewFrequency: ['مورد', 'حرج'],
   supplierIncidentNotificationSla: ['مورد', 'حادث'],
+  // email. The review sentence names the archive but not recovery, so the
+  // restore-test cycle and the review cycle stay apart.
+  emailRestoreTestFrequency: ['سترجاع', 'بريد'],
+  phishingTriageSla: ['بلاغ', 'تصيد'],
+  emailReviewFrequency: ['راجع', 'بريد'],
   dataReturnSla: ['بيانات', 'عاد'],
   fourthPartyReview: ['مورد', 'عتمد'],
   supplierExitTesting: ['خروج', 'مورد']

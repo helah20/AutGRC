@@ -699,6 +699,7 @@ export default {
     data_protection: 'حماية البيانات',
     cryptography: 'التشفير',
     network_security: 'أمن الشبكات',
+    email_security: 'أمن البريد الإلكتروني',
     endpoint_security: 'أمن الأجهزة الطرفية',
     cloud_security: 'أمن الحوسبة السحابية',
     application_security: 'أمن التطبيقات',

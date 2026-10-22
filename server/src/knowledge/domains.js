@@ -51,6 +51,8 @@ export const DOMAIN_META = [
     description: 'Approved algorithms, encryption of data in transit and at rest, and the cryptographic key lifecycle.' },
   { key: 'network_security', name: 'Network Security', short: 'NET', category: 'protect',
     description: 'Segmentation, perimeter defence, secure remote access, wireless security and network service hardening.' },
+  { key: 'email_security', name: 'Email Security', short: 'EML', category: 'protect',
+    description: 'Message filtering, sender authentication, mailbox access, advanced threat protection, archiving and impersonation defence.' },
   { key: 'endpoint_security', name: 'Endpoint Security', short: 'END', category: 'protect',
     description: 'Workstation, server and mobile device protection, malware defence, hardening and removable media control.' },
   { key: 'cloud_security', name: 'Cloud Security', short: 'CLD', category: 'protect',

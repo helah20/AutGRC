@@ -208,7 +208,7 @@ export default function Generator() {
               </button>
             ))}
           </div>
-          {!domains.length && <Empty title="No matching domain" >Clear the filter to see all 24 domains.</Empty>}
+          {!domains.length && <Empty title="No matching domain" >Clear the filter to see all 25 domains.</Empty>}
         </Card>
       )}
 

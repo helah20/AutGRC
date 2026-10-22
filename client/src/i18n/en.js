@@ -697,6 +697,7 @@ export default {
     data_protection: 'Data Protection',
     cryptography: 'Cryptography',
     network_security: 'Network Security',
+    email_security: 'Email Security',
     endpoint_security: 'Endpoint Security',
     cloud_security: 'Cloud Security',
     application_security: 'Application Security',
