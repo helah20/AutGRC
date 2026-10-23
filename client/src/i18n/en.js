@@ -39,6 +39,7 @@ export default {
     findings: 'Findings',
     imports: 'Import & Analyse',
     reports: 'Reports',
+    managementReviews: 'Management Reviews',
     settings: 'Settings',
     mainNavigation: 'Main navigation',
     toggleNavigation: 'Toggle navigation'
@@ -321,7 +322,45 @@ export default {
 
   gap: {
     title: 'Gap Assessment',
-    subtitle: "Assess the organisation against a framework. New assessments start from the platform's real coverage position rather than a blank sheet."
+    subtitle: "Assess the organisation against a framework. New assessments start from the platform's real coverage position rather than a blank sheet.",
+    auditReport: 'Audit report'
+  },
+
+  reviews: {
+    title: 'Management Reviews',
+    subtitle: 'Minutes of the reviews at which top management examines the management system (ISO 27001 9.3; NCA ECC 1-2-3). Inputs are captured on the day, and decisions can raise tracked actions.',
+    record: 'Record a review',
+    recordNote: 'The inputs ISO 27001 9.3.2 requires are captured from the platform when you save, as they stand today.',
+    reference: 'Review',
+    heldOn: 'Held on',
+    forum: 'Forum',
+    forumPlaceholder: 'Cybersecurity Supervisory Committee',
+    chair: 'Chair',
+    attendees: 'Attendees',
+    summary: 'Discussion',
+    decisions: 'Decisions',
+    decision: 'Decision',
+    category: 'Category',
+    action: 'Action',
+    inputs: 'Inputs considered',
+    inputsNote: 'As the platform reported them on {date}.',
+    input: 'Input',
+    position: 'Position',
+    attention: 'Attention',
+    noDecisions: 'No decision recorded yet.',
+    addDecision: 'Add decision',
+    raiseAction: 'Corrective action',
+    raiseActionLabel: 'Raise an action for this decision',
+    raiseActionHint: 'Needs an owner and a due date, and is then tracked to verification.',
+    decisionAdded: 'Decision recorded',
+    closeMinutes: 'Close minutes',
+    closedToast: 'Minutes closed',
+    closedNote: 'These minutes are closed and are no longer edited. Record a further review for anything new.',
+    closed: 'Closed',
+    draft: 'Draft',
+    couldNotSave: 'Could not save',
+    emptyTitle: 'No management review recorded',
+    emptyBody: 'Record the next meeting of the committee to capture its inputs and decisions.'
   },
 
   hierarchy: {
@@ -490,6 +529,8 @@ export default {
     dueDate: 'Due date',
     blockedReason: 'What is blocking it',
     blockedReasonHint: 'Required. “Blocked” with no reason tells the next reader nothing.',
+    rootCause: 'Root cause',
+    rootCauseHint: 'Required before completing an action on a finding or gap. Why did it happen, so it does not happen again?',
     progressLabel: 'Progress — {percent}%',
     raisedToast: 'Action raised',
     raisedToastBody: 'The owner has been notified.',

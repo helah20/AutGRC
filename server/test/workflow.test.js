@@ -1086,8 +1086,16 @@ test('AutGRC end-to-end governance workflow', {
     const early = await api('POST', `/api/actions/${action.id}/verify`, { as: 'auditor@autgrc.demo', body: {} });
     assert.equal(early.status, 409, 'only a completed action can be verified');
 
-    const completed = await api('PATCH', `/api/actions/${action.id}`, { body: { status: 'completed' } });
+    // A nonconformity is not closed until somebody has said why it happened.
+    const noCause = await api('PATCH', `/api/actions/${action.id}`, { body: { status: 'completed' } });
+    assert.equal(noCause.status, 400);
+    assert.match(noCause.body.error, /root cause/);
+
+    const completed = await api('PATCH', `/api/actions/${action.id}`, {
+      body: { status: 'completed', root_cause: 'Leavers were removed from HR before the privileged inventory was reconciled.' }
+    });
     assert.equal(completed.status, 200);
+    assert.match(completed.body.action.root_cause, /Leavers/);
     assert.equal(completed.body.action.progress, 100, 'completing implies finished');
 
     // The GRC manager holds action:verify and owns nothing here, so the only
@@ -1103,6 +1111,57 @@ test('AutGRC end-to-end governance workflow', {
 
     const reopened = await api('PATCH', `/api/actions/${action.id}`, { body: { status: 'open' } });
     assert.equal(reopened.status, 409, 'a verified action is closed for good');
+  });
+
+  await t.test('a management review records its decisions and then is closed for good', async () => {
+    const directory = await api('GET', '/api/admin/directory');
+    const analyst = directory.body.find((u) => u.email === 'analyst@autgrc.demo');
+
+    const denied = await api('POST', '/api/management-reviews', { as: 'analyst@autgrc.demo', body: { held_on: '2026-03-01' } });
+    assert.equal(denied.status, 403, 'recording the review is the GRC function\'s');
+
+    const created = await api('POST', '/api/management-reviews', {
+      body: { held_on: '2026-03-01', forum: 'Cybersecurity Supervisory Committee', chair: 'CISO', attendees: 'CISO, CIO, Head of Risk' }
+    });
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    const review = created.body.review;
+    assert.match(review.review_id, /^MR-\d{4}$/);
+    assert.equal(created.body.inputs.rows.length, 10, 'the 9.3.2 inputs are captured on the day');
+
+    const noOwner = await api('POST', `/api/management-reviews/${review.id}/decisions`, {
+      body: { category: 'resources', decision: 'Fund a second SOC analyst', raise_action: true }
+    });
+    assert.equal(noOwner.status, 400, 'an action needs somebody accountable');
+
+    const decided = await api('POST', `/api/management-reviews/${review.id}/decisions`, {
+      body: { category: 'resources', decision: 'Fund a second SOC analyst', raise_action: true, owner_id: analyst.id, due_date: '2099-01-01' }
+    });
+    assert.equal(decided.status, 201, JSON.stringify(decided.body));
+    const decision = decided.body.decisions[0];
+    assert.match(decision.action_ref, /^CA-/, 'the decision raised a corrective action');
+
+    const minutes = await api('GET', `/api/management-reviews/${review.id}/minutes.docx`, { raw: true });
+    assert.equal(minutes.status, 200);
+
+    const closed = await api('POST', `/api/management-reviews/${review.id}/close`);
+    assert.equal(closed.status, 200);
+    const edit = await api('PATCH', `/api/management-reviews/${review.id}`, { body: { summary: 'Rewritten afterwards' } });
+    assert.equal(edit.status, 409, 'closed minutes are not edited');
+
+    const inputs = await api('GET', '/api/reports/management_review');
+    assert.match(inputs.body.rows[0][2], new RegExp(`${review.review_id} \\(2026-03-01\\) recorded 1 decision`),
+      'the next review reads this one back');
+  });
+
+  await t.test('an internal audit report is produced for an assessment', async () => {
+    const list = await api('GET', '/api/assessments');
+    const assessment = list.body[0];
+    const docx = await api('GET', `/api/export/audit-report/${assessment.id}.docx`, { raw: true });
+    assert.equal(docx.status, 200);
+    const pdf = await api('GET', `/api/export/audit-report/${assessment.id}.pdf`, { raw: true });
+    assert.equal(pdf.status, 200);
+    const missing = await api('GET', '/api/export/audit-report/asm_missing.docx', { raw: true });
+    assert.equal(missing.status, 404);
   });
 
   await t.test('an action cannot be verified by the person who carried it out', async () => {

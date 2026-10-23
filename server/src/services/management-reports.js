@@ -147,10 +147,28 @@ export function managementReviewInputs() {
   const pct = (a, b) => (b ? `${Math.round(((a || 0) / b) * 100)}%` : 'n/a');
   const decide = (flag) => (flag ? 'Decision needed' : 'For information');
 
+  // The decisions of the last closed review are what 9.3.2 a asks about; the
+  // whole action register follows as context.
+  const previous = q.get("SELECT id, review_id, held_on FROM management_reviews WHERE status = 'closed' ORDER BY held_on DESC, closed_at DESC LIMIT 1");
+  let previousLine = 'No earlier management review is recorded in the platform. ';
+  let previousOpen = 0;
+  if (previous) {
+    const decisions = q.all(
+      `SELECT d.action_id, a.status, a.due_date, a.verified_at FROM management_review_decisions d
+         LEFT JOIN corrective_actions a ON a.id = d.action_id WHERE d.review_id = ?`, previous.id);
+    const withAction = decisions.filter((d) => d.action_id);
+    const verifiedPrev = withAction.filter((d) => d.verified_at).length;
+    previousOpen = withAction.filter((d) => ['open', 'in_progress', 'blocked'].includes(d.status)).length;
+    const overduePrev = withAction.filter((d) => ['open', 'in_progress', 'blocked'].includes(d.status)
+      && d.due_date && d.due_date < new Date().toISOString().slice(0, 10)).length;
+    previousLine = `${previous.review_id} (${previous.held_on}) recorded ${decisions.length} decision(s), ${withAction.length} with an action: `
+      + `${verifiedPrev} verified, ${previousOpen} open (${overduePrev} overdue). `;
+  }
+
   const rows = [
     ['Status of actions from previous management reviews', 'ISO 9.3.2 a',
-      `${actions.open} open corrective action(s), ${actions.overdue} overdue; ${actions.awaiting} completed and awaiting verification; ${actions.verified} verified in the last 12 months.`,
-      'Corrective actions', decide(actions.overdue || actions.awaiting)],
+      `${previousLine}Across the register: ${actions.open} open corrective action(s), ${actions.overdue} overdue; ${actions.awaiting} completed and awaiting verification; ${actions.verified} verified in the last 12 months.`,
+      'Management reviews; corrective actions', decide(previousOpen || actions.overdue || actions.awaiting)],
     ['Changes in external and internal issues', 'ISO 9.3.2 b; ECC 1-7',
       `${frameworks.applicable ? `${frameworks.applicable} applicable framework(s) recorded in the organisation profile.` : 'No applicable frameworks recorded in the organisation profile.'}${frameworks.draft.length
         ? ` Draft edition(s) awaiting migration: ${frameworks.draft.map((f) => `${f.code} ${f.version || ''}`.trim()).join(', ')}.` : ''}`

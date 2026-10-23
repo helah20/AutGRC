@@ -26,6 +26,7 @@ import Actions from './pages/Actions.jsx';
 import Soa from './pages/Soa.jsx';
 import Imports from './pages/Imports.jsx';
 import Reports from './pages/Reports.jsx';
+import ManagementReviews from './pages/ManagementReviews.jsx';
 import SearchPage from './pages/SearchPage.jsx';
 import Settings from './pages/Settings.jsx';
 import Setup from './pages/Setup.jsx';
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/soa" element={<Soa />} />
         <Route path="/imports" element={<Imports />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/management-reviews" element={<ManagementReviews />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

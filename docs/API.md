@@ -126,6 +126,8 @@ Every mutating RACI call returns the rehydrated matrix with fresh validation.
 | GET | `/dashboard` | `document:read` |
 | GET | `/reports`, `/reports/:key` | `document:read` |
 | GET | `/reports/:key/export.{xlsx,pdf}` | `export:run` |
+| GET/POST/PATCH | `/management-reviews…` | `review:write` to write. Creating a review captures the ISO 27001 9.3.2 inputs as they stand; `POST /:id/decisions` records a decision and, with `raise_action`, a corrective action; `POST /:id/close` makes the minutes read-only |
+| GET | `/management-reviews/:id/minutes.{docx,pdf}` | `export:run` |
 
 ## Export
 
@@ -133,6 +135,7 @@ Every mutating RACI call returns the rehydrated matrix with fresh validation.
 | --- | --- |
 | `/export/documents/:id.docx` | Word with cover page, document control, approval and version tables, contents, headers, footers and page numbering |
 | `/export/documents/:id.pdf` | The same structure as PDF |
+| `/export/audit-report/:id.{docx,pdf}` | Internal audit report for an assessment: scope and criteria, results, nonconformities, corrective actions with root causes, conclusion |
 | `/export/controls.xlsx` | Control matrix with an evidence sheet |
 | `/export/raci/:id.xlsx` | RACI matrix, legend and validation findings |
 | `/export/mappings.xlsx` | Framework mapping with a coverage summary |

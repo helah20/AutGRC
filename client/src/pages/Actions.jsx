@@ -13,6 +13,8 @@ import { useI18n } from '../i18n/index.jsx';
 
 const STATUSES = ['open', 'in_progress', 'blocked', 'completed', 'cancelled'];
 const PRIORITIES = ['low', 'medium', 'high', 'critical'];
+// Actions on a nonconformity record its cause before they close (ISO 27001 10.2).
+const NEEDS_ROOT_CAUSE = ['finding', 'gap_item', 'assessment'];
 
 /**
  * Corrective actions. A finding used to be raised and then nothing held it:
@@ -193,7 +195,8 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
             <button className="btn btn-primary" onClick={() => save({
               status: draft.status, progress: draft.progress, priority: draft.priority,
               due_date: draft.due_date, owner_id: draft.owner_id,
-              blocked_reason: draft.blocked_reason || null
+              blocked_reason: draft.blocked_reason || null,
+              root_cause: draft.root_cause || null
             })}><IconCheck width={13} height={13} />{t('common.save')}</button>
           )}
         </>
@@ -207,6 +210,9 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
           </div>
 
           {current.description && <p className="small">{current.description}</p>}
+          {current.root_cause && (!canWrite || current.verified) && (
+            <div className="definition"><dt>{t('actions.rootCause')}</dt><dd>{current.root_cause}</dd></div>
+          )}
 
           <div className="definition">
             <dt>{t('actions.raisedOn')}</dt><dd>{formatDate(current.created_at)} ({relativeTime(current.created_at)})</dd>
@@ -259,6 +265,12 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
                   onChange={(e) => setDraft((d) => ({ ...d, progress: Number(e.target.value) }))}
                   style={{ width: '100%' }} />
               </Field>
+              {(NEEDS_ROOT_CAUSE.includes(current.source_type) || draft.root_cause) && (
+                <Field label={t('actions.rootCause')} hint={t('actions.rootCauseHint')}>
+                  <textarea className="textarea" value={draft.root_cause || ''}
+                    onChange={(e) => setDraft((d) => ({ ...d, root_cause: e.target.value }))} />
+                </Field>
+              )}
               {draft.status === 'blocked' && (
                 <Field label={t('actions.blockedReason')} hint={t('actions.blockedReasonHint')}>
                   <textarea className="textarea" value={draft.blocked_reason || ''}
