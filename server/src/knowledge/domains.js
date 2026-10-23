@@ -57,6 +57,8 @@ export const DOMAIN_META = [
     description: 'Database register, hardening, access through applications, administrator control, activity monitoring, encryption and recovery.' },
   { key: 'ot_security', name: 'OT/ICS Security', short: 'OTS', category: 'protect',
     description: 'Operational technology and industrial control systems: facility levels, zones, remote access, hardening, monitoring and safe operation (NCA OTCC).' },
+  { key: 'social_media_security', name: 'Social Media Account Security', short: 'SMA', category: 'protect',
+    description: 'Official social media accounts: registration, authentication, access, dedicated devices, monitoring, impersonation and recovery (NCA OSMACC).' },
   { key: 'endpoint_security', name: 'Endpoint Security', short: 'END', category: 'protect',
     description: 'Workstation, server and mobile device protection, malware defence, hardening and removable media control.' },
   { key: 'cloud_security', name: 'Cloud Security', short: 'CLD', category: 'protect',

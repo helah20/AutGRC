@@ -45,7 +45,7 @@ const placeholders = (text) =>
  * Run `fn` with one domain's Arabic entry withheld.
  *
  * The fallback to English matters most for a domain that has no translation
- * yet, and all twenty-seven now do, so there is no longer a domain in the
+ * yet, and all twenty-eight now do, so there is no longer a domain in the
  * shipped set to exercise it against. Withholding one for the duration of the
  * assertion runs the real code path rather than replacing it with a test of
  * something else; the entry is restored in a finally so a failure here cannot

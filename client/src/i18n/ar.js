@@ -743,6 +743,7 @@ export default {
     email_security: 'أمن البريد الإلكتروني',
     database_security: 'أمن قواعد البيانات',
     ot_security: 'أمن التقنيات التشغيلية',
+    social_media_security: 'أمن حسابات التواصل الاجتماعي',
     endpoint_security: 'أمن الأجهزة الطرفية',
     cloud_security: 'أمن الحوسبة السحابية',
     application_security: 'أمن التطبيقات',

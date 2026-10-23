@@ -741,6 +741,7 @@ export default {
     email_security: 'Email Security',
     database_security: 'Database Security',
     ot_security: 'OT/ICS Security',
+    social_media_security: 'Social Media Account Security',
     endpoint_security: 'Endpoint Security',
     cloud_security: 'Cloud Security',
     application_security: 'Application Security',
