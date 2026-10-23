@@ -72,6 +72,7 @@ export function getOrgProfile() {
     regulators: fromJson(row.regulators, []),
     technology_env: fromJson(row.technology_env, []),
     data_classifications: fromJson(row.data_classifications, []),
+    cloud_roles: fromJson(row.cloud_roles, []),
     // Null and empty mean different things here. Null is "nobody has said which
     // frameworks apply", which is what sends a new installation through setup;
     // an empty list is a decision that none do, and generates documents with no

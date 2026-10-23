@@ -16,6 +16,8 @@ import { id } from '../utils/ids.js';
 import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound, HttpError } from '../middleware/errors.js';
 import { domainName, SOURCE_NOTE } from '../knowledge/index.js';
+import { getOrgProfile } from './_shared.js';
+import { evaluateApplicability } from '../services/applicability.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -45,6 +47,7 @@ router.get('/:code', asyncHandler(async (req, res) => {
     q.all('SELECT * FROM soa_decisions WHERE framework_id = ?', framework.id).map((d) => [d.requirement_id, d])
   );
 
+  const org = getOrgProfile();
   const rows = requirements.map((requirement) => {
     const controls = q.all(
       `SELECT c.id, c.control_id, c.name, c.status, c.domain_key, cm.coverage
@@ -72,6 +75,9 @@ router.get('/:code', asyncHandler(async (req, res) => {
       decided_by_name: decision?.decided_by_name || null,
       decided_at: decision?.decided_at || null,
       decision_recorded: Boolean(decision),
+      // What the publication itself says about scope, evaluated against the
+      // profile. Advice for the decision above, never a substitute for it.
+      publication: evaluateApplicability(requirement.applicability, org),
       controls,
       implementation: applicable ? implementationOf(controls) : 'excluded'
     };
@@ -97,6 +103,12 @@ router.get('/:code', asyncHandler(async (req, res) => {
       // An exclusion with no justification is the finding an auditor writes up
       // first, so it is counted separately rather than buried in "excluded".
       exclusionsWithoutJustification: rows.filter((r) => !r.applicable && !r.justification).length,
+      // Two disagreements between the decision and the publication's own scope,
+      // each worth a second look: a control kept in scope that the publication
+      // does not apply to this organisation, and one excluded that it does.
+      publicationExcludes: rows.filter((r) => r.applicable && r.publication?.applies === false).length,
+      excludedButPublicationApplies: rows.filter((r) => !r.applicable && r.publication?.applies === true).length,
+      publicationUnknown: rows.filter((r) => r.publication?.applies === null).length,
       decisionsRecorded: rows.filter((r) => r.decision_recorded).length
     }
   });

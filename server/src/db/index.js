@@ -48,7 +48,15 @@ const ADDED_COLUMNS = [
   // A document is approved in a language; a translation is a separate
   // controlled document that points back at its source.
   ['documents', 'language', "TEXT NOT NULL DEFAULT 'en' CHECK (language IN ('en','ar'))"],
-  ['documents', 'translation_of', 'TEXT']
+  ['documents', 'translation_of', 'TEXT'],
+  // Per-control scoping carried by an imported catalogue, and the profile
+  // inputs it is evaluated against.
+  ['framework_requirements', 'applicability', 'TEXT'],
+  ['org_profile', 'ot_facility_level', "TEXT CHECK (ot_facility_level IN ('L1','L2','L3'))"],
+  ['org_profile', 'cloud_roles', 'TEXT'],
+  // Why the nonconformity happened (ISO/IEC 27001 10.2 b), so the action
+  // removes the cause and not only the instance.
+  ['corrective_actions', 'root_cause', 'TEXT']
 ];
 
 function applyColumnMigrations() {

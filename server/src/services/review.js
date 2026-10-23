@@ -389,6 +389,23 @@ const AR_PARAMETER_TOPICS = {
   dueDiligenceValidity: ['عناي', 'واجب'],
   criticalSupplierReviewFrequency: ['مورد', 'حرج'],
   supplierIncidentNotificationSla: ['مورد', 'حادث'],
+  // email. The review sentence names the archive but not recovery, so the
+  // restore-test cycle and the review cycle stay apart.
+  emailRestoreTestFrequency: ['سترجاع', 'بريد'],
+  phishingTriageSla: ['بلاغ', 'تصيد'],
+  emailReviewFrequency: ['راجع', 'بريد'],
+  // databases. The review sentence does not name recovery, for the same reason.
+  dbAccessReviewFrequency: ['صلاحيات', 'قواعد'],
+  dbRestoreTestFrequency: ['ستعاد', 'قواعد'],
+  // social media accounts
+  smRiskAssessmentFrequency: ['قيم', 'مخاطر'],
+  smInventoryReview: ['جرد', 'تحديث'],
+  smAccessReviewFrequency: ['راجع', 'وصول'],
+  smConfigReviewFrequency: ['راجع', 'عدادات'],
+  smPasswordRotation: ['مرور', 'تغير'],
+  // operational technology
+  otVulnAssessmentFrequency: ['تقييم', 'ثغرات'],
+  otAssetInventoryReview: ['جرد', 'راجع'],
   dataReturnSla: ['بيانات', 'عاد'],
   fourthPartyReview: ['مورد', 'عتمد'],
   supplierExitTesting: ['خروج', 'مورد']

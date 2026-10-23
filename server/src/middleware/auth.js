@@ -66,6 +66,9 @@ export const PERMISSIONS = {
   // Closing your own corrective action is not verification.
   'action:verify': ['admin', 'grc_manager', 'reviewer', 'auditor'],
   'soa:write': ['admin', 'grc_manager', 'cyber_user'],
+  // Recording the management review is the GRC function's job; the decisions
+  // in it belong to the committee, which the minutes name.
+  'review:write': ['admin', 'grc_manager'],
   'export:run': ['admin', 'grc_manager', 'cyber_user', 'reviewer', 'approver', 'auditor', 'read_only'],
   'settings:write': ['admin', 'grc_manager'],
   'user:manage': ['admin'],

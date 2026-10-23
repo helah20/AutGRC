@@ -46,6 +46,7 @@ import ExcelJS from 'exceljs';
 import { db, q, nowIso } from '../db/index.js';
 import { id } from '../utils/ids.js';
 import { DOMAIN_META } from '../knowledge/index.js';
+import { parseApplicability } from './applicability.js';
 
 // ------------------------------------------------------------- the layouts --
 
@@ -61,7 +62,10 @@ const HEADERS = {
   domain: ['capabilityname', 'capability', 'domain', 'domainkey', 'area', 'controldomain', 'category'],
   parentRef: ['parentref', 'parent', 'parentcontrol', 'parentnumber'],
   level: ['level', 'depth'],
-  relatedStandards: ['relevantstandards', 'relatedstandards', 'standards', 'mappings', 'crossreference', 'crossreferences']
+  relatedStandards: ['relevantstandards', 'relatedstandards', 'standards', 'mappings', 'crossreference', 'crossreferences'],
+  // Who the publication applies the control to: classification levels, facility
+  // levels or CSP/CST. See services/applicability.js for the cell format.
+  applicability: ['applicability', 'appliesto', 'applicableto']
 };
 
 function normaliseHeader(value) {
@@ -215,6 +219,11 @@ export async function analyseCatalogue({ filePath, originalName, existing = [] }
       unmatchedDomains.set(capability, (unmatchedDomains.get(capability) || 0) + 1);
     }
 
+    // An unreadable applicability is rejected rather than dropped: importing the
+    // control without it would quietly widen it to everyone.
+    const applicability = parseApplicability(at(row, 'applicability'));
+    if (applicability?.error) { rejected.push({ line, ref, reason: `Applicability: ${applicability.error}` }); continue; }
+
     const levelCell = at(row, 'level');
     const related = at(row, 'relatedStandards');
     if (related) candidates.push({ ref, related });
@@ -230,6 +239,7 @@ export async function analyseCatalogue({ filePath, originalName, existing = [] }
       capability: capability || null,
       parentRef: at(row, 'parentRef') || null,
       level: /^[1-6]$/.test(levelCell) ? Number(levelCell) : levelFromRef(ref),
+      applicability,
       action: byRef.has(ref) ? 'update' : 'insert'
     });
   }
@@ -282,19 +292,20 @@ export function applyCatalogue({ framework, accepted }) {
         q.run(
           `UPDATE framework_requirements
               SET title = ?, statement = ?, domain_key = ?, parent_ref = ?, level = ?,
-                  source_status = 'user_imported'
+                  applicability = ?, source_status = 'user_imported'
             WHERE id = ?`,
-          row.title, row.statement, row.domainKey, row.parentRef, row.level, existing.id
+          row.title, row.statement, row.domainKey, row.parentRef, row.level,
+          row.applicability ? JSON.stringify(row.applicability) : null, existing.id
         );
         result.updated += 1;
       } else {
         q.run(
           `INSERT INTO framework_requirements
              (id, framework_id, ref, parent_ref, title, statement, domain_key, level,
-              provenance, source_status, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,'user_imported',?)`,
+              applicability, provenance, source_status, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,'user_imported',?)`,
           id('fwr'), framework.id, row.ref, row.parentRef, row.title, row.statement,
-          row.domainKey, row.level, provenance, at
+          row.domainKey, row.level, row.applicability ? JSON.stringify(row.applicability) : null, provenance, at
         );
         result.inserted += 1;
       }

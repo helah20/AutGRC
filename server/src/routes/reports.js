@@ -10,6 +10,7 @@ import { domainName, DOMAIN_META, ROLE_LIBRARY } from '../knowledge/index.js';
 import { getOrgProfile, enrichDocuments, STATUS_LABEL } from './_shared.js';
 import { h, joinBlocks } from '../services/html.js';
 import { DOC_TYPE_LABEL } from '../services/generator.js';
+import { internalAuditPlan, managementReviewInputs } from '../services/management-reports.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -24,7 +25,9 @@ const REPORTS = {
   raci: { name: 'RACI Assignment', description: 'Responsibility assignment across every matrix, with validation issues.' },
   document_status: { name: 'Document Status', description: 'The document register with lifecycle state and ownership.' },
   review_status: { name: 'Review Status', description: 'Documents by review date, highlighting those overdue.' },
-  audit_readiness: { name: 'Audit Readiness', description: 'A consolidated readiness position across documents, controls, evidence and findings.' }
+  audit_readiness: { name: 'Audit Readiness', description: 'A consolidated readiness position across documents, controls, evidence and findings.' },
+  internal_audit_plan: { name: 'Internal Audit Plan', description: 'A risk-based audit programme across the audit universe, with the audit criteria and the reason for each priority (ISO 27001 9.2, NCA ECC 1-8).' },
+  management_review: { name: 'Management Review Inputs', description: 'Each input ISO 27001 9.3.2 requires, with the position the platform holds, for the supervisory committee (NCA ECC 1-2-3, 1-8-3).' }
 };
 
 router.get('/', asyncHandler(async (req, res) => {
@@ -162,6 +165,10 @@ function buildReport(key) {
       return { headers: ['Domain', 'Documents', 'Published', 'Controls', 'With Evidence', 'Mapped', 'Open Findings', 'Readiness', 'Assessment'], rows,
         widths: [30, 12, 12, 12, 14, 12, 14, 12, 16] };
     }
+    case 'internal_audit_plan':
+      return internalAuditPlan();
+    case 'management_review':
+      return managementReviewInputs();
     default:
       return null;
   }

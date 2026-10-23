@@ -46,6 +46,7 @@ export default {
     findings: 'الملاحظات',
     imports: 'استيراد وتحليل',
     reports: 'التقارير',
+    managementReviews: 'مراجعات الإدارة',
     settings: 'الإعدادات',
     mainNavigation: 'التنقل الرئيسي',
     toggleNavigation: 'إظهار أو إخفاء القائمة'
@@ -323,7 +324,45 @@ export default {
 
   gap: {
     title: 'تقييم الفجوات',
-    subtitle: 'قياس المنظمة مقابل إطار مرجعي. وتبدأ التقييمات الجديدة من موقف التغطية الفعلي في المنصة لا من صفحة بيضاء.'
+    subtitle: 'قياس المنظمة مقابل إطار مرجعي. وتبدأ التقييمات الجديدة من موقف التغطية الفعلي في المنصة لا من صفحة بيضاء.',
+    auditReport: 'تقرير التدقيق'
+  },
+
+  reviews: {
+    title: 'مراجعات الإدارة',
+    subtitle: 'محاضر المراجعات التي تفحص فيها الإدارة العليا نظام الإدارة (ISO 27001 9.3؛ الضابط 1-2-3 من الضوابط الأساسية). تُلتقط المدخلات يوم الاجتماع، ويمكن أن تُنشئ القرارات إجراءات متابَعة.',
+    record: 'تسجيل مراجعة',
+    recordNote: 'تُلتقط المدخلات التي يتطلبها البند 9.3.2 من ISO 27001 من المنصة عند الحفظ، كما هي اليوم.',
+    reference: 'المراجعة',
+    heldOn: 'تاريخ الانعقاد',
+    forum: 'الجهة',
+    forumPlaceholder: 'اللجنة الإشرافية للأمن السيبراني',
+    chair: 'الرئيس',
+    attendees: 'الحضور',
+    summary: 'النقاش',
+    decisions: 'القرارات',
+    decision: 'القرار',
+    category: 'الفئة',
+    action: 'الإجراء',
+    inputs: 'المدخلات التي نُظر فيها',
+    inputsNote: 'كما عرضتها المنصة في {date}.',
+    input: 'المدخل',
+    position: 'الوضع',
+    attention: 'الأولوية',
+    noDecisions: 'لم يُسجَّل أي قرار بعد.',
+    addDecision: 'إضافة قرار',
+    raiseAction: 'إجراء تصحيحي',
+    raiseActionLabel: 'إنشاء إجراء لهذا القرار',
+    raiseActionHint: 'يحتاج إلى مالك وتاريخ استحقاق، ثم يُتابَع حتى التحقق منه.',
+    decisionAdded: 'سُجِّل القرار',
+    closeMinutes: 'إغلاق المحضر',
+    closedToast: 'أُغلق المحضر',
+    closedNote: 'هذا المحضر مُغلق ولا يُعدَّل. سجّل مراجعة جديدة لأي أمر جديد.',
+    closed: 'مُغلق',
+    draft: 'مسودة',
+    couldNotSave: 'تعذّر الحفظ',
+    emptyTitle: 'لم تُسجَّل أي مراجعة إدارة',
+    emptyBody: 'سجّل الاجتماع القادم للجنة لالتقاط مدخلاته وقراراته.'
   },
 
   hierarchy: {
@@ -492,6 +531,8 @@ export default {
     dueDate: 'تاريخ الاستحقاق',
     blockedReason: 'ما الذي يُعطّله',
     blockedReasonHint: 'مطلوب. كلمة «متوقف» بلا سبب لا تقول شيئاً لمن يقرأ بعدك.',
+    rootCause: 'السبب الجذري',
+    rootCauseHint: 'مطلوب قبل إكمال إجراء على ملاحظة أو فجوة. لماذا حدثت، حتى لا تتكرر؟',
     progressLabel: 'نسبة الإنجاز — {percent}٪',
     raisedToast: 'تم رفع الإجراء',
     raisedToastBody: 'تم إشعار المالك.',
@@ -539,7 +580,18 @@ export default {
     mappedControls: 'الضوابط المرتبطة بهذا المتطلب',
     recordedApplicable: 'سُجّل كمنطبق',
     recordedExcluded: 'سُجّل كمستثنى',
-    couldNotRecord: 'تعذّر تسجيل القرار'
+    couldNotRecord: 'تعذّر تسجيل القرار',
+    columnPublication: 'حسب الوثيقة',
+    publicationYes: 'ينطبق ({levels})',
+    publicationNo: 'لا ينطبق على ملفكم',
+    publicationUnknown: 'مقيّد بـ {levels}',
+    publicationSays: 'ما تقوله الوثيقة',
+    publicationFrequency: 'التكرار الذي تحدده الوثيقة: {frequency}',
+    usePublicationBasis: 'استثناء مع الاستناد إلى الوثيقة',
+    publicationFilter: 'قرار يخالف نطاق الوثيقة',
+    publicationDisagrees: '{count} قرار يخالف نطاق الانطباق الذي تحدده الوثيقة',
+    publicationDisagreesBody: '{excludes} ضمن النطاق والوثيقة لا تطبّقها على ملف منظمتكم، و{applies} مستثناة والوثيقة تطبّقها. النطاق مأخوذ من الكتالوج المستورد وملف المنظمة.',
+    showThem: 'اعرضها'
   },
 
   auth: {
@@ -566,7 +618,7 @@ export default {
     featureTraceTitle: 'قابلة للتتبع حتى المصدر',
     featureTraceBody: 'كل متطلب يُتتبَّع من النظام أو الإطار المرجعي مروراً بالضابط وبند السياسة وخطوة الإجراء وصولاً إلى الدليل الذي يُثبته.',
     featureFrameworksTitle: 'أربعة عشر إطاراً مربوطة',
-    featureFrameworksBody: 'ضوابط الهيئة الوطنية للأمن السيبراني ECC وCSCC وDCC وTCC وCCC، وإطار ساما، وISO/IEC 27001 و27002 و27005 و22301، وNIST CSF و800-53، وCIS v8، وCOBIT 2019.',
+    featureFrameworksBody: 'ضوابط الهيئة الوطنية للأمن السيبراني ECC وCSCC وDCC وTCC وCCC وOTCC وOSMACC، وإطار ساما، وISO/IEC 27001 و27002 و27005 و22301، وNIST CSF و800-53، وCIS v8، وCOBIT 2019.',
     featureAuditTitle: 'جاهزة للتدقيق بحكم البناء',
     featureAuditBody: 'الضوابط تحمل متطلبات الأدلة والمُلّاك والمؤشرات. وتقييم الفجوات يبدأ من وضع التغطية الفعلي لديك.',
     sourceCaveat: 'مدخلات كتالوج الأطر بيانات مرجعية للربط. تحقّق منها مقابل النشرة الرسمية قبل الاعتماد عليها في إقرار تنظيمي.',
@@ -688,6 +740,10 @@ export default {
     data_protection: 'حماية البيانات',
     cryptography: 'التشفير',
     network_security: 'أمن الشبكات',
+    email_security: 'أمن البريد الإلكتروني',
+    database_security: 'أمن قواعد البيانات',
+    ot_security: 'أمن التقنيات التشغيلية',
+    social_media_security: 'أمن حسابات التواصل الاجتماعي',
     endpoint_security: 'أمن الأجهزة الطرفية',
     cloud_security: 'أمن الحوسبة السحابية',
     application_security: 'أمن التطبيقات',

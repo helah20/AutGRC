@@ -93,7 +93,7 @@ cleared.
 | GET | `/frameworks/:code/requirements` | — |
 | GET | `/frameworks/requirements/:id/trace` | — |
 | GET | `/frameworks/coverage` | — |
-| POST | `/frameworks/:code/catalogue` (multipart; `confirm=true` to write) | `settings:write` |
+| POST | `/frameworks/:code/catalogue` (multipart; `confirm=true` to write; an optional `Applicability` column scopes each control — see below) | `settings:write` |
 | GET/POST/DELETE | `/frameworks/crosswalks…` | `mapping:write` to write |
 | POST/DELETE | `/frameworks/mappings…` | `mapping:write` |
 | POST | `/frameworks/requirements/:id/suggest` | `ai:use` |
@@ -126,6 +126,8 @@ Every mutating RACI call returns the rehydrated matrix with fresh validation.
 | GET | `/dashboard` | `document:read` |
 | GET | `/reports`, `/reports/:key` | `document:read` |
 | GET | `/reports/:key/export.{xlsx,pdf}` | `export:run` |
+| GET/POST/PATCH | `/management-reviews…` | `review:write` to write. Creating a review captures the ISO 27001 9.3.2 inputs as they stand; `POST /:id/decisions` records a decision and, with `raise_action`, a corrective action; `POST /:id/close` makes the minutes read-only |
+| GET | `/management-reviews/:id/minutes.{docx,pdf}` | `export:run` |
 
 ## Export
 
@@ -133,6 +135,7 @@ Every mutating RACI call returns the rehydrated matrix with fresh validation.
 | --- | --- |
 | `/export/documents/:id.docx` | Word with cover page, document control, approval and version tables, contents, headers, footers and page numbering |
 | `/export/documents/:id.pdf` | The same structure as PDF |
+| `/export/audit-report/:id.{docx,pdf}` | Internal audit report for an assessment: scope and criteria, results, nonconformities, corrective actions with root causes, conclusion |
 | `/export/controls.xlsx` | Control matrix with an evidence sheet |
 | `/export/raci/:id.xlsx` | RACI matrix, legend and validation findings |
 | `/export/mappings.xlsx` | Framework mapping with a coverage summary |
@@ -161,9 +164,30 @@ duplicate, conflicting, ambiguous and outdated content.
 | GET/POST/PATCH | `/admin/users…` | `user:manage` |
 | GET | `/admin/directory` | `document:read` |
 | GET | `/admin/org` | `document:read` |
-| PUT | `/admin/org` | `settings:write` |
+| PUT | `/admin/org` (`ot_facility_level` `L1`–`L3` and `cloud_roles` `CSP`/`CST` are kept when omitted) | `settings:write` |
 | GET | `/admin/audit` | `audit:read` |
 | GET | `/admin/system` | `document:read` |
+
+### Per-control applicability
+
+NCA DCC, OTCC and CCC scope individual controls. An imported catalogue carries
+that scope in an `Applicability` column, one cell per control, entries separated
+by `;`, each a level optionally followed by `: ` and the frequency the
+publication sets for it:
+
+| Basis | Levels | Example cell |
+| --- | --- | --- |
+| Data classification (DCC) | `Public`, `Confidential`, `Secret`, `Top Secret` | `Public: At least every month; Secret: Immediately` |
+| Facility level (OTCC) | `L1`, `L2`, `L3` | `L1; L2` |
+| Cloud role (CCC) | `CSP`, `CST` | `CST` |
+
+A cell naming an unknown level, or mixing bases, rejects the row. The scope is
+evaluated against the organisation profile (`data_classifications`,
+`ot_facility_level`, `cloud_roles`) and returned as `publication` on each
+`/soa/:code` row and `applicability` on each `/frameworks/:code/requirements`
+row: `{ basis, levels, applies, matched, frequency, reason }`, where `applies`
+is `null` when the profile does not say enough to decide. It never records an
+SoA decision on its own.
 
 ## Errors
 

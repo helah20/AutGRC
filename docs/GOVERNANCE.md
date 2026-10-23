@@ -108,7 +108,7 @@ distinct from never having been asked, which is what sends a new installation
 through setup rather than letting it generate untraceable documents.
 
 The same rule decides what happens to the gap that leaves. The catalogue holds
-51 of the 114 controls the NCA ECC entry itself describes, and thirteen of its
+50 of the 200 controls and subcontrols ECC-2:2024 sets out, and twelve of its
 subdomains carry no controls at all. The tempting fix — writing the missing
 titles — is the prohibited one, because a title composed here and displayed
 beside real identifiers is indistinguishable from the publication to everyone
@@ -122,7 +122,19 @@ way it replaces any reference catalogue entry with its licensed copy. Until
 then the English reference text is shown as English text, bidi-isolated so it
 reads correctly inside an Arabic page, and visibly not a translation.
 
-**7. A translation carries the same commitment, not a similar one.**
+**7. A publication's scope advises a decision; it does not make one.**
+Where a publication applies a control only to some organisations — DCC by
+data classification level, OTCC by facility level, CCC by provider or tenant —
+that scope arrives with the imported catalogue and is evaluated against the
+organisation profile. The Statement of Applicability shows the result beside
+each control and counts the decisions that disagree with it, but it never
+excludes a control by itself: exclusion stays a recorded decision with a
+justification, which the evaluation can pre-fill and a person has to submit.
+When the profile does not say enough, the answer is "unknown", not a guess,
+because a wrong "does not apply" invites an exclusion nobody would make with
+the facts.
+
+**8. A translation carries the same commitment, not a similar one.**
 Arabic and English are two expressions of one decision. A numeric value is
 never written into a translated sentence: both languages carry the same
 `{{placeholder}}`, and the value comes from the one agreed parameter set, in
@@ -134,7 +146,7 @@ the other has two positions and no way to tell which governs.
 The same principle applies to a domain with no translation yet: it generates in
 English and records the document's language as English. A half-translated
 document labelled Arabic would misrepresent what the reader is holding. All
-twenty-four domains are now translated, so nothing takes that path in the
+twenty-eight domains are now translated, so nothing takes that path in the
 shipped set; the fallback and its test both stay, because the next domain added
 will take it before its Arabic is written.
 

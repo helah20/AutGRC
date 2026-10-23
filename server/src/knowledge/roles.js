@@ -169,7 +169,7 @@ export const ROLE_LIBRARY = [
     ],
     approvals: ['Security design approval at project gates.', 'Deviations from approved architecture patterns.', 'Cryptographic algorithm selections outside the standard list.'],
     escalations: ['Escalate designs that cannot meet security requirements to the CISO for risk acceptance.', 'Escalate systemic architectural weaknesses to the Cybersecurity Steering Committee.'],
-    domains: ['network_security', 'cryptography', 'cloud_security', 'secure_sdlc']
+    domains: ['network_security', 'cryptography', 'cloud_security', 'secure_sdlc', 'ot_security']
   },
   {
     code: 'soc_analyst', name: 'SOC Analyst', shortName: 'SOC Analyst', category: 'Operations',
@@ -200,7 +200,7 @@ export const ROLE_LIBRARY = [
       'Escalate degraded security tooling to the IT Manager as an operational incident.',
       'Escalate privileged activity inconsistent with an approved task immediately.'
     ],
-    domains: ['security_monitoring', 'security_operations', 'incident_management']
+    domains: ['security_monitoring', 'security_operations', 'incident_management', 'email_security']
   },
   {
     code: 'ir_analyst', name: 'Incident Response Analyst', shortName: 'IR Analyst', category: 'Operations',
@@ -439,7 +439,7 @@ export const ROLE_LIBRARY = [
     activities: ['Chair the change advisory board.', 'Deploy patches within the applicable service levels.', 'Monitor security tooling health and availability.', 'Execute recovery testing on the defined cycle.'],
     approvals: ['Standard and normal changes at the change advisory board.', 'Emergency change authorisation.', 'Technical implementation approach for approved controls.'],
     escalations: ['Escalate controls that cannot be implemented as specified to the Security Architect and CISO.', 'Escalate degraded security tooling as an operational incident.', 'Escalate repeated backup failures to the System Owner and Cybersecurity GRC Manager.'],
-    domains: ['change_management', 'endpoint_security', 'network_security', 'backup_recovery']
+    domains: ['change_management', 'endpoint_security', 'database_security', 'network_security', 'email_security', 'backup_recovery']
   },
   {
     code: 'internal_auditor', name: 'Internal Auditor', shortName: 'Internal Audit', category: 'Assurance',

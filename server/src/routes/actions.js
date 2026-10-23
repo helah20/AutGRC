@@ -20,6 +20,14 @@ import { listParam, paginate } from './_shared.js';
 const router = express.Router();
 router.use(authenticate);
 
+/**
+ * Sources that record a nonconformity. ISO/IEC 27001 10.2 b asks for its cause
+ * to be found before the action closes; fixing only the instance invites the
+ * same finding at the next audit. A risk treatment or a manual task is not a
+ * nonconformity, so it carries no such requirement.
+ */
+const NEEDS_ROOT_CAUSE = new Set(['finding', 'gap_item', 'assessment']);
+
 const SOURCE_TABLE = {
   finding: { table: 'findings', label: 'Finding' },
   gap_item: { table: 'gap_items', label: 'Gap item' },
@@ -69,7 +77,7 @@ function describeSource(sourceType, sourceId) {
     const row = q.get('SELECT id, requirement_ref, gap, status FROM gap_items WHERE id = ?', sourceId);
     return row ? { type: 'gap_item', label: 'Gap', id: row.id, ref: row.requirement_ref, title: row.gap, status: row.status } : null;
   }
-  const row = q.get('SELECT id, title, status FROM assessments WHERE id = ?', sourceId);
+  const row = q.get('SELECT id, name AS title, status FROM assessments WHERE id = ?', sourceId);
   return row ? { type: 'assessment', label: 'Assessment', id: row.id, title: row.title, status: row.status } : null;
 }
 
@@ -146,7 +154,8 @@ router.post('/', requirePermission('action:write'), validate(z.object({
   domain_key: z.string().max(60).nullable().optional(),
   owner_id: z.string().min(2),
   priority: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
-  due_date: z.string().min(8).max(40)
+  due_date: z.string().min(8).max(40),
+  root_cause: z.string().max(2000).nullable().optional()
 })), asyncHandler(async (req, res) => {
   const b = req.body;
   if (b.source_type !== 'manual') {
@@ -165,10 +174,10 @@ router.post('/', requirePermission('action:write'), validate(z.object({
 
   q.run(
     `INSERT INTO corrective_actions (id, action_id, title, description, source_type, source_id,
-       domain_key, owner_id, priority, due_date, status, progress, created_by, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       domain_key, owner_id, priority, due_date, status, progress, root_cause, created_by, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     rowId, reference, b.title, b.description || null, b.source_type, b.source_id || null,
-    b.domain_key || null, owner.id, b.priority, b.due_date, 'open', 0, req.user.id, at, at
+    b.domain_key || null, owner.id, b.priority, b.due_date, 'open', 0, b.root_cause?.trim() || null, req.user.id, at, at
   );
 
   if (owner.id !== req.user.id) {
@@ -199,7 +208,8 @@ router.patch('/:id', requirePermission('action:write'), validate(z.object({
   due_date: z.string().min(8).max(40).optional(),
   status: z.enum(['open', 'in_progress', 'blocked', 'completed', 'cancelled']).optional(),
   progress: z.number().int().min(0).max(100).optional(),
-  blocked_reason: z.string().max(1000).nullable().optional()
+  blocked_reason: z.string().max(1000).nullable().optional(),
+  root_cause: z.string().max(2000).nullable().optional()
 }).partial()), asyncHandler(async (req, res) => {
   const row = loadAction(req.params.id);
   if (!row) throw notFound('Corrective action');
@@ -208,6 +218,10 @@ router.patch('/:id', requirePermission('action:write'), validate(z.object({
   }
   if (req.body.status === 'blocked' && !(req.body.blocked_reason || row.blocked_reason)) {
     throw new HttpError(400, 'Say what is blocking it. "Blocked" with no reason tells the next reader nothing.');
+  }
+  const rootCause = req.body.root_cause !== undefined ? req.body.root_cause : row.root_cause;
+  if (req.body.status === 'completed' && NEEDS_ROOT_CAUSE.has(row.source_type) && !String(rootCause || '').trim()) {
+    throw new HttpError(400, 'Record the root cause before completing an action on a nonconformity (ISO/IEC 27001 10.2). Fixing the instance alone invites the same finding again.');
   }
 
   const entries = Object.entries(req.body).filter(([, v]) => v !== undefined);

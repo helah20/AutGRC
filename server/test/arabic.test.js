@@ -45,7 +45,7 @@ const placeholders = (text) =>
  * Run `fn` with one domain's Arabic entry withheld.
  *
  * The fallback to English matters most for a domain that has no translation
- * yet, and all twenty-four now do, so there is no longer a domain in the
+ * yet, and all twenty-eight now do, so there is no longer a domain in the
  * shipped set to exercise it against. Withholding one for the duration of the
  * assertion runs the real code path rather than replacing it with a test of
  * something else; the entry is restored in a finally so a failure here cannot
@@ -404,6 +404,9 @@ const PLANTED = {
   disaster_recovery: { docType: 'procedure', agreed: 'بتكرار سنوياً', wrong: 'بتكرار ربع سنوياً', parameter: 'drPlanReviewFrequency' },
   cryptography: { docType: 'procedure', agreed: '٣٠ يوماً', wrong: '٦٠ يوماً', parameter: 'certificateExpiryAlert' },
   network_security: { docType: 'procedure', agreed: 'بتكرار نصف سنوي', wrong: 'بتكرار سنوي', parameter: 'firewallReviewFrequency' },
+  email_security: { docType: 'standard', agreed: '٤ ساعات', wrong: '٨ ساعات', parameter: 'phishingTriageSla' },
+  database_security: { docType: 'standard', agreed: 'بتكرار ربع سنوي', wrong: 'بتكرار سنوي', parameter: 'dbAccessReviewFrequency' },
+  ot_security: { docType: 'standard', agreed: 'بتكرار نصف سنوي', wrong: 'بتكرار سنوي', parameter: 'otAssetInventoryReview' },
   application_security: { docType: 'procedure', agreed: '١٥ يوماً', wrong: '٤٥ يوماً', parameter: 'criticalAppFindingSla' },
   change_management: { docType: 'procedure', agreed: '٥ أيام عمل', wrong: '١٥ يوم عمل', parameter: 'emergencyChangeReviewSla' },
   physical_security: { docType: 'procedure', agreed: 'بتكرار ربع سنوي', wrong: 'بتكرار سنوي', parameter: 'accessReviewFrequency' },
@@ -419,6 +422,13 @@ test('Arabic consistency detection', async (t) => {
     for (const key of translatedDomains()) {
       assert.deepEqual(arabicTopicGaps(key), [], `${key} has parameters with no Arabic subject`);
     }
+  });
+
+  await t.test('every domain has an Arabic model', () => {
+    // A new domain added in English only would generate Arabic packages that
+    // switch language mid-document, with no test failing to say so.
+    const missing = Object.keys(DOMAIN_MODELS).filter((key) => !translatedDomains().includes(key));
+    assert.deepEqual(missing, []);
   });
 
   for (const [domainKey, plant] of Object.entries(PLANTED)) {

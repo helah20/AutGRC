@@ -1,0 +1,206 @@
+{
+  "id": "kbIngestDocs0001",
+  "name": "قاعدة المعرفة - إضافة مستندات (Ingest)",
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "a1",
+      "name": "رفع المستندات",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "6a0c3b4e-2f7d-4b8a-9c11-0b1e2d3f4a51",
+      "parameters": {
+        "formTitle": "إضافة مستندات إلى قاعدة المعرفة",
+        "formDescription": "ارفع ملفات PDF أو DOCX أو TXT أو MD أو CSV. يُقسَّم كل ملف إلى مقاطع وتُخزَّن تضميناتها في Qdrant.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "files",
+              "fieldType": "file",
+              "multipleFiles": true,
+              "acceptFileTypes": ".pdf,.docx,.txt,.md,.csv,.json",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {
+          "path": "kb-upload",
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "تمت إضافة المستندات إلى قاعدة المعرفة ✅"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "a6",
+      "name": "ملف لكل عنصر",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// One item per uploaded file, so each chunk records the file it came from.\n// The MIME type is set from the extension because browsers and curl often\n// send .md/.txt/.csv as application/octet-stream, which the loader rejects.\nconst types = {\n  pdf: 'application/pdf',\n  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',\n  txt: 'text/plain', md: 'text/plain', csv: 'text/csv', json: 'application/json',\n};\nconst out = [];\nfor (const item of $input.all()) {\n  for (const file of Object.values(item.binary ?? {})) {\n    const ext = (file.fileName ?? '').split('.').pop().toLowerCase();\n    if (!types[ext]) continue;\n    out.push({\n      json: { file_name: file.fileName },\n      binary: { data: { ...file, mimeType: types[ext] } },\n    });\n  }\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "a2",
+      "name": "Qdrant - تخزين",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "knowledge_base"
+        },
+        "embeddingBatchSize": 64,
+        "options": {}
+      },
+      "credentials": {
+        "qdrantApi": {
+          "id": "kbQdrantLocal001",
+          "name": "Qdrant (local)"
+        }
+      }
+    },
+    {
+      "id": "a3",
+      "name": "Ollama Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        340,
+        240
+      ],
+      "parameters": {
+        "model": "bge-m3"
+      },
+      "credentials": {
+        "ollamaApi": {
+          "id": "kbOllamaLocal001",
+          "name": "Ollama (local)"
+        }
+      }
+    },
+    {
+      "id": "a4",
+      "name": "قارئ المستندات",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        240
+      ],
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "binaryDataKey": "data",
+        "loader": "auto",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_name",
+                "value": "={{ $json.file_name }}"
+              },
+              {
+                "name": "uploaded_at",
+                "value": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "a5",
+      "name": "تقسيم النص",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        640,
+        440
+      ],
+      "parameters": {
+        "chunkSize": 1000,
+        "chunkOverlap": 150,
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "رفع المستندات": {
+      "main": [
+        [
+          {
+            "node": "ملف لكل عنصر",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant - تخزين",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "قارئ المستندات": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant - تخزين",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "تقسيم النص": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "قارئ المستندات",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ملف لكل عنصر": {
+      "main": [
+        [
+          {
+            "node": "Qdrant - تخزين",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

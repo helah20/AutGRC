@@ -67,6 +67,10 @@ export default function GapAssessmentDetail() {
             .then(() => toast.success('Exported')).catch((e) => toast.error('Export failed', e.message))}>
             <IconDownload />Export
           </button>
+          <button className="btn" onClick={() => api.download(`/export/audit-report/${id}.docx`, `Internal Audit Report — ${assessment.name}.docx`)
+            .then(() => toast.success('Exported')).catch((e) => toast.error('Export failed', e.message))}>
+            <IconDownload />{t('gap.auditReport')}
+          </button>
         </div>
       </div>
 

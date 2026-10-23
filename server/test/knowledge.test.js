@@ -134,3 +134,28 @@ test('knowledge base', async (t) => {
     assert.deepEqual(incomplete, []);
   });
 });
+
+/**
+ * Obligations ECC-2:2024 added to controls the platform already cited. Each
+ * was missing from the 2018-era wording, and each is the kind of sentence a
+ * later edit could drop without any other test noticing.
+ */
+test('ECC-2:2024 obligations are stated in both languages', async () => {
+  const { localisedModel } = await import('../src/knowledge/index.js');
+  const cases = [
+    ['iam', 'mfa_privileged', /impact of authentication failure and bypass/, /أثر فشل التحقق أو تجاوزه/, '2-2-3-2'],
+    ['cryptography', 'approved_crypto', /National Cryptographic Standards/, /المعايير الوطنية للتشفير/, '2-8-3'],
+    ['third_party', 'due_diligence', /before the contract is signed[\s\S]*legislative or regulatory requirements change/,
+      /قبل توقيع العقد[\s\S]*تغيّر المتطلبات التشريعية/, '4-1-3'],
+    ['third_party', 'contract_clauses', /\{\{managedSecurityLocation\}\}/, /\{\{managedSecurityLocation\}\}/, '4-1-3']
+  ];
+  for (const [domain, key, en, ar, ref] of cases) {
+    const find = (lang) => localisedModel(domain, lang).requirements.find((r) => r.key === key);
+    const english = find('en');
+    assert.match(`${english.policy} ${english.standard}`, en, `${key} (en)`);
+    const arabic = find('ar');
+    assert.match(`${arabic.policy} ${arabic.standard}`, ar, `${key} (ar)`);
+    assert.ok(english.refs['NCA-ECC'].includes(ref), `${key} cites ECC ${ref}`);
+  }
+  assert.equal(DOMAIN_MODELS.third_party.parameters.managedSecurityLocation, 'entirely within the Kingdom of Saudi Arabia');
+});

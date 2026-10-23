@@ -39,6 +39,7 @@ export default {
     findings: 'Findings',
     imports: 'Import & Analyse',
     reports: 'Reports',
+    managementReviews: 'Management Reviews',
     settings: 'Settings',
     mainNavigation: 'Main navigation',
     toggleNavigation: 'Toggle navigation'
@@ -321,7 +322,45 @@ export default {
 
   gap: {
     title: 'Gap Assessment',
-    subtitle: "Assess the organisation against a framework. New assessments start from the platform's real coverage position rather than a blank sheet."
+    subtitle: "Assess the organisation against a framework. New assessments start from the platform's real coverage position rather than a blank sheet.",
+    auditReport: 'Audit report'
+  },
+
+  reviews: {
+    title: 'Management Reviews',
+    subtitle: 'Minutes of the reviews at which top management examines the management system (ISO 27001 9.3; NCA ECC 1-2-3). Inputs are captured on the day, and decisions can raise tracked actions.',
+    record: 'Record a review',
+    recordNote: 'The inputs ISO 27001 9.3.2 requires are captured from the platform when you save, as they stand today.',
+    reference: 'Review',
+    heldOn: 'Held on',
+    forum: 'Forum',
+    forumPlaceholder: 'Cybersecurity Supervisory Committee',
+    chair: 'Chair',
+    attendees: 'Attendees',
+    summary: 'Discussion',
+    decisions: 'Decisions',
+    decision: 'Decision',
+    category: 'Category',
+    action: 'Action',
+    inputs: 'Inputs considered',
+    inputsNote: 'As the platform reported them on {date}.',
+    input: 'Input',
+    position: 'Position',
+    attention: 'Attention',
+    noDecisions: 'No decision recorded yet.',
+    addDecision: 'Add decision',
+    raiseAction: 'Corrective action',
+    raiseActionLabel: 'Raise an action for this decision',
+    raiseActionHint: 'Needs an owner and a due date, and is then tracked to verification.',
+    decisionAdded: 'Decision recorded',
+    closeMinutes: 'Close minutes',
+    closedToast: 'Minutes closed',
+    closedNote: 'These minutes are closed and are no longer edited. Record a further review for anything new.',
+    closed: 'Closed',
+    draft: 'Draft',
+    couldNotSave: 'Could not save',
+    emptyTitle: 'No management review recorded',
+    emptyBody: 'Record the next meeting of the committee to capture its inputs and decisions.'
   },
 
   hierarchy: {
@@ -490,6 +529,8 @@ export default {
     dueDate: 'Due date',
     blockedReason: 'What is blocking it',
     blockedReasonHint: 'Required. “Blocked” with no reason tells the next reader nothing.',
+    rootCause: 'Root cause',
+    rootCauseHint: 'Required before completing an action on a finding or gap. Why did it happen, so it does not happen again?',
     progressLabel: 'Progress — {percent}%',
     raisedToast: 'Action raised',
     raisedToastBody: 'The owner has been notified.',
@@ -537,7 +578,18 @@ export default {
     mappedControls: 'Controls mapped to this requirement',
     recordedApplicable: 'Recorded as applicable',
     recordedExcluded: 'Recorded as excluded',
-    couldNotRecord: 'Could not record the decision'
+    couldNotRecord: 'Could not record the decision',
+    columnPublication: 'Per publication',
+    publicationYes: 'Applies ({levels})',
+    publicationNo: 'Not for your profile',
+    publicationUnknown: 'Scoped to {levels}',
+    publicationSays: 'What the publication says',
+    publicationFrequency: 'Frequency set by the publication: {frequency}',
+    usePublicationBasis: 'Exclude, citing the publication',
+    publicationFilter: 'Decision differs from the publication',
+    publicationDisagrees: '{count} decision(s) differ from the publication\'s own scope',
+    publicationDisagreesBody: '{excludes} in scope that the publication does not apply to your profile, and {applies} excluded that it does. The scope comes from the imported catalogue and your organisation profile.',
+    showThem: 'Show them'
   },
 
   auth: {
@@ -564,7 +616,7 @@ export default {
     featureTraceTitle: 'Traceable to the source',
     featureTraceBody: 'Every requirement traces from the regulation through the control, policy clause and procedure step to the evidence that proves it.',
     featureFrameworksTitle: 'Fourteen frameworks mapped',
-    featureFrameworksBody: 'NCA ECC, CSCC, DCC, TCC and CCC, SAMA CSF, ISO/IEC 27001, 27002, 27005 and 22301, NIST CSF and 800-53, CIS v8 and COBIT 2019.',
+    featureFrameworksBody: 'NCA ECC, CSCC, DCC, TCC, CCC, OTCC and OSMACC, SAMA CSF, ISO/IEC 27001, 27002, 27005 and 22301, NIST CSF and 800-53, CIS v8 and COBIT 2019.',
     featureAuditTitle: 'Audit-ready by construction',
     featureAuditBody: 'Controls carry evidence requirements, owners and indicators. Gap assessments start from your real coverage position.',
     sourceCaveat: 'Framework catalogue entries are reference metadata for mapping. Verify against the official publication before relying on them for regulatory attestation.',
@@ -686,6 +738,10 @@ export default {
     data_protection: 'Data Protection',
     cryptography: 'Cryptography',
     network_security: 'Network Security',
+    email_security: 'Email Security',
+    database_security: 'Database Security',
+    ot_security: 'OT/ICS Security',
+    social_media_security: 'Social Media Account Security',
     endpoint_security: 'Endpoint Security',
     cloud_security: 'Cloud Security',
     application_security: 'Application Security',

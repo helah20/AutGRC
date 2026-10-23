@@ -1,0 +1,119 @@
+# قاعدة معرفة محلية: n8n + Qdrant + Ollama
+# Local knowledge base: n8n (workflows) + Qdrant (vectors) + Ollama (LLM + embeddings)
+#
+#   cp .env.example .env   # ثم ضع N8N_ENCRYPTION_KEY
+#   docker compose up -d   # CPU
+#   docker compose --profile gpu-nvidia up -d   # NVIDIA GPU
+#
+# All ports are bound to 127.0.0.1 so nothing is reachable from the network.
+
+name: knowledge-base
+
+x-n8n: &n8n
+  image: n8nio/n8n:${N8N_VERSION:-latest}
+  environment:
+    - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+    - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-Asia/Riyadh}
+    - TZ=${GENERIC_TIMEZONE:-Asia/Riyadh}
+    - N8N_DIAGNOSTICS_ENABLED=false
+    - N8N_PERSONALIZATION_ENABLED=false
+    - N8N_RUNNERS_ENABLED=true
+    - N8N_SECURE_COOKIE=false
+    - N8N_LISTEN_ADDRESS=0.0.0.0
+    - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:11434}
+  extra_hosts:
+    - host.docker.internal:host-gateway
+  volumes:
+    - n8n_data:/home/node/.n8n
+
+x-ollama: &ollama
+  image: ollama/ollama:${OLLAMA_VERSION:-latest}
+  container_name: ollama
+  restart: unless-stopped
+  ports:
+    - 127.0.0.1:11434:11434
+  volumes:
+    - ollama_data:/root/.ollama
+
+x-ollama-pull: &ollama-pull
+  image: ollama/ollama:${OLLAMA_VERSION:-latest}
+  environment:
+    - OLLAMA_HOST=ollama:11434
+  volumes:
+    - ollama_data:/root/.ollama
+  entrypoint: /bin/sh
+  command:
+    - -c
+    - ollama pull ${EMBEDDING_MODEL:-bge-m3} && ollama pull ${CHAT_MODEL:-qwen2.5:7b}
+
+services:
+  qdrant:
+    image: qdrant/qdrant:${QDRANT_VERSION:-latest}
+    container_name: qdrant
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:6333:6333
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  # Imports the credentials and workflows once, then exits. Re-running it
+  # overwrites the workflows with the versions in ./workflows.
+  n8n-import:
+    <<: *n8n
+    container_name: n8n-import
+    user: root
+    entrypoint: /bin/sh
+    command: /import/scripts/import.sh
+    environment:
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_USER_FOLDER=/home/node
+      - CHAT_MODEL=${CHAT_MODEL:-qwen2.5:7b}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-bge-m3}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-knowledge_base}
+      - OLLAMA_URL=${OLLAMA_HOST:-http://ollama:11434}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/import/workflows:ro
+      - ./credentials:/import/credentials:ro
+      - ./scripts:/import/scripts:ro
+
+  n8n:
+    <<: *n8n
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:5678:5678
+    depends_on:
+      n8n-import:
+        condition: service_completed_successfully
+      qdrant:
+        condition: service_started
+
+  ollama-cpu:
+    <<: *ollama
+    profiles: [cpu]
+  ollama-gpu:
+    <<: *ollama
+    profiles: [gpu-nvidia]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  ollama-pull-cpu:
+    <<: *ollama-pull
+    profiles: [cpu]
+    depends_on: [ollama-cpu]
+  ollama-pull-gpu:
+    <<: *ollama-pull
+    profiles: [gpu-nvidia]
+    depends_on: [ollama-gpu]
+
+volumes:
+  n8n_data:
+  qdrant_data:
+  ollama_data:

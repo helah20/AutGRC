@@ -13,7 +13,8 @@ import { asyncHandler, validate, notFound, HttpError } from '../middleware/error
 import { domainName, SOURCE_NOTE, DOMAIN_META, frameworkCoverage } from '../knowledge/index.js';
 import { suggestMappings } from '../services/ai.js';
 import { analyseCatalogue, applyCatalogue } from '../services/import-framework.js';
-import { listParam } from './_shared.js';
+import { listParam, getOrgProfile } from './_shared.js';
+import { evaluateApplicability } from '../services/applicability.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -138,10 +139,10 @@ router.post('/editions', requirePermission('settings:write'), validate(z.object(
         q.run(
           `INSERT INTO framework_requirements
              (id, framework_id, ref, parent_ref, title, statement, domain_key, level,
-              provenance, source_status, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+              applicability, provenance, source_status, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
           newId, editionId, r.ref, r.parent_ref, r.title, r.statement, r.domain_key, r.level,
-          r.provenance, r.source_status, at
+          r.applicability, r.provenance, r.source_status, at
         );
       }
       // Each requirement in the new edition is equivalent to its predecessor
@@ -223,11 +224,13 @@ router.get('/:code/requirements', asyncHandler(async (req, res) => {
     byReq[m.requirement_id].push(m);
   }
 
+  const org = getOrgProfile();
   res.json({
     framework: fw,
     sourceNote: SOURCE_NOTE,
     requirements: rows.map((r) => ({
       ...r,
+      applicability: evaluateApplicability(r.applicability, org),
       domain_label: r.domain_key ? domainName(r.domain_key) : null,
       controls: byReq[r.id] || [],
       coverage: coverageOf(byReq[r.id] || [])

@@ -151,15 +151,22 @@ server/                 Node.js + Express + SQLite (better-sqlite3)
 
 | File | Contents |
 | --- | --- |
-| `frameworks.js` | 14 frameworks, 482 requirement references, 89 cross-framework equivalences |
+| `frameworks.js` | 16 frameworks, 543 requirement references, 126 cross-framework equivalences |
 | `domains.js` | 24 cybersecurity domains and the placeholder resolver |
-| `req-*.js` | Canonical requirement models: 218 requirements across 24 domains, every one traced to at least one framework requirement |
+| `req-*.js` | Canonical requirement models: 262 requirements across 28 domains, every one traced to at least one framework requirement |
 | `roles.js` | 14 cybersecurity roles with authority, approvals and escalations |
 | `index.js` | Assembly and a load-time integrity validator |
 
 The validator refuses to start on a broken model: unknown framework
 references, placeholders with no parameter, duplicate requirement keys, and
 RACI matrices without exactly one accountable role all fail fast.
+
+### Local document knowledge base (n8n)
+
+[`knowledge-base/`](knowledge-base/README.md) is a separate, self-contained
+stack — n8n, Qdrant and Ollama in Docker — for asking questions of your own
+policy documents in Arabic or English, fully offline. It does not depend on
+the AutGRC server.
 
 ### How consistency is guaranteed
 
@@ -267,7 +274,7 @@ document types, roles, coverage, risk bands, treatments, finding categories —
 which are re-labelled on the client from the key the API sends, so no endpoint
 needs to know the reader's language.
 
-**Generated documents in Arabic.** All twenty-four domains generate a complete
+**Generated documents in Arabic.** All twenty-eight domains generate a complete
 Arabic package: every policy clause, standard requirement, procedure step,
 decision branch, escalation condition, role definition, RACI activity, control
 name, KPI and piece of required evidence.
@@ -336,11 +343,11 @@ save the PDF.
   device security, penetration testing, web application security and ICS
   protection — are requirements inside existing domains rather than domains of
   their own, because that is where the controls that implement them already
-  live. Every one of the thirteen ECC subdomains carried at heading level has
+  live. Every one of the twelve ECC subdomains carried at heading level has
   at least one requirement mapped to it.
-- The reference catalogue is not the publication. It holds 51 of the 114
-  controls the NCA ECC entry describes, and thirteen of that framework's
-  twenty-nine subdomains are carried at heading level only — so a generated
+- The reference catalogue is not the publication. It holds 50 of the 200
+  controls and subcontrols in ECC-2:2024, and twelve of that framework's
+  twenty-eight subdomains are carried at heading level only — so a generated
   compliance table can cite "ECC 2-4" where the obligation lives in a control
   beneath it. The Frameworks page and `verify:knowledge` both state the
   shortfall per framework and name the subdomains. The missing titles are not

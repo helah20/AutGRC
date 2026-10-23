@@ -10,6 +10,8 @@ import {
   buildControlWorkbook, buildRaciWorkbook, buildMappingWorkbook,
   buildGapWorkbook, buildRegisterWorkbook, buildSoaWorkbook, buildRiskTreatmentWorkbook
 } from '../services/export-xlsx.js';
+import { evaluateApplicability } from '../services/applicability.js';
+import { auditReportPayload } from '../services/assurance-records.js';
 import { enrichRisk } from '../services/risk.js';
 import { validateMatrix } from '../services/review.js';
 import { domainName } from '../knowledge/index.js';
@@ -183,6 +185,22 @@ router.get('/gap/:id.xlsx', asyncHandler(async (req, res) => {
   send(res, buffer, `${assessment.name}.xlsx`, MIME.xlsx);
 }));
 
+/**
+ * Internal audit report for one assessment (ISO/IEC 27001 9.2.2; NCA ECC
+ * 1-8-3): scope and criteria, results, nonconformities, the corrective actions
+ * raised against them with their root causes, and the conclusion.
+ */
+router.get('/audit-report/:id.:format(docx|pdf)', asyncHandler(async (req, res) => {
+  const payload = auditReportPayload(req.params.id);
+  if (!payload) throw notFound('Assessment');
+  const org = getOrgProfile();
+  const docx = req.params.format === 'docx';
+  const buffer = docx ? await buildDocx({ ...payload, org }) : await buildPdf({ ...payload, org });
+  audit(req, { action: `export:${req.params.format}`, entityType: 'assessment', entityId: req.params.id,
+    summary: `Exported the internal audit report for ${payload.document.title.replace('Internal Audit Report — ', '')}` });
+  send(res, buffer, `${payload.document.title}.${req.params.format}`, docx ? MIME.docx : MIME.pdf);
+}));
+
 router.get('/register.xlsx', asyncHandler(async (req, res) => {
   const documents = enrichDocuments(q.all('SELECT * FROM documents ORDER BY reference'));
   const buffer = await buildRegisterWorkbook({ documents, orgName: getOrgProfile().org_name });
@@ -202,6 +220,7 @@ router.get('/soa.xlsx', asyncHandler(async (req, res) => {
   const decisions = Object.fromEntries(
     q.all('SELECT * FROM soa_decisions WHERE framework_id = ?', framework.id).map((d) => [d.requirement_id, d])
   );
+  const org = getOrgProfile();
   const rows = q.all('SELECT * FROM framework_requirements WHERE framework_id = ? ORDER BY ref', framework.id)
     .map((requirement) => {
       const controls = q.all(
@@ -220,6 +239,7 @@ router.get('/soa.xlsx', asyncHandler(async (req, res) => {
         justification: decision?.justification || null,
         decided_by_name: decision?.decided_by_name || null,
         decided_at: decision?.decided_at || null,
+        publication: evaluateApplicability(requirement.applicability, org),
         controls,
         implementation: !applicable ? 'excluded'
           : !controls.length ? 'not_implemented'
@@ -238,6 +258,8 @@ router.get('/soa.xlsx', asyncHandler(async (req, res) => {
     planned: applicable.filter((r) => r.implementation === 'planned').length,
     notImplemented: applicable.filter((r) => r.implementation === 'not_implemented').length,
     exclusionsWithoutJustification: rows.filter((r) => !r.applicable && !r.justification).length,
+    publicationExcludes: rows.filter((r) => r.applicable && r.publication?.applies === false).length,
+    excludedButPublicationApplies: rows.filter((r) => !r.applicable && r.publication?.applies === true).length,
     decisionsRecorded: Object.keys(decisions).length
   };
 

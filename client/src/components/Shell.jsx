@@ -62,6 +62,7 @@ const NAV = [
       { to: '/soa', labelKey: 'nav.soa', icon: IconLayers },
       { to: '/findings', labelKey: 'nav.findings', icon: IconAlert, countKey: 'openFindings', tone: 'danger' },
       { to: '/imports', labelKey: 'nav.imports', icon: IconUpload, permission: 'import:write' },
+      { to: '/management-reviews', labelKey: 'nav.managementReviews', icon: IconUsers },
       { to: '/reports', labelKey: 'nav.reports', icon: IconChart }
     ]
   }

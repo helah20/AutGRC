@@ -82,6 +82,11 @@ CREATE TABLE IF NOT EXISTS org_profile (
   mfa_required_roles    TEXT,
   business_requirements TEXT,
   data_classifications  TEXT,      -- JSON array
+  -- Scoping inputs for publications that apply controls selectively: the
+  -- operational technology facility level (NCA OTCC) and whether the
+  -- organisation provides or consumes cloud services (NCA CCC).
+  ot_facility_level     TEXT CHECK (ot_facility_level IN ('L1','L2','L3')),
+  cloud_roles           TEXT,      -- JSON array of 'CSP' and/or 'CST'
   logo_data_url         TEXT,
   updated_at            TEXT NOT NULL
 );
@@ -124,6 +129,9 @@ CREATE TABLE IF NOT EXISTS framework_requirements (
                   CHECK (provenance IN ('regulatory_requirement','framework_guidance')),
   source_status TEXT NOT NULL DEFAULT 'reference'
                   CHECK (source_status IN ('reference','verified_official','user_imported')),
+  -- Who the publication applies this control to, where it scopes it: JSON
+  -- {basis, levels}. See services/applicability.js.
+  applicability TEXT,
   created_at    TEXT NOT NULL,
   UNIQUE (framework_id, ref)
 );
@@ -514,6 +522,7 @@ CREATE TABLE IF NOT EXISTS corrective_actions (
                   CHECK (status IN ('open','in_progress','blocked','completed','cancelled')),
   progress      INTEGER NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
   blocked_reason TEXT,
+  root_cause    TEXT,           -- required before completing an action on a nonconformity
   completed_at  TEXT,
   -- Closing your own action is not verification; the route enforces that too.
   verified_by   TEXT REFERENCES users(id) ON DELETE SET NULL,
@@ -524,6 +533,43 @@ CREATE TABLE IF NOT EXISTS corrective_actions (
 );
 CREATE INDEX IF NOT EXISTS idx_action_owner ON corrective_actions(owner_id, status, due_date);
 CREATE INDEX IF NOT EXISTS idx_action_source ON corrective_actions(source_type, source_id);
+
+-- -------------------------------------------------------- management review --
+-- The minutes of a management review (ISO/IEC 27001 9.3; NCA ECC 1-2-3, 1-8-3).
+-- The inputs are captured as they stood on the day, so the record shows what
+-- the committee was told rather than what the platform says later. Closed
+-- minutes are not edited.
+CREATE TABLE IF NOT EXISTS management_reviews (
+  id             TEXT PRIMARY KEY,
+  review_id      TEXT NOT NULL UNIQUE,          -- e.g. MR-0003
+  held_on        TEXT NOT NULL,
+  forum          TEXT,                          -- e.g. Cybersecurity Supervisory Committee
+  chair          TEXT,
+  attendees      TEXT,
+  summary        TEXT,
+  inputs_snapshot TEXT NOT NULL,                -- JSON: the inputs report on the day
+  status         TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','closed')),
+  closed_by      TEXT REFERENCES users(id) ON DELETE SET NULL,
+  closed_at      TEXT,
+  created_by     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at     TEXT NOT NULL,
+  updated_at     TEXT NOT NULL
+);
+
+-- ISO/IEC 27001 9.3.3: decisions on improvement and on changes to the ISMS.
+-- A decision that needs work carries the corrective action raised for it.
+CREATE TABLE IF NOT EXISTS management_review_decisions (
+  id           TEXT PRIMARY KEY,
+  review_id    TEXT NOT NULL REFERENCES management_reviews(id) ON DELETE CASCADE,
+  position     INTEGER NOT NULL,
+  category     TEXT NOT NULL CHECK (category IN ('improvement','change','resources','risk','other')),
+  decision     TEXT NOT NULL,
+  owner_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  due_date     TEXT,
+  action_id    TEXT REFERENCES corrective_actions(id) ON DELETE SET NULL,
+  created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_mr_decision ON management_review_decisions(review_id, position);
 
 -- ------------------------------------------- statement of applicability ---
 -- ISO/IEC 27001 requires a reasoned decision per Annex A control, including

@@ -70,7 +70,7 @@ export const ACCESS_DOMAINS = {
           'Role-to-entitlement catalogue (current version)',
           'Sample reconciliation of granted entitlements against approvals'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-3'] }
+        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-1'], 'NCA-OTCC': ['2-2'] }
       },
       {
         key: 'segregation_of_duties',
@@ -97,8 +97,8 @@ export const ACCESS_DOMAINS = {
         key: 'mfa_privileged',
         title: 'Multi-factor authentication for privileged and remote access',
         policy: 'Privileged access, remote access and access to systems processing Confidential or higher classified information shall be protected using multi-factor authentication.',
-        standard: 'Multi-factor authentication shall be enforced using {{mfaMethods}}. SMS and voice-call factors shall not be used for privileged access. MFA shall be enforced at the identity provider so that it cannot be bypassed by a direct application login, and enrolment shall require identity proofing. Coverage shall reach {{mfaCoverageTarget}} of privileged and remote-access accounts.',
-        clauseOwners: ['it_manager', 'security_architect', 'security_architect', 'iam_specialist'],
+        standard: 'Multi-factor authentication shall be enforced using {{mfaMethods}}. SMS and voice-call factors shall not be used for privileged access. MFA shall be enforced at the identity provider so that it cannot be bypassed by a direct application login, and enrolment shall require identity proofing. Coverage shall reach {{mfaCoverageTarget}} of privileged and remote-access accounts. The authentication factors, their number and the authentication technique for each type of access shall be selected on the basis of an assessment of the impact of authentication failure and bypass, and the assessment shall be recorded.',
+        clauseOwners: ['it_manager', 'security_architect', 'security_architect', 'iam_specialist', 'security_architect'],
         guidance: 'Enforce MFA through conditional access policies at the identity provider rather than per application. Maintain a documented break-glass path with offline credentials, alerting on every use.',
         controlName: 'Multi-factor authentication for privileged and remote access',
         controlType: 'preventive',
@@ -134,7 +134,7 @@ export const ACCESS_DOMAINS = {
           'Breached-password screening service configuration',
           'Account lockout configuration evidence'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-1'], 'ISO-27001': ['A.5.17', 'A.8.5'], 'NIST-800-53': ['IA-5'], 'NIST-CSF': ['PR.AA-01'] }
+        refs: { 'NCA-ECC': ['2-2-3-1'], 'ISO-27001': ['A.5.17', 'A.8.5'], 'NIST-800-53': ['IA-5'], 'NIST-CSF': ['PR.AA-01'], 'NCA-OSMACC': ['2-2'] }
       },
       {
         key: 'joiner_mover_leaver',
@@ -260,7 +260,7 @@ export const ACCESS_DOMAINS = {
           'Remote access gateway logs for third-party sessions',
           'Privileged session recordings for third-party administrative access'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-2', '4-1-1'], 'ISO-27001': ['A.5.19', 'A.8.2'], 'NIST-800-53': ['AC-17'], 'NCA-TCC': ['2-1'] }
+        refs: { 'NCA-ECC': ['2-2-3-2', '4-1-1'], 'ISO-27001': ['A.5.19', 'A.8.2'], 'NIST-800-53': ['AC-17'], 'NCA-TCC': ['2-2'] }
       },
       {
         key: 'iam_logging',

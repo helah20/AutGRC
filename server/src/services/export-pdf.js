@@ -8,6 +8,7 @@
 
 import PDFDocument from 'pdfkit';
 import { htmlToBlocks, runsToText } from './html-to-blocks.js';
+import { lastReviewed } from './export-docx.js';
 
 const BRAND = '#1F3A5F';
 const ACCENT = '#2E6F9E';
@@ -80,6 +81,10 @@ export function buildPdf(data) {
     ['Document owner', owner?.name ? `${owner.name}${owner.job_title ? `, ${owner.job_title}` : ''}` : 'Not assigned'],
     ['Approver', approver?.name ? `${approver.name}${approver.job_title ? `, ${approver.job_title}` : ''}` : 'Not assigned'],
     ['Effective date', doc.effective_date || 'On approval'],
+    // Publication sets the next review a year out (routes/documents.js), so the
+    // cycle stated here is the one the platform enforces.
+    ['Review cycle', 'At least annually, and on any change to the relevant legislative or regulatory requirements'],
+    ['Last reviewed', lastReviewed(approvals) || 'Not yet reviewed'],
     ['Next review date', doc.review_date || 'To be set'],
     ['Issuing organisation', org?.org_name || '—']
   ]);

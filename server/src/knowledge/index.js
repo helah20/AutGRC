@@ -127,9 +127,9 @@ export function lookupFrameworkRequirement(code, ref) {
  * How completely the reference catalogue represents each framework.
  *
  * The catalogue holds identifiers and titles compiled for mapping, not the
- * publications themselves, and it is not complete: the NCA ECC entry describes
- * a control set of 114 and the catalogue carries 51 control-level rows, with
- * thirteen of its twenty-nine subdomains represented only at subdomain level.
+ * publications themselves, and it is not complete: ECC-2:2024 has 108 main
+ * controls and 92 subcontrols and the catalogue carries 50 control-level rows,
+ * with twelve of its twenty-eight subdomains represented only at subdomain level.
  * That is a material fact about what a generated compliance table can claim —
  * a Policy citing "ECC 2-4" is citing a subdomain, not the control inside it —
  * and it was visible nowhere.
