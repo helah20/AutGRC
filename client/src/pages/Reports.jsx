@@ -17,11 +17,11 @@ export default function Reports() {
   async function download(key, format) {
     try {
       const name = await api.download(`/reports/${key}/export.${format}`);
-      toast.success('Export ready', name);
-    } catch (err) { toast.error('Export failed', err.message); }
+      toast.success(t('documents.exportReady'), name);
+    } catch (err) { toast.error(t('common.exportFailed'), err.message); }
   }
 
-  if (loading) return <Loading label="Loading reports…" />;
+  if (loading) return <Loading label={t('reportsUi.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
   return (
@@ -44,7 +44,7 @@ export default function Reports() {
               <p className="small muted" style={{ minHeight: 40 }}>{r.description}</p>
               <div className="row-tight">
                 <button className="btn btn-sm btn-primary" onClick={() => setActive(r.key)}>
-                  View<IconChevronRight width={12} height={12} />
+                  {t('reportsUi.view')}<IconChevronRight width={12} height={12} />
                 </button>
                 <button className="btn btn-sm" onClick={() => download(r.key, 'xlsx')}><IconDownload width={13} height={13} />Excel</button>
                 <button className="btn btn-sm" onClick={() => download(r.key, 'pdf')}>PDF</button>
@@ -55,7 +55,7 @@ export default function Reports() {
       ) : (
         <Card flush>
           <div className="table-toolbar">
-            <button className="btn btn-sm" onClick={() => setActive(null)}><IconX width={13} height={13} />All reports</button>
+            <button className="btn btn-sm" onClick={() => setActive(null)}><IconX width={13} height={13} />{t('reportsUi.allReports')}</button>
             <div style={{ minWidth: 0 }}>
               <span className="strong">{report?.name || ''}</span>
               {report?.description && <div className="tiny muted">{report.description}</div>}
@@ -63,7 +63,7 @@ export default function Reports() {
             <div className="row-tight" style={{ marginInlineStart: 'auto' }}>
               <button className="btn btn-sm" onClick={() => download(active, 'xlsx')}><IconDownload width={13} height={13} />Excel</button>
               <button className="btn btn-sm" onClick={() => download(active, 'pdf')}>PDF</button>
-              {report && <span className="table-count">{report.rows.length} rows</span>}
+              {report && <span className="table-count">{t('counts.rows', { count: report.rows.length })}</span>}
             </div>
           </div>
 
@@ -86,7 +86,7 @@ export default function Reports() {
                   </tbody>
                 </table>
               </div>
-            ) : <div className="card-body"><Empty icon={IconChart} title="No data for this report" /></div>
+            ) : <div className="card-body"><Empty icon={IconChart} title={t('reportsUi.noData')} /></div>
           )}
         </Card>
       )}

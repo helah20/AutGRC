@@ -124,6 +124,30 @@ for (const file of files) {
   });
 }
 
+// Hardcoded English in the interface. The dictionaries passing their key
+// checks says nothing about text written straight into JSX, which renders in
+// English whatever language is selected. Names that are the same in every
+// language are allowed; anything else goes through t().
+const SAME_IN_EVERY_LANGUAGE = new Set(['AutGRC', 'English', 'Excel', 'PDF', 'Word', 'SHA-256', 'Q3 2026']);
+const HARDCODED = [
+  />\s*([A-Z][A-Za-z][^<>{}]{3,}?)\s*</g,
+  /(?:title|placeholder|label|hint|aria-label|header)="([A-Z][^"]{3,})"/g,
+  /toast\.(?:success|error|info|warn)\(\s*'([A-Z][^']{3,})'/g
+];
+for (const file of files) {
+  const rel = path.relative(ROOT, file);
+  if (!rel.endsWith('.jsx')) continue;
+  const src = readFileSync(file, 'utf8');
+  for (const re of HARDCODED) {
+    for (const m of src.matchAll(re)) {
+      const text = m[1].trim();
+      if (SAME_IN_EVERY_LANGUAGE.has(text)) continue;
+      const line = src.slice(0, m.index).split('\n').length;
+      problems.push(`${rel}:${line}: "${text.slice(0, 60)}" is hardcoded English; use t()`);
+    }
+  }
+}
+
 if (!problems.length) {
   console.log(`Client checks: ${files.length} file(s), ${enKeys.size} translation key(s), no problems.`);
   process.exit(0);

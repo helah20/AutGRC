@@ -19,6 +19,18 @@ import {
 import { useLabels } from '../i18n/labels.js';
 import { useI18n } from '../i18n/index.jsx';
 
+/** Classification values are API keys; the label is looked up at render time. */
+function classificationLabel(t, value) {
+  switch (value) {
+    case 'public': return t('documentDetailUi.classPublic');
+    case 'internal': return t('documentDetailUi.classInternal');
+    case 'confidential': return t('documentDetailUi.classConfidential');
+    case 'secret': return t('documentDetailUi.classSecret');
+    case 'top_secret': return t('documentDetailUi.classTopSecret');
+    default: return titleCase(value);
+  }
+}
+
 export default function DocumentDetail() {
   const labels = useLabels();
   const { t, language, isRtl } = useI18n();
@@ -55,14 +67,14 @@ export default function DocumentDetail() {
   const saveSection = useCallback(async (sectionId, html) => {
     try {
       await api.put(`/documents/${id}/sections/${sectionId}`, { body: html });
-      toast.success('Section saved');
+      toast.success(t('documentDetailUi.sectionSaved'));
       setEditing(null);
       reload();
     } catch (err) {
-      toast.error('Could not save', err.message);
+      toast.error(t('documentDetailUi.couldNotSave'), err.message);
       throw err;
     }
-  }, [id, reload, toast]);
+  }, [id, reload, toast, t]);
 
   const runReview = useCallback(async () => {
     setReviewBusy(true);
@@ -71,24 +83,27 @@ export default function DocumentDetail() {
       setReview(res);
       setTab('review');
       const high = res.findings.filter((f) => ['critical', 'high'].includes(f.severity)).length;
-      if (high) toast.warn(`Review complete — ${high} high or critical finding${high === 1 ? '' : 's'}`, `Readiness score ${res.score.score}/100.`);
-      else toast.success('Review complete', `Readiness score ${res.score.score}/100 with no high-severity findings.`);
+      if (high) toast.warn(t('documentDetailUi.reviewCompleteHigh', { count: high }), t('documentDetailUi.readinessLine', { score: res.score.score }));
+      else toast.success(t('documentDetailUi.reviewComplete'), t('documentDetailUi.readinessLineClean', { score: res.score.score }));
     } catch (err) {
-      toast.error('Review failed', err.message);
+      toast.error(t('documentDetailUi.reviewFailed'), err.message);
     } finally {
       setReviewBusy(false);
     }
-  }, [id, toast]);
+  }, [id, toast, t]);
 
   async function applyTransition() {
     try {
       const res = await api.post(`/documents/${id}/transition`, { to: transitionTarget.to, comment: transitionNote || undefined });
-      toast.success(`Document ${res.document.status_label.toLowerCase()}`, `${res.document.reference} is now at version ${res.document.version}.`);
+      toast.success(
+        t('documentDetailUi.transitionDone', { status: labels.status(res.document.status, res.document.status_label) }),
+        t('documentDetailUi.transitionDoneBody', { reference: res.document.reference, version: res.document.version })
+      );
       setTransitionTarget(null);
       setTransitionNote('');
       reload();
     } catch (err) {
-      toast.error('Transition rejected', err.message);
+      toast.error(t('documentDetailUi.transitionRejected'), err.message);
     }
   }
 
@@ -107,14 +122,14 @@ export default function DocumentDetail() {
     try {
       const res = await api.post('/ai/rewrite', { text: html, mode, documentId: id });
       if (res.changes?.length) {
-        toast.info(`${res.changes.length} change${res.changes.length === 1 ? '' : 's'} applied`, res.notes?.[0]);
+        toast.info(t('documentDetailUi.changesApplied', { count: res.changes.length }), res.notes?.[0]);
       } else {
-        toast.info('No changes needed', res.notes?.[0]);
+        toast.info(t('documentDetailUi.noChangesNeeded'), res.notes?.[0]);
         return null;
       }
       return res.html;
     } catch (err) {
-      toast.error('Rewrite failed', err.message);
+      toast.error(t('documentDetailUi.rewriteFailed'), err.message);
       return null;
     } finally {
       setAiBusy(false);
@@ -123,9 +138,25 @@ export default function DocumentDetail() {
 
   if (loading) return <Loading label={t('documentDetail.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
-  if (!doc) return <Empty title="Document not found" />;
+  if (!doc) return <Empty title={t('documentDetailUi.notFound')} />;
 
   const reviewDays = daysUntil(doc.review_date);
+
+  const approvalActionLabels = {
+    submitted: t('documentDetailUi.actionSubmitted'),
+    approved: t('documentDetailUi.actionApproved'),
+    published: t('documentDetailUi.actionPublished'),
+    reopened: t('documentDetailUi.actionReopened'),
+    retired: t('documentDetailUi.actionRetired'),
+    returned: t('documentDetailUi.actionReturned')
+  };
+
+  const diffStatusLabels = {
+    added: t('documentDetailUi.diffAdded'),
+    removed: t('documentDetailUi.diffRemoved'),
+    modified: t('documentDetailUi.diffModified'),
+    unchanged: t('documentDetailUi.diffUnchanged')
+  };
   const openFindings = review?.findings || data.findings || [];
 
   const tabs = [
@@ -140,8 +171,8 @@ export default function DocumentDetail() {
   return (
     <>
       <div className="breadcrumb">
-        <Link to="/documents">Documents</Link><IconChevronRight width={12} height={12} />
-        <span>{doc.doc_type_label}</span><IconChevronRight width={12} height={12} />
+        <Link to="/documents">{t('documentDetailUi.documents')}</Link><IconChevronRight width={12} height={12} />
+        <span>{labels.docType(doc.doc_type, doc.doc_type_label)}</span><IconChevronRight width={12} height={12} />
         <span className="mono">{doc.reference}</span>
       </div>
 
@@ -152,15 +183,15 @@ export default function DocumentDetail() {
             <StatusBadge status={doc.status} />
             <Badge tone="neutral">v{doc.version}</Badge>
             <Badge tone={doc.classification === 'public' ? 'neutral' : doc.classification === 'internal' ? 'info' : 'critical'}>
-              {titleCase(doc.classification)}
+              {classificationLabel(t, doc.classification)}
             </Badge>
             <ProvenanceTag provenance={doc.provenance} />
           </div>
           <h1 className="page-title">{doc.title}</h1>
           <p className="page-sub">
-            {labels.domain(doc.domain_key, doc.domain_label)} · Owner {doc.owner_name || 'unassigned'}
-            {doc.approver_name ? ` · Approver ${doc.approver_name}` : ''}
-            {doc.review_date ? ` · Review due ${formatDate(doc.review_date)}` : ''}
+            {labels.domain(doc.domain_key, doc.domain_label)} · {t('documentDetailUi.ownerLine', { name: doc.owner_name || t('documentDetailUi.unassigned') })}
+            {doc.approver_name ? ` · ${t('documentDetailUi.approverLine', { name: doc.approver_name })}` : ''}
+            {doc.review_date ? ` · ${t('documentDetailUi.reviewDueLine', { date: formatDate(doc.review_date) })}` : ''}
           </p>
         </div>
         <div className="page-actions">
@@ -176,14 +207,14 @@ export default function DocumentDetail() {
           {can('ai:use') && (
             <button className="btn" onClick={runReview} disabled={reviewBusy}>
               {reviewBusy ? <span className="spinner" style={{ width: 13, height: 13 }} /> : <IconSparkles />}
-              Review with AI
+              {t('documentDetail.reviewWithAi')}
             </button>
           )}
           {can('document:update') && <button className="btn" onClick={() => setPropsOpen(true)}><IconEdit />{t('documentDetail.properties')}</button>}
-          {transitions.filter((t) => t.allowed).map((t) => (
-            <button key={t.to} className={`btn ${t.to === 'published' || t.to === 'approved' ? 'btn-primary' : ''}`}
-              onClick={() => setTransitionTarget(t)}>
-              {t.to === 'approved' ? <IconCheck /> : null}{t.label === 'Draft' ? 'Return to draft' : t.label}
+          {transitions.filter((tr) => tr.allowed).map((tr) => (
+            <button key={tr.to} className={`btn ${tr.to === 'published' || tr.to === 'approved' ? 'btn-primary' : ''}`}
+              onClick={() => setTransitionTarget(tr)}>
+              {tr.to === 'approved' ? <IconCheck /> : null}{tr.label === 'Draft' ? t('documentDetailUi.returnToDraft') : labels.status(tr.to, tr.label)}
             </button>
           ))}
         </div>
@@ -193,8 +224,10 @@ export default function DocumentDetail() {
         <div className="callout" data-callout="warning">
           <strong>{t('documentDetail.overdue')}</strong>
           <p style={{ marginBottom: 0 }}>
-            This document was due for review {Math.abs(reviewDays)} days ago on {formatDate(doc.review_date)} and
-            remains published. Move it to Under Revision to bring it up to date.
+            {t('documentDetailUi.overdueBody', {
+              days: t('documentDetailUi.overdueDays', { count: Math.abs(reviewDays) }),
+              date: formatDate(doc.review_date)
+            })}
           </p>
         </div>
       )}
@@ -202,7 +235,7 @@ export default function DocumentDetail() {
       {doc.status === 'published' && can('document:update') && (
         <div className="callout" data-callout="note">
           <strong>{t('documentDetail.readOnly')}</strong>
-          <p style={{ marginBottom: 0 }}>Move this document to Under Revision to edit its content. The published version stays in force until a new version is published.</p>
+          <p style={{ marginBottom: 0 }}>{t('documentDetailUi.readOnlyBody')}</p>
         </div>
       )}
 
@@ -221,7 +254,7 @@ export default function DocumentDetail() {
                     {editable && editing !== section.id && (
                       <span className="doc-section-tools">
                         <button className="btn btn-ghost btn-sm" onClick={() => setEditing(section.id)}>
-                          <IconEdit width={13} height={13} />Edit
+                          <IconEdit width={13} height={13} />{t('documentDetailUi.edit')}
                         </button>
                       </span>
                     )}
@@ -234,9 +267,9 @@ export default function DocumentDetail() {
                       onCancel={() => setEditing(null)}
                       onSave={(html) => saveSection(section.id, html)}
                       aiActions={can('ai:use') ? [
-                        { label: 'Improve', title: 'Replace unmeasurable wording with auditable formulations', run: (html) => aiRewrite(html, 'improve') },
-                        { label: 'Formalise', title: 'Rewrite in a formal corporate register', run: (html) => aiRewrite(html, 'formalise') },
-                        { label: 'Shorten', title: 'Reduce wordiness without changing obligations', run: (html) => aiRewrite(html, 'shorten') }
+                        { label: t('documentDetailUi.aiImprove'), title: t('documentDetailUi.aiImproveTitle'), run: (html) => aiRewrite(html, 'improve') },
+                        { label: t('documentDetailUi.aiFormalise'), title: t('documentDetailUi.aiFormaliseTitle'), run: (html) => aiRewrite(html, 'formalise') },
+                        { label: t('documentDetailUi.aiShorten'), title: t('documentDetailUi.aiShortenTitle'), run: (html) => aiRewrite(html, 'shorten') }
                       ] : undefined}
                     />
                   ) : (
@@ -245,14 +278,14 @@ export default function DocumentDetail() {
                       {section.source_refs?.length > 0 && (
                         <details style={{ marginTop: 8 }}>
                           <summary className="tiny muted" style={{ cursor: 'pointer' }}>
-                            {section.source_refs.length} source reference{section.source_refs.length === 1 ? '' : 's'}
+                            {t('documentDetailUi.sourceRefCount', { count: section.source_refs.length })}
                           </summary>
                           <div className="row-tight" style={{ marginTop: 6, flexWrap: 'wrap' }}>
                             {section.source_refs.filter((r) => r.type === 'framework').map((r, j) => (
                               <span key={j} className="pill mono">{r.framework} {r.ref}</span>
                             ))}
                             {section.source_refs.filter((r) => r.type === 'parameter').map((r, j) => (
-                              <span key={`p${j}`} className="pill">Value: {r.name}</span>
+                              <span key={`p${j}`} className="pill">{t('documentDetailUi.valueRef', { name: r.name })}</span>
                             ))}
                           </div>
                         </details>
@@ -301,10 +334,9 @@ export default function DocumentDetail() {
         {tab === 'review' && (
           <div style={{ padding: 18 }}>
             {!review && !openFindings.length && (
-              <Empty icon={IconSparkles} title="No review has been run"
+              <Empty icon={IconSparkles} title={t('documentDetailUi.noReviewTitle')}
                 action={can('ai:use') ? <button className="btn btn-primary" onClick={runReview} disabled={reviewBusy}><IconSparkles />{t('documentDetail.reviewWithAi')}</button> : null}>
-                The quality engine checks completeness, cross-document consistency, accountability,
-                auditability, compliance coverage and ambiguous wording.
+                {t('documentDetailUi.noReviewBody')}
               </Empty>
             )}
 
@@ -319,13 +351,13 @@ export default function DocumentDetail() {
                       <div className="row-tight">
                         {Object.entries(review.score.bySeverity || {}).map(([sev, n]) => (
                           <Badge key={sev} tone={sev === 'critical' ? 'critical' : sev === 'high' ? 'danger' : sev === 'medium' ? 'warn' : 'neutral'}>
-                            {n} {sev}
+                            {n} {labels.rating(sev)}
                           </Badge>
                         ))}
                       </div>
                     </div>
                     <div className="stack-sm" style={{ alignItems: 'flex-end' }}>
-                      <span className="tiny muted">Engine: {review.provider === 'anthropic' ? `Claude (${review.model})` : 'built-in knowledge engine'}</span>
+                      <span className="tiny muted">{t('documentDetailUi.engineLine', { engine: review.provider === 'anthropic' ? `Claude (${review.model})` : t('documentDetailUi.builtInEngineLower') })}</span>
                       <button className="btn btn-sm" onClick={runReview} disabled={reviewBusy}><IconRefresh width={13} height={13} />{t('documentDetail.rerun')}</button>
                     </div>
                   </div>
@@ -334,7 +366,7 @@ export default function DocumentDetail() {
                 {review?.scorecard && <Scorecard scorecard={review.scorecard} />}
 
                 {openFindings.length === 0 ? (
-                  <Empty icon={IconCheck} title="No findings" >This document passed every check the quality engine performs.</Empty>
+                  <Empty icon={IconCheck} title={t('documentDetailUi.noFindingsTitle')} >{t('documentDetailUi.noFindingsBody')}</Empty>
                 ) : (
                   <div className="stack-sm">
                     {openFindings.map((f, i) => (
@@ -342,10 +374,10 @@ export default function DocumentDetail() {
                         onStatusChange={async (finding, status) => {
                           try {
                             await api.patch(`/findings/${finding.id}`, { status });
-                            toast.success('Finding updated', titleCase(status));
+                            toast.success(t('documentDetailUi.findingUpdated'), labels.findingStatus(status, titleCase(status)));
                             setReview((r) => (r ? { ...r, findings: r.findings.filter((x) => x.id !== finding.id) } : r));
                             reload();
-                          } catch (err) { toast.error('Update failed', err.message); }
+                          } catch (err) { toast.error(t('documentDetailUi.updateFailed'), err.message); }
                         }} />
                     ))}
                   </div>
@@ -361,11 +393,11 @@ export default function DocumentDetail() {
 
         {tab === 'traceability' && (
           <div style={{ padding: 18 }} className="stack">
-            <Card title="Related documents" flush>
+            <Card title={t('documentDetailUi.relatedDocuments')} flush>
               {data.links.length || data.backlinks.length ? (
                 <div className="table-wrap">
                   <table className="data">
-                    <thead><tr><th>{t('documentDetail.direction')}</th><th>{t('documentDetail.relationship')}</th><th>Document</th><th>Status</th></tr></thead>
+                    <thead><tr><th>{t('documentDetail.direction')}</th><th>{t('documentDetail.relationship')}</th><th>{t('documentDetailUi.colDocument')}</th><th>{t('documentDetailUi.colStatus')}</th></tr></thead>
                     <tbody>
                       {data.links.map((l) => (
                         <tr key={`o-${l.id}`}>
@@ -386,28 +418,28 @@ export default function DocumentDetail() {
                     </tbody>
                   </table>
                 </div>
-              ) : <div className="card-body"><Empty icon={IconLink} title="No relationships recorded" /></div>}
+              ) : <div className="card-body"><Empty icon={IconLink} title={t('documentDetailUi.noRelationships')} /></div>}
             </Card>
 
-            <Card title="Controls implementing this document" flush>
+            <Card title={t('documentDetailUi.implementingControls')} flush>
               <DataTable
                 columns={[
-                  { key: 'control_id', header: 'Control ID', nowrap: true, render: (c) => <span className="mono">{c.control_id}</span> },
-                  { key: 'name', header: 'Control' },
-                  { key: 'control_type', header: 'Type', nowrap: true, render: (c) => <Badge tone="neutral">{titleCase(c.control_type)}</Badge> },
-                  { key: 'risk_rating', header: 'Risk', nowrap: true, render: (c) => <Badge tone={c.risk_rating === 'critical' ? 'critical' : c.risk_rating === 'high' ? 'danger' : c.risk_rating === 'medium' ? 'warn' : 'ok'}>{titleCase(c.risk_rating)}</Badge> }
+                  { key: 'control_id', header: t('documentDetailUi.colControlId'), nowrap: true, render: (c) => <span className="mono">{c.control_id}</span> },
+                  { key: 'name', header: t('documentDetailUi.colControl') },
+                  { key: 'control_type', header: t('documentDetailUi.colType'), nowrap: true, render: (c) => <Badge tone="neutral">{titleCase(c.control_type)}</Badge> },
+                  { key: 'risk_rating', header: t('documentDetailUi.colRisk'), nowrap: true, render: (c) => <Badge tone={c.risk_rating === 'critical' ? 'critical' : c.risk_rating === 'high' ? 'danger' : c.risk_rating === 'medium' ? 'warn' : 'ok'}>{labels.rating(c.risk_rating, titleCase(c.risk_rating))}</Badge> }
                 ]}
                 rows={data.controls}
                 onRowClick={() => navigate('/controls')}
-                empty={<Empty icon={IconShield} title="No controls linked" >Controls are created alongside a generated Standard.</Empty>}
+                empty={<Empty icon={IconShield} title={t('documentDetailUi.noControlsTitle')} >{t('documentDetailUi.noControlsBody')}</Empty>}
               />
             </Card>
 
             {doc.generation_meta && (
-              <Card title="Generation record" subtitle="What this document was generated from.">
+              <Card title={t('documentDetailUi.generationRecord')} subtitle={t('documentDetailUi.generationRecordSubtitle')}>
                 <dl className="definition">
-                  <dt>Engine</dt><dd>{doc.generation_meta.provider === 'anthropic' ? 'Claude' : doc.generation_meta.provider === 'import' ? 'Imported document' : 'Built-in knowledge engine'}</dd>
-                  <dt>Generated</dt><dd>{formatDate(doc.generation_meta.generatedAt || doc.created_at, { withTime: true })}</dd>
+                  <dt>{t('documentDetail.engine')}</dt><dd>{doc.generation_meta.provider === 'anthropic' ? 'Claude' : doc.generation_meta.provider === 'import' ? t('documentDetailUi.importedDocument') : t('documentDetailUi.builtInEngine')}</dd>
+                  <dt>{t('documentDetail.generated')}</dt><dd>{formatDate(doc.generation_meta.generatedAt || doc.created_at, { withTime: true })}</dd>
                   <dt>{t('documentDetail.sources')}</dt><dd>{doc.generation_meta.frameworks?.length ? doc.generation_meta.frameworks.join(', ') : <span className="muted">{t('documentDetail.noneSelected')}</span>}</dd>
                 </dl>
                 {doc.generation_meta.assumptions?.length > 0 && (
@@ -447,41 +479,41 @@ export default function DocumentDetail() {
 
         {tab === 'history' && (
           <div style={{ padding: 18 }} className="stack">
-            <Card title="Approval history" flush>
+            <Card title={t('documentDetailUi.approvalHistory')} flush>
               <DataTable
                 columns={[
-                  { key: 'action', header: 'Action', nowrap: true, render: (a) => <Badge tone={a.action === 'approved' || a.action === 'published' ? 'ok' : a.action === 'retired' ? 'neutral' : 'info'}>{titleCase(a.action)}</Badge> },
-                  { key: 'from', header: 'Transition', nowrap: true, render: (a) => <span className="small muted">{titleCase(a.from_status)} → {titleCase(a.to_status)}</span> },
-                  { key: 'actor_name', header: 'By', nowrap: true, render: (a) => <>{a.actor_name}<div className="cell-sub">{titleCase(a.actor_role)}</div></> },
-                  { key: 'comment', header: 'Comment', render: (a) => a.comment || <span className="muted">—</span> },
-                  { key: 'created_at', header: 'When', nowrap: true, render: (a) => <span className="small">{formatDate(a.created_at, { withTime: true })}</span> }
+                  { key: 'action', header: t('documentDetailUi.colAction'), nowrap: true, render: (a) => <Badge tone={a.action === 'approved' || a.action === 'published' ? 'ok' : a.action === 'retired' ? 'neutral' : 'info'}>{approvalActionLabels[a.action] || titleCase(a.action)}</Badge> },
+                  { key: 'from', header: t('documentDetailUi.colTransition'), nowrap: true, render: (a) => <span className="small muted">{labels.status(a.from_status, titleCase(a.from_status))} → {labels.status(a.to_status, titleCase(a.to_status))}</span> },
+                  { key: 'actor_name', header: t('documentDetailUi.colBy'), nowrap: true, render: (a) => <>{a.actor_name}<div className="cell-sub">{labels.role(a.actor_role, titleCase(a.actor_role))}</div></> },
+                  { key: 'comment', header: t('documentDetailUi.colComment'), render: (a) => a.comment || <span className="muted">—</span> },
+                  { key: 'created_at', header: t('documentDetailUi.colWhen'), nowrap: true, render: (a) => <span className="small">{formatDate(a.created_at, { withTime: true })}</span> }
                 ]}
                 rows={data.approvals}
-                empty={<Empty icon={IconHistory} title="No approval activity yet" />}
+                empty={<Empty icon={IconHistory} title={t('documentDetailUi.noApprovalActivity')} />}
               />
             </Card>
 
-            <Card title="Version history" flush
-              actions={data.versions.length > 1 ? <span className="tiny muted">Select a version to compare with the current content</span> : null}>
+            <Card title={t('documentDetailUi.versionHistory')} flush
+              actions={data.versions.length > 1 ? <span className="tiny muted">{t('documentDetailUi.selectVersionHint')}</span> : null}>
               <DataTable
                 columns={[
-                  { key: 'version', header: 'Version', nowrap: true, render: (v) => <span className="mono strong">{v.version}</span> },
-                  { key: 'change_type', header: 'Type', nowrap: true, render: (v) => <Badge tone="neutral">{titleCase(v.change_type)}</Badge> },
-                  { key: 'change_note', header: 'Change note', render: (v) => v.change_note || <span className="muted">—</span> },
-                  { key: 'author_name', header: 'Author', nowrap: true },
-                  { key: 'created_at', header: 'When', nowrap: true, render: (v) => <span className="small">{formatDate(v.created_at, { withTime: true })}</span> },
+                  { key: 'version', header: t('documentDetailUi.colVersion'), nowrap: true, render: (v) => <span className="mono strong">{v.version}</span> },
+                  { key: 'change_type', header: t('documentDetailUi.colType'), nowrap: true, render: (v) => <Badge tone="neutral">{titleCase(v.change_type)}</Badge> },
+                  { key: 'change_note', header: t('documentDetailUi.colChangeNote'), render: (v) => v.change_note || <span className="muted">—</span> },
+                  { key: 'author_name', header: t('documentDetailUi.colAuthor'), nowrap: true },
+                  { key: 'created_at', header: t('documentDetailUi.colWhen'), nowrap: true, render: (v) => <span className="small">{formatDate(v.created_at, { withTime: true })}</span> },
                   {
                     key: 'actions', header: '', nowrap: true, render: (v) => (
                       <button className="btn btn-sm" onClick={async (e) => {
                         e.stopPropagation();
                         try { setCompare(await api.get(`/documents/${id}/compare?from=${v.id}`)); }
-                        catch (err) { toast.error('Comparison failed', err.message); }
+                        catch (err) { toast.error(t('documentDetailUi.comparisonFailed'), err.message); }
                       }}>{t('documentDetail.compare')}</button>
                     )
                   }
                 ]}
                 rows={data.versions}
-                empty={<Empty icon={IconHistory} title="No versions recorded" />}
+                empty={<Empty icon={IconHistory} title={t('documentDetailUi.noVersions')} />}
               />
             </Card>
           </div>
@@ -493,15 +525,15 @@ export default function DocumentDetail() {
               <Card>
                 <Field label={t('documentDetail.addComment')}>
                   <textarea className="textarea" value={comment} onChange={(e) => setComment(e.target.value)}
-                    placeholder="Raise a question, note a required change, or record a review observation…" />
+                    placeholder={t('documentDetailUi.commentPlaceholder')} />
                 </Field>
                 <button className="btn btn-primary btn-sm" disabled={!comment.trim()} onClick={async () => {
                   try {
                     await api.post(`/documents/${id}/comments`, { body: comment });
                     setComment('');
-                    toast.success('Comment added');
+                    toast.success(t('documentDetailUi.commentAdded'));
                     reload();
-                  } catch (err) { toast.error('Could not add comment', err.message); }
+                  } catch (err) { toast.error(t('documentDetailUi.couldNotAddComment'), err.message); }
                 }}><IconComment width={13} height={13} />{t('documentDetail.postComment')}</button>
               </Card>
             )}
@@ -529,7 +561,7 @@ export default function DocumentDetail() {
                   </div>
                 ))}
               </div>
-            ) : <Empty icon={IconComment} title="No comments" >Reviewers can raise observations here without editing the document.</Empty>}
+            ) : <Empty icon={IconComment} title={t('documentDetailUi.noCommentsTitle')} >{t('documentDetailUi.noCommentsBody')}</Empty>}
           </div>
         )}
       </Card>
@@ -537,22 +569,22 @@ export default function DocumentDetail() {
       {/* ------------------------------------------------------ dialogs -- */}
 
       <Modal open={Boolean(transitionTarget)} onClose={() => setTransitionTarget(null)}
-        title={`Move to ${transitionTarget?.label || ''}`}
+        title={t('documentDetailUi.moveTo', { status: transitionTarget?.label ? labels.status(transitionTarget.to, transitionTarget.label) : '' })}
         footer={
           <>
-            <button className="btn" onClick={() => setTransitionTarget(null)}>Cancel</button>
-            <button className="btn btn-primary" onClick={applyTransition}>Confirm</button>
+            <button className="btn" onClick={() => setTransitionTarget(null)}>{t('documentDetailUi.cancel')}</button>
+            <button className="btn btn-primary" onClick={applyTransition}>{t('documentDetailUi.confirm')}</button>
           </>
         }>
         <p className="muted small">
-          {transitionTarget?.to === 'approved' && 'Approving records your name and role against this document. A document cannot be approved by its own owner.'}
-          {transitionTarget?.to === 'published' && 'Publishing issues a whole version number, sets the effective date and schedules the next review in 12 months.'}
-          {transitionTarget?.to === 'under_review' && 'Submitting moves the document into the review queue.'}
-          {transitionTarget?.to === 'retired' && 'Retiring removes the document from force. The record and its history are preserved.'}
-          {transitionTarget?.to === 'under_revision' && 'The published version stays in force while you revise.'}
-          {transitionTarget?.to === 'draft' && 'Returning to draft sends the document back to its author.'}
+          {transitionTarget?.to === 'approved' && t('documentDetailUi.explainApproved')}
+          {transitionTarget?.to === 'published' && t('documentDetailUi.explainPublished')}
+          {transitionTarget?.to === 'under_review' && t('documentDetailUi.explainUnderReview')}
+          {transitionTarget?.to === 'retired' && t('documentDetailUi.explainRetired')}
+          {transitionTarget?.to === 'under_revision' && t('documentDetailUi.explainUnderRevision')}
+          {transitionTarget?.to === 'draft' && t('documentDetailUi.explainDraft')}
         </p>
-        <Field label={t('documentDetail.addComment')} hint="Recorded in the approval history.">
+        <Field label={t('documentDetail.addComment')} hint={t('documentDetailUi.recordedInHistory')}>
           <textarea className="textarea" value={transitionNote} onChange={(e) => setTransitionNote(e.target.value)} />
         </Field>
       </Modal>
@@ -562,29 +594,29 @@ export default function DocumentDetail() {
         onDelete={() => { setPropsOpen(false); setConfirmDelete(true); }} canDelete={can('document:delete')} />
 
       <ConfirmDialog open={confirmDelete} onClose={() => setConfirmDelete(false)} danger
-        title="Delete this document?" confirmLabel="Delete"
-        message={`${doc.reference} and all of its sections, versions and comments will be permanently removed. Published documents must be retired instead.`}
+        title={t('documentDetailUi.deleteTitle')} confirmLabel={t('documentDetailUi.delete')}
+        message={t('documentDetailUi.deleteMessage', { reference: doc.reference })}
         onConfirm={async () => {
           try {
             await api.del(`/documents/${id}`);
-            toast.success('Document deleted');
+            toast.success(t('documentDetailUi.documentDeleted'));
             navigate('/documents');
-          } catch (err) { toast.error('Delete failed', err.message); }
+          } catch (err) { toast.error(t('documentDetailUi.deleteFailed'), err.message); }
         }} />
 
       <Drawer open={Boolean(compare)} onClose={() => setCompare(null)} wide
-        title={`Compare version ${compare?.from?.version || ''} with current`}>
+        title={t('documentDetailUi.compareTitle', { version: compare?.from?.version || '' })}>
         {compare && (
           <div className="stack-sm">
             <p className="small muted">
-              Version {compare.from.version} by {compare.from.author} on {formatDate(compare.from.created_at)}, compared with the current content.
+              {t('documentDetailUi.compareIntro', { version: compare.from.version, author: compare.from.author, date: formatDate(compare.from.created_at) })}
             </p>
             {compare.sections.map((s) => (
               <div key={s.section_key} className="card" style={{ padding: 12 }}>
                 <div className="row-tight" style={{ marginBottom: s.diff ? 8 : 0 }}>
                   <span className="strong small">{s.heading}</span>
                   <Badge tone={s.status === 'unchanged' ? 'neutral' : s.status === 'added' ? 'ok' : s.status === 'removed' ? 'danger' : 'warn'}>
-                    {titleCase(s.status)}
+                    {diffStatusLabels[s.status] || titleCase(s.status)}
                   </Badge>
                 </div>
                 {s.diff && (
@@ -624,15 +656,15 @@ function PropertiesModal({ open, onClose, doc, directory, onSaved, onDelete, can
   }, [open, doc]);
 
   return (
-    <Modal open={open} onClose={onClose} title="Document properties" size="modal-lg"
+    <Modal open={open} onClose={onClose} title={t('documentDetailUi.propertiesTitle')} size="modal-lg"
       footer={
         <>
           {canDelete && doc.status !== 'published' && (
             <button className="btn btn-ghost" style={{ marginInlineEnd: 'auto', color: 'var(--danger)' }} onClick={onDelete}>
-              <IconTrash width={13} height={13} />Delete document
+              <IconTrash width={13} height={13} />{t('documentDetailUi.deleteDocument')}
             </button>
           )}
-          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn" onClick={onClose}>{t('documentDetailUi.cancel')}</button>
           <button className="btn btn-primary" onClick={async () => {
             try {
               await api.patch(`/documents/${doc.id}`, {
@@ -642,9 +674,9 @@ function PropertiesModal({ open, onClose, doc, directory, onSaved, onDelete, can
                 effective_date: form.effective_date || null,
                 review_date: form.review_date || null
               });
-              toast.success('Properties updated');
+              toast.success(t('documentDetailUi.propertiesUpdated'));
               onSaved();
-            } catch (err) { toast.error('Update failed', err.message); }
+            } catch (err) { toast.error(t('documentDetailUi.updateFailed'), err.message); }
           }}>{t('documentDetail.saveChanges')}</button>
         </>
       }>
@@ -655,19 +687,19 @@ function PropertiesModal({ open, onClose, doc, directory, onSaved, onDelete, can
         <textarea className="textarea" value={form.summary || ''} onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))} />
       </Field>
       <div className="field-row">
-        <Field label={t('documentDetail.documentOwner')} hint="Accountable for content and review.">
-          <Select value={form.owner_id} onChange={(v) => setForm((f) => ({ ...f, owner_id: v }))} placeholder="Unassigned"
+        <Field label={t('documentDetail.documentOwner')} hint={t('documentDetailUi.ownerHint')}>
+          <Select value={form.owner_id} onChange={(v) => setForm((f) => ({ ...f, owner_id: v }))} placeholder={t('documentDetailUi.unassignedOption')}
             options={directory.map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
         </Field>
         <Field label={t('documentDetail.approver')}>
-          <Select value={form.approver_id} onChange={(v) => setForm((f) => ({ ...f, approver_id: v }))} placeholder="Unassigned"
+          <Select value={form.approver_id} onChange={(v) => setForm((f) => ({ ...f, approver_id: v }))} placeholder={t('documentDetailUi.unassignedOption')}
             options={directory.filter((u) => ['approver', 'admin'].includes(u.role)).map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
         </Field>
       </div>
       <div className="field-row">
         <Field label={t('documentDetail.classification')}>
           <Select value={form.classification} onChange={(v) => setForm((f) => ({ ...f, classification: v }))}
-            options={['public', 'internal', 'confidential', 'secret', 'top_secret'].map((v) => ({ value: v, label: titleCase(v) }))} />
+            options={['public', 'internal', 'confidential', 'secret', 'top_secret'].map((v) => ({ value: v, label: classificationLabel(t, v) }))} />
         </Field>
         <Field label={t('documentDetail.effectiveDate')}>
           <input className="input" type="date" value={form.effective_date || ''} onChange={(e) => setForm((f) => ({ ...f, effective_date: e.target.value }))} />

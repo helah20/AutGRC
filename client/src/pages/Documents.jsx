@@ -69,16 +69,16 @@ export default function Documents({ fixedType }) {
 
   const domainOptions = useMemo(() => {
     const counts = meta?.counts?.byDomain || [];
-    return counts.map((d) => ({ value: d.domain_key, label: `${titleCase(d.domain_key)} (${d.n})` }));
-  }, [meta]);
+    return counts.map((d) => ({ value: d.domain_key, label: `${labels.domain(d.domain_key, titleCase(d.domain_key))} (${d.n})` }));
+  }, [meta, labels]);
 
   const columns = [
     {
-      key: 'reference', header: 'Reference', nowrap: true, width: 130,
+      key: 'reference', header: t('documentsUi.columnReference'), nowrap: true, width: 130,
       render: (d) => <span className="ref-tag">{d.reference}</span>
     },
     {
-      key: 'title', header: 'Document',
+      key: 'title', header: t('documentsUi.columnDocument'),
       render: (d) => (
         <>
           <div className="cell-title">{d.title}</div>
@@ -86,31 +86,31 @@ export default function Documents({ fixedType }) {
         </>
       )
     },
-    { key: 'doc_type', header: 'Type', nowrap: true, render: (d) => <Badge tone="neutral">{d.doc_type_label}</Badge> },
+    { key: 'doc_type', header: t('common.type'), nowrap: true, render: (d) => <Badge tone="neutral">{labels.docType(d.doc_type, d.doc_type_label)}</Badge> },
     {
       key: 'language', header: t('documents.language'), nowrap: true, width: 84,
       render: (d) => (d.language === 'ar'
         ? <Badge tone="info" lang="ar">العربية</Badge>
         : <span className="small muted">English</span>)
     },
-    { key: 'status', header: 'Status', nowrap: true, render: (d) => <StatusBadge status={d.status} /> },
-    { key: 'owner_name', header: 'Owner', nowrap: true, render: (d) => d.owner_name || <span className="muted">Unassigned</span> },
+    { key: 'status', header: t('common.status'), nowrap: true, render: (d) => <StatusBadge status={d.status} /> },
+    { key: 'owner_name', header: t('common.owner'), nowrap: true, render: (d) => d.owner_name || <span className="muted">{t('common.unassigned')}</span> },
     {
-      key: 'review_date', header: 'Review due', nowrap: true,
+      key: 'review_date', header: t('documentsUi.columnReviewDue'), nowrap: true,
       render: (d) => {
-        if (!d.review_date) return <span className="muted">Not set</span>;
+        if (!d.review_date) return <span className="muted">{t('documentsUi.notSet')}</span>;
         const days = daysUntil(d.review_date);
         return (
           <div>
             <div className="small">{formatDate(d.review_date)}</div>
             {d.status !== 'retired' && days !== null && days <= 60 && (
-              <Badge tone={days < 0 ? 'danger' : 'warn'}>{days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`}</Badge>
+              <Badge tone={days < 0 ? 'danger' : 'warn'}>{days < 0 ? t('documentsUi.daysOverdue', { count: Math.abs(days) }) : t('documentsUi.daysLeft', { count: days })}</Badge>
             )}
           </div>
         );
       }
     },
-    { key: 'updated_at', header: 'Updated', nowrap: true, render: (d) => <span className="small muted">{relativeTime(d.updated_at)}</span> }
+    { key: 'updated_at', header: t('common.updated'), nowrap: true, render: (d) => <span className="small muted">{relativeTime(d.updated_at)}</span> }
   ];
 
   const activeFilters = [type && !fixedType, domain, status, reviewDue, debounced].filter(Boolean).length;
@@ -127,33 +127,33 @@ export default function Documents({ fixedType }) {
         </div>
         <div className="page-actions">
           <button className="btn" onClick={() => api.download('/export/register.xlsx', 'Document Register.xlsx')
-            .then(() => toast.success('Register exported'))
-            .catch((e) => toast.error('Export failed', e.message))}>
-            <IconDownload />Export register
+            .then(() => toast.success(t('documentsUi.registerExported')))
+            .catch((e) => toast.error(t('common.exportFailed'), e.message))}>
+            <IconDownload />{t('documentsUi.exportRegister')}
           </button>
-          {can('generate:run') && <Link className="btn btn-primary" to="/generator"><IconWand />Generate</Link>}
+          {can('generate:run') && <Link className="btn btn-primary" to="/generator"><IconWand />{t('documentsUi.generate')}</Link>}
         </div>
       </div>
 
       <Card flush>
         <div className="table-toolbar">
-          <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder="Search by title, reference or summary…" /></div>
+          <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder={t('documentsUi.searchPlaceholder')} /></div>
           {!fixedType && (
             <Select value={type} onChange={setType} placeholder={t('documents.allTypes')}
               options={DOC_TYPES.map((value) => ({ value, label: labels.docType(value) }))} />
           )}
-          <Select value={domain} onChange={setDomain} placeholder="All domains" options={domainOptions} />
-          <Select value={status} onChange={setStatus} placeholder="All statuses"
-            options={['draft', 'under_review', 'approved', 'published', 'under_revision', 'retired'].map((v) => ({ value: v, label: titleCase(v) }))} />
+          <Select value={domain} onChange={setDomain} placeholder={t('documentsUi.allDomains')} options={domainOptions} />
+          <Select value={status} onChange={setStatus} placeholder={t('documentsUi.allStatuses')}
+            options={['draft', 'under_review', 'approved', 'published', 'under_revision', 'retired'].map((v) => ({ value: v, label: labels.status(v, titleCase(v)) }))} />
           <Select value={docLanguage} onChange={setDocLanguage} placeholder={t('documents.allLanguages')}
             options={[{ value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }]} />
           <button className={`btn btn-sm ${reviewDue ? 'btn-primary' : ''}`} onClick={() => setReviewDue((r) => !r)}>
-            <IconFilter width={13} height={13} />Review due
+            <IconFilter width={13} height={13} />{t('documentsUi.columnReviewDue')}
           </button>
           {activeFilters > 0 && (
             <button className="btn btn-ghost btn-sm" onClick={() => {
               setSearch(''); if (!fixedType) setType(''); setDomain(''); setStatus(''); setDocLanguage(''); setReviewDue(false);
-            }}><IconX width={13} height={13} />Clear</button>
+            }}><IconX width={13} height={13} />{t('common.clear')}</button>
           )}
           <span className="table-count">{data ? `${formatNumber(data.items.length)} ${t('common.of')} ${formatNumber(data.total)}` : '—'}</span>
         </div>
@@ -167,9 +167,9 @@ export default function Documents({ fixedType }) {
             onRowClick={(d) => navigate(`/documents/${d.id}`)}
             rowClass={(d) => (d.status === 'retired' ? 'muted' : '')}
             empty={
-              <Empty icon={IconDocument} title="No documents match"
-                action={can('generate:run') ? <Link className="btn btn-primary btn-sm" to="/generator"><IconWand />Generate a package</Link> : null}>
-                {activeFilters ? 'Adjust or clear the filters to widen the search.' : 'Generate a governance package to populate the library.'}
+              <Empty icon={IconDocument} title={t('documentsUi.emptyTitle')}
+                action={can('generate:run') ? <Link className="btn btn-primary btn-sm" to="/generator"><IconWand />{t('documentsUi.generatePackage')}</Link> : null}>
+                {activeFilters ? t('documentsUi.emptyFiltered') : t('documentsUi.emptyBody')}
               </Empty>
             }
           />

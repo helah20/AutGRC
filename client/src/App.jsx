@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './lib/auth.jsx';
+import { useI18n } from './i18n/index.jsx';
 import { Loading } from './components/ui.jsx';
 import Shell from './components/Shell.jsx';
 import Login from './pages/Login.jsx';
@@ -43,9 +44,10 @@ function Permitted({ permission, children }) {
 
 export default function App() {
   const { session, loading, accountBlock } = useAuth();
+  const { t } = useI18n();
 
   if (loading) {
-    return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><Loading label="Starting AutGRC…" /></div>;
+    return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><Loading label={t('auth.starting')} /></div>;
   }
 
   if (!session) {

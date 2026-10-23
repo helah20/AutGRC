@@ -149,7 +149,7 @@ export default function Shell({ children }) {
         </div>
 
         <div className="sidebar-footer">
-          <div className="truncate" title={org?.org_name}>{org?.org_name || 'Organisation'}</div>
+          <div className="truncate" title={org?.org_name}>{org?.org_name || t('shellUi.organisation')}</div>
           <div>{t('app.version')}</div>
         </div>
       </nav>
@@ -230,6 +230,7 @@ const SEVERITY_TONE = { danger: 'danger', warn: 'warn', info: 'info' };
  * review that falls due in 30 days.
  */
 function NotificationBell() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -293,8 +294,8 @@ function NotificationBell() {
   return (
     <div className="notif-wrap">
       <button className="btn btn-ghost btn-icon" onClick={() => setOpen((o) => !o)}
-        aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
-        aria-expanded={open} title="Notifications">
+        aria-label={unread ? t('notifications.ariaUnread', { count: unread }) : t('notifications.aria')}
+        aria-expanded={open} title={t('notifications.title')}>
         <IconBell />
         {unread > 0 && <span className="notif-dot">{unread > 99 ? '99+' : unread}</span>}
       </button>
@@ -302,21 +303,21 @@ function NotificationBell() {
       {open && (
         <>
           <div className="notif-backdrop" onMouseDown={() => setOpen(false)} />
-          <div className="notif-panel" role="dialog" aria-label="Notifications">
+          <div className="notif-panel" role="dialog" aria-label={t('notifications.aria')}>
             <div className="notif-head">
-              <strong>Notifications</strong>
+              <strong>{t('notifications.title')}</strong>
               {unread > 0 && (
                 <button className="btn btn-ghost btn-sm" onClick={markAll}>
-                  <IconCheck width={12} height={12} />Mark all read
+                  <IconCheck width={12} height={12} />{t('notifications.markAllRead')}
                 </button>
               )}
             </div>
 
             <div className="notif-list">
-              {items === null && <div className="loading-block" style={{ padding: 20 }}><span className="spinner" />Loading…</div>}
+              {items === null && <div className="loading-block" style={{ padding: 20 }}><span className="spinner" />{t('common.loading')}</div>}
               {items?.length === 0 && (
                 <div className="empty" style={{ padding: 24 }}>
-                  <p>Nothing to report. Approvals, review dates and evidence checks appear here.</p>
+                  <p>{t('notifications.empty')}</p>
                 </div>
               )}
               {items?.map((item) => (
@@ -331,7 +332,7 @@ function NotificationBell() {
                   <div className="notif-item-side">
                     {item.severity !== 'info' && <span className={`notif-flag ${SEVERITY_TONE[item.severity]}`} aria-hidden="true" />}
                     <button className="btn btn-ghost btn-sm btn-icon" onClick={() => dismiss(item)}
-                      aria-label="Dismiss" title="Dismiss"><IconTrash width={12} height={12} /></button>
+                      aria-label={t('notifications.dismiss')} title={t('notifications.dismiss')}><IconTrash width={12} height={12} /></button>
                   </div>
                 </div>
               ))}
@@ -339,7 +340,7 @@ function NotificationBell() {
 
             <div className="notif-foot">
               <button className="btn btn-sm" onClick={() => { setOpen(false); navigate('/my-work'); }}>
-                Open My Work<IconChevronRight width={12} height={12} />
+                {t('notifications.openMyWork')}<IconChevronRight width={12} height={12} />
               </button>
             </div>
           </div>
@@ -362,6 +363,7 @@ const ENTITY_ROUTE = {
 };
 
 function CommandPalette({ onClose }) {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [term, setTerm] = useState('');
   const [groups, setGroups] = useState([]);
@@ -406,15 +408,15 @@ function CommandPalette({ onClose }) {
     <div className="cmdk" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="cmdk-panel">
         <input className="cmdk-input" autoFocus value={term} onChange={(e) => setTerm(e.target.value)}
-          onKeyDown={onKeyDown} placeholder="Search policies, standards, procedures, controls, requirements, roles, evidence…" />
+          onKeyDown={onKeyDown} placeholder={t('search.full')} />
         <div className="cmdk-results">
-          {busy && <div className="loading-block" style={{ padding: 24 }}><span className="spinner" />Searching…</div>}
+          {busy && <div className="loading-block" style={{ padding: 24 }}><span className="spinner" />{t('common.searching')}</div>}
           {!busy && term.trim().length >= 2 && !flat.length && (
-            <div className="empty" style={{ padding: 28 }}><p>No matches for “{term}”.</p></div>
+            <div className="empty" style={{ padding: 28 }}><p>{t('common.nothingMatches', { term })}</p></div>
           )}
           {!busy && term.trim().length < 2 && (
             <div style={{ padding: '10px 12px' }} className="small muted">
-              Type at least two characters. Search covers documents, controls, framework requirements, roles, evidence, RACI activities and gap items.
+              {t('search.hint')}
             </div>
           )}
           {groups.map((group) => (

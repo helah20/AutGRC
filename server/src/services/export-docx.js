@@ -122,9 +122,11 @@ const FURNITURE = {
   }
 };
 
+// The national data classification levels (NDMO): عام، مقيّد، سري، سري للغاية.
+// "Internal" is the platform's own level between public and restricted.
 const CLASSIFICATION_AR = {
-  public: 'عام', internal: 'داخلي', confidential: 'سري',
-  secret: 'سري للغاية', top_secret: 'سري للغاية — أعلى تصنيف'
+  public: 'عام', internal: 'داخلي', confidential: 'مقيّد',
+  secret: 'سري', top_secret: 'سري للغاية'
 };
 
 const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: BORDER };

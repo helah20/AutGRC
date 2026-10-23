@@ -73,9 +73,9 @@ export default function Actions() {
         <div className="table-toolbar">
           <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder={t('actions.searchPlaceholder')} /></div>
           <Select value={status} onChange={setStatus} placeholder={t('common.status')}
-            options={STATUSES.map((v) => ({ value: v, label: titleCase(v) }))} />
+            options={STATUSES.map((v) => ({ value: v, label: labels.actionStatus(v, titleCase(v)) }))} />
           <Select value={priority} onChange={setPriority} placeholder={t('common.priority')}
-            options={PRIORITIES.map((v) => ({ value: v, label: titleCase(v) }))} />
+            options={PRIORITIES.map((v) => ({ value: v, label: labels.rating(v, titleCase(v)) }))} />
           <button className={`btn btn-sm ${mine ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setMine((v) => !v)}>
             {t('actions.mine')}{s?.mine ? ` (${formatNumber(s.mine)})` : ''}
           </button>
@@ -166,9 +166,9 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
     try {
       const res = await api.patch(`/actions/${action.id}`, patch);
       setDraft({ ...res.action });
-      toast.success('Action updated');
+      toast.success(t('actionsUi.updated'));
       onChanged();
-    } catch (err) { toast.error('Could not update', err.message); }
+    } catch (err) { toast.error(t('actionsUi.couldNotUpdate'), err.message); }
   }
 
   async function verify() {
@@ -177,7 +177,7 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
       setDraft({ ...res.action });
       toast.success(t('actions.verifiedToast'), t('actions.verifiedToastBody'));
       onChanged();
-    } catch (err) { toast.error('Could not verify', err.message); }
+    } catch (err) { toast.error(t('actionsUi.couldNotVerify'), err.message); }
   }
 
   const ownedByMe = current?.owner_id === user?.id;
@@ -218,7 +218,7 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
             <dt>{t('actions.raisedOn')}</dt><dd>{formatDate(current.created_at)} ({relativeTime(current.created_at)})</dd>
             <dt>{t('common.due')}</dt><dd>{formatDate(current.due_date)}</dd>
             {current.completed_at && <><dt>{t('actions.completedOn')}</dt><dd>{formatDate(current.completed_at)}</dd></>}
-            {current.verified && <><dt>{t('actions.verifiedOn')}</dt><dd>{current.verified_by_name} on {formatDate(current.verified_at)}</dd></>}
+            {current.verified && <><dt>{t('actions.verifiedOn')}</dt><dd>{t('actionsUi.verifiedByOn', { name: current.verified_by_name, date: formatDate(current.verified_at) })}</dd></>}
           </dl>
 
           {current.verified && (
@@ -243,11 +243,11 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
               <div className="grid grid-2">
                 <Field label={t('common.status')}>
                   <Select value={draft.status} onChange={(v) => setDraft((d) => ({ ...d, status: v }))}
-                    options={STATUSES.map((v) => ({ value: v, label: titleCase(v) }))} />
+                    options={STATUSES.map((v) => ({ value: v, label: labels.actionStatus(v, titleCase(v)) }))} />
                 </Field>
                 <Field label={t('common.priority')}>
                   <Select value={draft.priority} onChange={(v) => setDraft((d) => ({ ...d, priority: v }))}
-                    options={PRIORITIES.map((v) => ({ value: v, label: titleCase(v) }))} />
+                    options={PRIORITIES.map((v) => ({ value: v, label: labels.rating(v, titleCase(v)) }))} />
                 </Field>
               </div>
               <div className="grid grid-2">
@@ -288,6 +288,7 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
 /* --------------------------------------------------------------- raise --- */
 
 function RaiseAction({ open, onClose, onCreated, toast, directory }) {
+  const labels = useLabels();
   const { t, formatNumber } = useI18n();
   const blank = {
     title: '', description: '', source_type: 'manual', source_id: '',
@@ -310,7 +311,7 @@ function RaiseAction({ open, onClose, onCreated, toast, directory }) {
       setForm(blank);
       onClose();
       onCreated();
-    } catch (err) { toast.error('Could not raise it', err.message); }
+    } catch (err) { toast.error(t('actionsUi.couldNotRaise'), err.message); }
   }
 
   return (
@@ -325,7 +326,7 @@ function RaiseAction({ open, onClose, onCreated, toast, directory }) {
       }>
       <Field label={t('actions.whatNeedsDoing')} required>
         <input className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-          placeholder="Reconcile the privileged account inventory to the HR leaver feed" />
+          placeholder={t('actionsUi.titlePlaceholder')} />
       </Field>
       <Field label={t('actions.detail')}>
         <textarea className="textarea" value={form.description}
@@ -357,7 +358,7 @@ function RaiseAction({ open, onClose, onCreated, toast, directory }) {
         </Field>
         <Field label={t('common.priority')}>
           <Select value={form.priority} onChange={(v) => setForm((f) => ({ ...f, priority: v }))}
-            options={PRIORITIES.map((v) => ({ value: v, label: titleCase(v) }))} />
+            options={PRIORITIES.map((v) => ({ value: v, label: labels.rating(v, titleCase(v)) }))} />
         </Field>
         <Field label={t('actions.dueDate')} required>
           <input className="input" type="date" value={form.due_date}

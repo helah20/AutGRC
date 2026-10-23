@@ -91,10 +91,11 @@ export function Scorecard({ scorecard, compact = false }) {
         // scoring nothing, and a silent zero is the failure this view exists
         // to prevent.
         <div className="callout" data-callout="warning">
-          <strong>Unclassified findings</strong>
+          <strong>{t('appUi.unclassifiedFindings')}</strong>
           <p style={{ marginBottom: 0 }}>
-            {scorecard.unmapped.map((u) => `${u.category} (${u.findings})`).join(', ')} —
-            these findings are not counted in any criterion above.
+            {t('appUi.unclassifiedBody', {
+              list: scorecard.unmapped.map((u) => `${u.category} (${u.findings})`).join(', ')
+            })}
           </p>
         </div>
       )}
