@@ -128,14 +128,14 @@ function ControlDetail({ data }) {
 
       <section>
         <h4>Attributes</h4>
-        <div className="definition">
+        <dl className="definition">
           <dt>Responsible</dt><dd>{c.responsible_role || '—'}</dd>
           <dt>Accountable</dt><dd>{c.accountable_role || '—'}</dd>
           <dt>Frequency</dt><dd>{c.frequency || '—'}</dd>
           <dt>Indicator</dt><dd>{c.kpi || '—'}</dd>
           <dt>Testing method</dt><dd>{c.testing_method || '—'}</dd>
           <dt>Status</dt><dd><Badge tone={c.status === 'implemented' ? 'ok' : c.status === 'approved' ? 'info' : 'neutral'}>{labels.status(c.status)}</Badge></dd>
-        </div>
+        </dl>
       </section>
 
       <section>
@@ -195,11 +195,11 @@ function ControlDetail({ data }) {
               </Link>
             ))}
           </div>
-          <div className="definition" style={{ marginTop: 10 }}>
+          <dl className="definition" style={{ marginTop: 10 }}>
             {c.policy_ref && <><dt>Policy clause</dt><dd className="mono small">{c.policy_ref}</dd></>}
             {c.standard_ref && <><dt>Standard clause</dt><dd className="mono small">{c.standard_ref}</dd></>}
             {c.procedure_ref && <><dt>Procedure</dt><dd className="mono small">{c.procedure_ref}</dd></>}
-          </div>
+          </dl>
         </section>
       )}
     </div>

@@ -90,7 +90,7 @@ export default function Risks() {
                   );
                 })}
                 <div className="divider" />
-                <div className="definition">
+                <dl className="definition">
                   <dt>{t('risks.residualAssessed')}</dt><dd>{formatNumber(summary.residualAssessed)} {t('common.of')} {formatNumber(summary.total)}</dd>
                   <dt>{t('risks.formallyAccepted')}</dt><dd>{formatNumber(summary.accepted)}</dd>
                   {summary.acceptancesExpired > 0 && (
@@ -99,7 +99,7 @@ export default function Risks() {
                       <dd><Badge tone="danger">{summary.acceptancesExpired}</Badge></dd>
                     </>
                   )}
-                </div>
+                </dl>
               </div>
             </Card>
           </div>
@@ -179,7 +179,7 @@ function RiskMatrix({ cells, onPick }) {
   const labels = useLabels();
   const { t, formatNumber } = useI18n();
   return (
-    <div className="risk-matrix" role="table" aria-label={t('risks.matrix')}>
+    <div className="risk-matrix" role="group" aria-label={t('risks.matrix')}>
       <div className="risk-matrix-grid">
         {cells.map((cell) => (
           <button key={`${cell.likelihood}-${cell.impact}`} type="button"

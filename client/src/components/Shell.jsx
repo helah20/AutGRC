@@ -150,7 +150,7 @@ export default function Shell({ children }) {
 
         <div className="sidebar-footer">
           <div className="truncate" title={org?.org_name}>{org?.org_name || 'Organisation'}</div>
-          <div style={{ opacity: .75 }}>{t('app.version')}</div>
+          <div>{t('app.version')}</div>
         </div>
       </nav>
 
@@ -163,7 +163,9 @@ export default function Shell({ children }) {
           <button className="topbar-search" onClick={() => setPaletteOpen(true)} type="button"
             style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer' }} aria-label={t('search.openSearch')}>
             <IconSearch width={14} height={14} />
-            <input readOnly value="" placeholder={t('search.placeholder')} style={{ cursor: 'pointer' }} />
+            {/* A span, not an input: an input inside a button is two controls in one, and
+                screen readers announce neither correctly. The button opens the palette. */}
+            <span className="topbar-search-field">{t('search.placeholder')}</span>
             <kbd>⌘K</kbd>
           </button>
 
@@ -174,7 +176,7 @@ export default function Shell({ children }) {
               aria-label={theme === 'dark' ? t('common.lightTheme') : t('common.darkTheme')} title={t('common.toggleTheme')}>
               {theme === 'dark' ? <IconSun /> : <IconMoon />}
             </button>
-            <div className="row-tight" style={{ paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
+            <div className="row-tight" style={{ paddingInlineStart: 6, borderInlineStart: '1px solid var(--border)' }}>
               <span className="avatar" title={user?.email}>{initials(user?.name)}</span>
               <div style={{ lineHeight: 1.25 }} className="hide-sm">
                 <div className="small strong truncate" style={{ maxWidth: 150 }}>{user?.name}</div>
@@ -424,7 +426,7 @@ function CommandPalette({ onClose }) {
                 return (
                   <button key={`${group.type}-${item.id}`} type="button"
                     className={`cmdk-item ${active ? 'active' : ''}`}
-                    style={{ width: '100%', border: 'none', background: active ? 'var(--bg-active)' : 'none', font: 'inherit', textAlign: 'left' }}
+                    style={{ width: '100%', border: 'none', background: active ? 'var(--bg-active)' : 'none', font: 'inherit', textAlign: 'start' }}
                     onClick={() => go({ ...item, type: group.type })}>
                     <span className="cmdk-item-title">{item.title}</span>
                     {item.badge && <span className="pill">{item.badge}</span>}

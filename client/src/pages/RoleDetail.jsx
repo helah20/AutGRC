@@ -86,14 +86,14 @@ export default function RoleDetail() {
 
       <div className="grid grid-2" style={{ marginBottom: 14 }}>
         <Card title="Reporting line and authority">
-          <div className="definition">
+          <dl className="definition">
             <dt>Reports to</dt><dd>{role.reporting_line || <span className="muted">Not defined</span>}</dd>
             <dt>Authority</dt><dd>{role.authority || <span className="muted">Not defined</span>}</dd>
-          </div>
+          </dl>
         </Card>
         <Card title="Required competencies">
           {role.competencies?.length ? (
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
+            <ul style={{ margin: 0, paddingInlineStart: 20 }}>
               {role.competencies.map((c, i) => <li key={i} style={{ marginBottom: 4 }}>{c}</li>)}
             </ul>
           ) : <Empty title="No competencies recorded" />}
@@ -133,7 +133,7 @@ export default function RoleDetail() {
                 )}
 
                 {role.items[kind.key]?.length ? (
-                  <ol style={{ margin: 0, paddingLeft: 20 }}>
+                  <ol style={{ margin: 0, paddingInlineStart: 20 }}>
                     {role.items[kind.key].map((item) => (
                       <li key={item.id} style={{ marginBottom: 8 }}>
                         {editing === item.id ? (

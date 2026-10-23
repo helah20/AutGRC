@@ -405,7 +405,7 @@ function UserSettings() {
           editing && (
             <>
               {editing.locked_until && new Date(editing.locked_until) > new Date() && (
-                <button className="btn" style={{ marginRight: 'auto' }} onClick={async () => {
+                <button className="btn" style={{ marginInlineEnd: 'auto' }} onClick={async () => {
                   await api.post(`/admin/users/${editing.id}/unlock`);
                   toast.success('Account unlocked');
                   setEditing(null);
@@ -564,7 +564,7 @@ function MfaPanel() {
 
       {data.enabled && (
         <div className="stack">
-          <div className="definition">
+          <dl className="definition">
             <dt>Enrolled</dt><dd>{formatDate(data.enrolledAt, { withTime: true })}</dd>
             <dt>Recovery codes left</dt>
             <dd>
@@ -573,7 +573,7 @@ function MfaPanel() {
               </Badge>
             </dd>
             <dt>Mandatory for your role</dt><dd>{data.required ? 'Yes' : 'No'}</dd>
-          </div>
+          </dl>
 
           {newCodes && (
             <div>
@@ -634,13 +634,13 @@ function AccountSettings({ user }) {
   return (
     <div className="stack">
       <Card title="Your account">
-        <div className="definition">
+        <dl className="definition">
           <dt>Name</dt><dd>{user.name}</dd>
           <dt>Email</dt><dd>{user.email}</dd>
           <dt>Role</dt><dd><Badge tone="info">{user.roleLabel}</Badge></dd>
           <dt>Job title</dt><dd>{user.jobTitle || '—'}</dd>
           <dt>Last sign-in</dt><dd>{user.lastLoginAt ? formatDate(user.lastLoginAt, { withTime: true }) : '—'}</dd>
-        </div>
+        </dl>
       </Card>
 
       <MfaPanel />
@@ -772,7 +772,7 @@ function SystemStatus() {
       </Card>
 
       <Card title="Knowledge base">
-        <div className="definition">
+        <dl className="definition">
           <dt>Domains</dt><dd>{data.knowledgeBase.domains}</dd>
           <dt>Frameworks</dt><dd>{data.knowledgeBase.frameworks}</dd>
           <dt>Framework requirements</dt><dd>{data.knowledgeBase.frameworkRequirements}</dd>
@@ -783,11 +783,11 @@ function SystemStatus() {
               ? <Badge tone="ok"><IconCheck width={11} height={11} />No problems</Badge>
               : <Badge tone="danger"><IconAlert width={11} height={11} />{data.knowledgeBase.integrityProblems.length} problems</Badge>}
           </dd>
-        </div>
+        </dl>
         {data.knowledgeBase.integrityProblems.length > 0 && (
           <div className="callout" data-callout="danger" style={{ marginTop: 12 }}>
             <strong>Integrity problems</strong>
-            <ul style={{ marginBottom: 0, paddingLeft: 18 }}>
+            <ul style={{ marginBottom: 0, paddingInlineStart: 18 }}>
               {data.knowledgeBase.integrityProblems.slice(0, 10).map((p, i) => <li key={i} className="small">{p}</li>)}
             </ul>
           </div>

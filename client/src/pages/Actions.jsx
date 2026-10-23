@@ -211,15 +211,15 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
 
           {current.description && <p className="small">{current.description}</p>}
           {current.root_cause && (!canWrite || current.verified) && (
-            <div className="definition"><dt>{t('actions.rootCause')}</dt><dd>{current.root_cause}</dd></div>
+            <dl className="definition"><dt>{t('actions.rootCause')}</dt><dd>{current.root_cause}</dd></dl>
           )}
 
-          <div className="definition">
+          <dl className="definition">
             <dt>{t('actions.raisedOn')}</dt><dd>{formatDate(current.created_at)} ({relativeTime(current.created_at)})</dd>
             <dt>{t('common.due')}</dt><dd>{formatDate(current.due_date)}</dd>
             {current.completed_at && <><dt>{t('actions.completedOn')}</dt><dd>{formatDate(current.completed_at)}</dd></>}
             {current.verified && <><dt>{t('actions.verifiedOn')}</dt><dd>{current.verified_by_name} on {formatDate(current.verified_at)}</dd></>}
-          </div>
+          </dl>
 
           {current.verified && (
             <div className="callout" data-callout="ok">

@@ -87,12 +87,12 @@ export default function FindingCard({ finding, onStatusChange, canManage }) {
       {finding.recommendation && <div className="finding-rec"><strong>Recommendation. </strong>{finding.recommendation}</div>}
 
       {canManage && onStatusChange && finding.id && (
-        <div className="row-tight" style={{ marginTop: 9 }}>
+        <div className="row-tight" style={{ marginTop: 9, flexWrap: 'wrap' }}>
           <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'acknowledged')}>Acknowledge</button>
           <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'resolved')}><IconCheck width={12} height={12} />Resolved</button>
           <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'accepted_risk')}><IconAlert width={12} height={12} />Accept risk</button>
           <button className="btn btn-ghost btn-sm" onClick={() => onStatusChange(finding, 'false_positive')}><IconX width={12} height={12} />False positive</button>
-          {finding.created_at && <span className="tiny faint" style={{ marginLeft: 'auto' }}>Raised {relativeTime(finding.created_at)}</span>}
+          {finding.created_at && <span className="tiny faint" style={{ marginInlineStart: 'auto' }}>Raised {relativeTime(finding.created_at)}</span>}
         </div>
       )}
     </article>

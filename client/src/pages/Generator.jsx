@@ -191,7 +191,7 @@ export default function Generator() {
             {domains.map((d) => (
               <button key={d.key} type="button"
                 className={`option-card ${domainKey === d.key ? 'selected' : ''}`}
-                style={{ textAlign: 'left', font: 'inherit' }}
+                style={{ textAlign: 'start', font: 'inherit' }}
                 onClick={() => setDomainKey(d.key)}>
                 <span className="option-card-body">
                   <span className="option-card-title">
@@ -215,7 +215,7 @@ export default function Generator() {
       {step === 2 && domainDetail && (
         <div className="stack">
           <Card title="Organisation context" subtitle="Used to tailor the generated content. Maintained under Settings.">
-            <div className="definition">
+            <dl className="definition">
               <dt>Organisation</dt><dd>{options.org.org_name || 'Not set'}</dd>
               <dt>Type</dt><dd>{options.org.org_type || <span className="muted">Not set — an assumption will be recorded</span>}</dd>
               <dt>Industry</dt><dd>{options.org.industry || <span className="muted">Not set — an assumption will be recorded</span>}</dd>
@@ -224,7 +224,7 @@ export default function Generator() {
               <dt>Risk appetite</dt><dd>{options.org.risk_appetite || <span className="muted">Not set</span>}</dd>
               <dt>Regulators</dt><dd>{options.org.regulators?.join(', ') || <span className="muted">Not set</span>}</dd>
               <dt>Technology</dt><dd>{options.org.technology_env?.join(', ') || <span className="muted">Not set</span>}</dd>
-            </div>
+            </dl>
           </Card>
 
           <Card title={t('generator.languageTitle')} subtitle={t('generator.languageSubtitle')}>

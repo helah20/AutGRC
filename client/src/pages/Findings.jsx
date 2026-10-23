@@ -43,7 +43,7 @@ export default function Findings() {
 
       <Card flush>
         <div className="table-toolbar">
-          <Select value={status} onChange={setStatus}
+          <Select value={status} onChange={setStatus} aria-label={t('common.status')}
             options={[
               { value: 'open,acknowledged', label: 'Open and acknowledged' },
               { value: 'open', label: 'Open only' },

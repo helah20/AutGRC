@@ -405,11 +405,11 @@ export default function DocumentDetail() {
 
             {doc.generation_meta && (
               <Card title="Generation record" subtitle="What this document was generated from.">
-                <div className="definition">
+                <dl className="definition">
                   <dt>Engine</dt><dd>{doc.generation_meta.provider === 'anthropic' ? 'Claude' : doc.generation_meta.provider === 'import' ? 'Imported document' : 'Built-in knowledge engine'}</dd>
                   <dt>Generated</dt><dd>{formatDate(doc.generation_meta.generatedAt || doc.created_at, { withTime: true })}</dd>
                   <dt>{t('documentDetail.sources')}</dt><dd>{doc.generation_meta.frameworks?.length ? doc.generation_meta.frameworks.join(', ') : <span className="muted">{t('documentDetail.noneSelected')}</span>}</dd>
-                </div>
+                </dl>
                 {doc.generation_meta.assumptions?.length > 0 && (
                   <>
                     <div className="divider" />
@@ -429,7 +429,7 @@ export default function DocumentDetail() {
                   <>
                     <div className="divider" />
                     <h4 style={{ marginBottom: 8 }}>{t('documentDetail.agreedValues')}</h4>
-                    <div className="definition">
+                    <dl className="definition">
                       {Object.entries(doc.generation_meta.parameters)
                         .filter(([k]) => k !== 'orgName')
                         .map(([k, v]) => (
@@ -437,7 +437,7 @@ export default function DocumentDetail() {
                             <dt>{titleCase(k.replace(/([A-Z])/g, ' $1'))}</dt><dd>{String(v)}</dd>
                           </div>
                         ))}
-                    </div>
+                    </dl>
                   </>
                 )}
               </Card>
@@ -595,7 +595,7 @@ export default function DocumentDetail() {
                         background: d.type === 'added' ? 'var(--ok-soft)' : 'var(--danger-soft)',
                         color: d.type === 'added' ? 'var(--ok)' : 'var(--danger)'
                       }}>
-                        <span style={{ fontWeight: 700, marginRight: 6 }}>{d.type === 'added' ? '+' : '−'}</span>{d.text}
+                        <span style={{ fontWeight: 700, marginInlineEnd: 6 }}>{d.type === 'added' ? '+' : '−'}</span>{d.text}
                       </div>
                     ))}
                   </div>
@@ -628,7 +628,7 @@ function PropertiesModal({ open, onClose, doc, directory, onSaved, onDelete, can
       footer={
         <>
           {canDelete && doc.status !== 'published' && (
-            <button className="btn btn-ghost" style={{ marginRight: 'auto', color: 'var(--danger)' }} onClick={onDelete}>
+            <button className="btn btn-ghost" style={{ marginInlineEnd: 'auto', color: 'var(--danger)' }} onClick={onDelete}>
               <IconTrash width={13} height={13} />Delete document
             </button>
           )}

@@ -125,11 +125,11 @@ export default function Evidence() {
               <Badge tone={EVIDENCE_TONE[selected.status] || 'neutral'}>{labels.evidenceStatus(selected.status)}</Badge>
             </div>
             <p className="muted small">{selected.description}</p>
-            <div className="definition">
+            <dl className="definition">
               <dt>{t('evidence.control')}</dt><dd>{selected.control_ref ? `${selected.control_ref} — ${selected.control_name}` : '—'}</dd>
               <dt>{t('evidence.columnFrequency')}</dt><dd>{selected.frequency || '—'}</dd>
               <dt>{t('evidence.retention')}</dt><dd>{selected.retention || '—'}</dd>
-            </div>
+            </dl>
 
             <Attachments evidenceId={selected.id} onRegisterChange={reload} />
 

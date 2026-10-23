@@ -60,7 +60,7 @@ export default function Reports() {
               <span className="strong">{report?.name || ''}</span>
               {report?.description && <div className="tiny muted">{report.description}</div>}
             </div>
-            <div className="row-tight" style={{ marginLeft: 'auto' }}>
+            <div className="row-tight" style={{ marginInlineStart: 'auto' }}>
               <button className="btn btn-sm" onClick={() => download(active, 'xlsx')}><IconDownload width={13} height={13} />Excel</button>
               <button className="btn btn-sm" onClick={() => download(active, 'pdf')}>PDF</button>
               {report && <span className="table-count">{report.rows.length} rows</span>}

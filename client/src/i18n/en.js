@@ -73,6 +73,7 @@ export default {
     status: 'Status',
     owner: 'Owner',
     domain: 'Domain',
+    framework: 'Framework',
     type: 'Type',
     priority: 'Priority',
     due: 'Due',

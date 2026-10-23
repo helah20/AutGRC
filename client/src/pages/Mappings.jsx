@@ -64,7 +64,7 @@ export default function Mappings() {
         </Card>
 
         <Card title="Coverage by domain" subtitle="How much of each domain's catalogued requirement set has a mapped control." flush>
-          <div className="table-wrap" style={{ maxHeight: 300, overflowY: 'auto' }}>
+          <div className="table-wrap" tabIndex={0} style={{ maxHeight: 300, overflowY: 'auto' }}>
             <table className="data">
               <thead><tr><th>Domain</th><th className="num">Requirements</th><th className="num">Mapped</th><th style={{ width: 150 }}>Coverage</th></tr></thead>
               <tbody>
@@ -107,7 +107,7 @@ export default function Mappings() {
             options={data.domains.filter((d) => d.requirements > 0).map((d) => ({ value: d.key, label: d.name }))} />
         }>
         {crosswalks?.items?.length ? (
-          <div className="table-wrap" style={{ maxHeight: 520, overflowY: 'auto' }}>
+          <div className="table-wrap" tabIndex={0} style={{ maxHeight: 520, overflowY: 'auto' }}>
             <table className="data">
               <thead>
                 <tr><th>Domain</th><th>Source requirement</th><th style={{ width: 40 }} /><th>Equivalent requirement</th><th>Relation</th></tr>

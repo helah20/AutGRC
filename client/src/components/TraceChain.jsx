@@ -126,7 +126,7 @@ export default function TraceChain({ trace }) {
                   <span className="trace-kind">Evidence</span>
                   <div className="trace-body">
                     <div className="trace-title">{link.evidence.length} evidence requirement{link.evidence.length === 1 ? '' : 's'}</div>
-                    <ul style={{ margin: '6px 0 0', paddingLeft: 18, fontSize: 12.5 }}>
+                    <ul style={{ margin: '6px 0 0', paddingInlineStart: 18, fontSize: 12.5 }}>
                       {link.evidence.map((e) => (
                         <li key={e.id} style={{ marginBottom: 3 }}>
                           <span className="mono tiny">{e.evidence_id}</span> {e.name}

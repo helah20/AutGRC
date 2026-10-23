@@ -168,10 +168,10 @@ export default function GapAssessmentDetail() {
               <textarea className="textarea" value={selected.evidence_ref || ''} onChange={(e) => setSelected((s) => ({ ...s, evidence_ref: e.target.value }))} />
             </Field>
             {selected.document_ref && (
-              <div className="definition">
+              <dl className="definition">
                 <dt>Related document</dt>
                 <dd><Link to={`/documents/${selected.document_id}`}>{selected.document_ref} — {selected.document_title}</Link></dd>
-              </div>
+              </dl>
             )}
           </div>
         )}

@@ -80,6 +80,7 @@ export default {
     status: 'الحالة',
     owner: 'المالك',
     domain: 'المجال',
+    framework: 'الإطار',
     type: 'النوع',
     priority: 'الأولوية',
     due: 'الاستحقاق',

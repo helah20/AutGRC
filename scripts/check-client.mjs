@@ -109,6 +109,21 @@ for (const file of files) {
   }
 }
 
+// Physical left/right styling. The interface is mirrored for Arabic, and a
+// margin-left or text-align: left stays on the left when everything else moves
+// to the right. Logical properties (marginInlineStart, textAlign: 'start')
+// follow the reading direction. Chart margins are SVG geometry and exempt.
+const PHYSICAL = /\b(?:margin|padding|border)(?:Left|Right)\b|textAlign:\s*'(?:left|right)'/g;
+for (const file of files) {
+  const rel = path.relative(ROOT, file);
+  if (!rel.endsWith('.jsx')) continue;
+  readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(PHYSICAL)) {
+      problems.push(`${rel}:${i + 1}: ${m[0]} does not mirror in Arabic; use the logical property`);
+    }
+  });
+}
+
 if (!problems.length) {
   console.log(`Client checks: ${files.length} file(s), ${enKeys.size} translation key(s), no problems.`);
   process.exit(0);

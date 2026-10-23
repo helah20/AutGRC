@@ -80,7 +80,7 @@ export default function Hierarchy() {
           <p className="page-sub">{t('hierarchy.subtitle')}</p>
         </div>
         <div className="page-actions">
-          <Select value={domain} onChange={setDomain} options={domains} />
+          <Select value={domain} onChange={setDomain} options={domains} aria-label={t('common.domain')} />
           {can('ai:use') && (
             <button className="btn btn-primary" onClick={runReview} disabled={busy}>
               {busy ? <span className="spinner" style={{ width: 13, height: 13 }} /> : <IconSparkles />}

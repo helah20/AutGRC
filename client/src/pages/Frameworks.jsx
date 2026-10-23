@@ -100,7 +100,7 @@ export default function Frameworks() {
         <div className="grid grid-3" style={{ marginTop: 14 }}>
           {data.items.map((f) => (
             <button key={f.id} type="button" className="card" onClick={() => setActive(f.code)}
-              style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit', padding: 0, border: '1px solid var(--border)' }}>
+              style={{ textAlign: 'start', cursor: 'pointer', font: 'inherit', padding: 0, border: '1px solid var(--border)' }}>
               <div className="card-body">
                 <div className="row-tight" style={{ marginBottom: 6, flexWrap: 'wrap' }}>
                   <span className="ref-tag">{f.code}</span>
@@ -178,7 +178,7 @@ export default function Frameworks() {
                 {
                   key: 'title', header: 'Requirement',
                   render: (r) => (
-                    <div style={{ paddingLeft: (r.level - 1) * 14 }}>
+                    <div style={{ paddingInlineStart: (r.level - 1) * 14 }}>
                       <div className={`${r.level <= 2 ? 'cell-title' : ''} ltr-content`}>{r.title}</div>
                       {r.domain_label && <div className="cell-sub">{labels.domain(r.domain_key, r.domain_label)}</div>}
                     </div>

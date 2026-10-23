@@ -1,6 +1,6 @@
 /** Shared UI primitives used across every page. */
 
-import { useEffect, useRef, useState, createContext, useContext, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, createContext, useContext, useCallback, useMemo, useId, Children, isValidElement, cloneElement } from 'react';
 import { createPortal } from 'react-dom';
 import {
   IconX, IconCheck, IconAlert, IconInfo, IconChevronDown, IconSearch, IconChevronRight
@@ -92,7 +92,7 @@ export function Kpi({ label, value, meta, tone, progress, to, onClick }) {
   const Tag = to ? 'a' : onClick ? 'button' : 'div';
   const props = to ? { href: to } : onClick ? { onClick, type: 'button' } : {};
   return (
-    <Tag className="kpi" style={Tag === 'button' ? { textAlign: 'left', font: 'inherit', cursor: 'pointer' } : undefined} {...props}>
+    <Tag className="kpi" style={Tag === 'button' ? { textAlign: 'start', font: 'inherit', cursor: 'pointer' } : undefined} {...props}>
       {tone && <span className={`kpi-accent ${tone}`} />}
       <span className="kpi-label">{label}</span>
       <span className="kpi-value">{value}</span>
@@ -273,15 +273,24 @@ export function Tabs({ tabs, active, onChange }) {
 
 /* ----------------------------------------------------------------- forms -- */
 
+/** Controls a Field can name with its label: native ones, and the Select wrapper. */
+const LABELLABLE = new Set(['input', 'select', 'textarea']);
+
 export function Field({ label, hint, error, children, required }) {
+  // A visible label that is not tied to its control is read by nobody using a
+  // screen reader. Tie it when the Field holds one control and it has no id.
+  const generated = useId();
+  const only = Children.count(children) === 1 && isValidElement(children) ? children : null;
+  const tie = only && !only.props.id && (LABELLABLE.has(only.type) || only.type === Select);
+  const controlId = tie ? generated : only?.props.id;
   return (
     <div className="field">
       {label && (
-        <label className="label">
+        <label className="label" htmlFor={controlId}>
           {label}{required && <span style={{ color: 'var(--danger)' }}> *</span>}
         </label>
       )}
-      {children}
+      {tie ? cloneElement(only, { id: generated }) : children}
       {hint && !error && <span className="hint">{hint}</span>}
       {error && <span className="error-text">{error}</span>}
     </div>
@@ -289,8 +298,11 @@ export function Field({ label, hint, error, children, required }) {
 }
 
 export function Select({ value, onChange, options, placeholder, ...rest }) {
+  // A filter select has no visible label; its placeholder names it. Inside a
+  // Field, the Field's label names it instead.
   return (
-    <select className="select" value={value ?? ''} onChange={(e) => onChange(e.target.value)} {...rest}>
+    <select className="select" value={value ?? ''} onChange={(e) => onChange(e.target.value)}
+      aria-label={rest.id ? undefined : placeholder} {...rest}>
       {placeholder && <option value="">{placeholder}</option>}
       {options.map((o) => (
         <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? titleCase(o.value ?? o)}</option>
@@ -303,10 +315,10 @@ export function SearchInput({ value, onChange, placeholder = 'Search…', classN
   return (
     <div className={`topbar-search ${className}`} style={{ maxWidth: 'none' }}>
       <IconSearch width={14} height={14} />
-      <input className="input" style={{ paddingLeft: 30, paddingRight: 28 }} value={value}
-        onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      <input className="input" style={{ paddingInlineStart: 30, paddingInlineEnd: 28 }} value={value}
+        onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder} />
       {value && (
-        <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', right: 2 }}
+        <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', insetInlineEnd: 2 }}
           onClick={() => onChange('')} aria-label="Clear search"><IconX width={13} height={13} /></button>
       )}
     </div>
@@ -320,7 +332,7 @@ export function Collapsible({ title, subtitle, defaultOpen = false, children, ba
   return (
     <div className="card">
       <button type="button" className="card-head" onClick={() => setOpen((o) => !o)}
-        style={{ width: '100%', background: 'none', border: 'none', borderBottom: open ? '1px solid var(--border)' : 'none', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}>
+        style={{ width: '100%', background: 'none', border: 'none', borderBottom: open ? '1px solid var(--border)' : 'none', cursor: 'pointer', font: 'inherit', textAlign: 'start' }}>
         <IconChevronRight style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .15s', flex: '0 0 auto', color: 'var(--text-muted)' }} />
         <h3 style={{ flex: 1 }}>{title}</h3>
         {badge}
@@ -338,7 +350,8 @@ export function DataTable({ columns, rows, onRowClick, empty, keyOf, rowClass })
     return <div className="card-body">{empty || <Empty title="Nothing to show" />}</div>;
   }
   return (
-    <div className="table-wrap">
+    // Focusable so a keyboard user can scroll a table wider than the screen.
+    <div className="table-wrap" tabIndex={0}>
       <table className="data">
         <thead>
           <tr>{columns.map((c) => <th key={c.key} className={c.align === 'right' ? 'num' : ''} style={c.width ? { width: c.width } : undefined}>{c.header}</th>)}</tr>

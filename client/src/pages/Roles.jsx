@@ -88,7 +88,7 @@ export default function Roles() {
         <div className="grid grid-2">
           {missing.map((r) => (
             <button key={r.code} type="button" className="option-card" disabled={busy === r.code}
-              style={{ textAlign: 'left', font: 'inherit' }} onClick={() => addFromLibrary(r.code)}>
+              style={{ textAlign: 'start', font: 'inherit' }} onClick={() => addFromLibrary(r.code)}>
               <span className="option-card-body">
                 <span className="option-card-title">{r.name}{busy === r.code && <span className="spinner" style={{ width: 12, height: 12 }} />}</span>
                 <span className="option-card-desc">{r.category}</span>
