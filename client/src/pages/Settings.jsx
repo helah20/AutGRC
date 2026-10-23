@@ -22,13 +22,13 @@ import { useT } from '../i18n/index.jsx';
  * the user directory.
  */
 const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Administrator' },
-  { value: 'grc_manager', label: 'GRC Manager' },
-  { value: 'cyber_user', label: 'Cybersecurity User' },
-  { value: 'reviewer', label: 'Reviewer' },
-  { value: 'approver', label: 'Approver' },
-  { value: 'auditor', label: 'Auditor' },
-  { value: 'read_only', label: 'Read Only' }
+  { value: 'admin' },
+  { value: 'grc_manager' },
+  { value: 'cyber_user' },
+  { value: 'reviewer' },
+  { value: 'approver' },
+  { value: 'auditor' },
+  { value: 'read_only' }
 ];
 
 export default function Settings() {
@@ -38,11 +38,11 @@ export default function Settings() {
   const [tab, setTab] = useState('organisation');
 
   const tabs = [
-    { key: 'organisation', label: 'Organisation', icon: <IconBuilding width={14} height={14} /> },
-    ...(can('user:manage') ? [{ key: 'users', label: 'Users & access', icon: <IconUsers width={14} height={14} /> }] : []),
-    { key: 'account', label: 'My account', icon: <IconLock width={14} height={14} /> },
-    ...(can('audit:read') ? [{ key: 'audit', label: 'Audit log', icon: <IconHistory width={14} height={14} /> }] : []),
-    { key: 'system', label: 'System', icon: <IconShield width={14} height={14} /> }
+    { key: 'organisation', label: t('settingsUi.tabs.organisation'), icon: <IconBuilding width={14} height={14} /> },
+    ...(can('user:manage') ? [{ key: 'users', label: t('settingsUi.tabs.users'), icon: <IconUsers width={14} height={14} /> }] : []),
+    { key: 'account', label: t('settingsUi.tabs.account'), icon: <IconLock width={14} height={14} /> },
+    ...(can('audit:read') ? [{ key: 'audit', label: t('settingsUi.tabs.audit'), icon: <IconHistory width={14} height={14} /> }] : []),
+    { key: 'system', label: t('settingsUi.tabs.system'), icon: <IconShield width={14} height={14} /> }
   ];
 
   return (
@@ -71,6 +71,8 @@ export default function Settings() {
 /* ------------------------------------------------------------ organisation */
 
 function OrgSettings({ canEdit }) {
+  const t = useT();
+  const labels = useLabels();
   const toast = useToast();
   const { refreshOrg } = useAuth();
   const { data, loading, error, reload } = useFetch('/admin/org');
@@ -87,80 +89,79 @@ function OrgSettings({ canEdit }) {
   return (
     <div className="stack">
       <div className="callout">
-        <strong>Why this matters</strong>
+        <strong>{t('settingsUi.org.whyTitle')}</strong>
         <p style={{ marginBottom: 0 }}>
-          The generator uses this profile to tailor documents. Where a field is empty it records an
-          explicit assumption on every generated package rather than presenting a guess as fact.
+          {t('settingsUi.org.whyBody')}
         </p>
       </div>
 
       <div className="field-row">
-        <Field label="Organisation name" required>
+        <Field label={t('settingsUi.org.name')} required>
           <input className="input" disabled={!canEdit} value={form.org_name || ''}
             onChange={(e) => setForm((f) => ({ ...f, org_name: e.target.value }))} />
         </Field>
-        <Field label="Organisation type">
-          <input className="input" disabled={!canEdit} value={form.org_type || ''} placeholder="e.g. Public joint-stock company"
+        <Field label={t('settingsUi.org.type')}>
+          <input className="input" disabled={!canEdit} value={form.org_type || ''} placeholder={t('settingsUi.org.typePlaceholder')}
             onChange={(e) => setForm((f) => ({ ...f, org_type: e.target.value }))} />
         </Field>
-        <Field label="Industry">
-          <input className="input" disabled={!canEdit} value={form.industry || ''} placeholder="e.g. Banking and financial services"
+        <Field label={t('settingsUi.org.industry')}>
+          <input className="input" disabled={!canEdit} value={form.industry || ''} placeholder={t('settingsUi.org.industryPlaceholder')}
             onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))} />
         </Field>
       </div>
 
       <div className="field-row">
-        <Field label="Size">
-          <input className="input" disabled={!canEdit} value={form.size || ''} placeholder="e.g. 2,500–10,000 employees"
+        <Field label={t('settingsUi.org.size')}>
+          <input className="input" disabled={!canEdit} value={form.size || ''} placeholder={t('settingsUi.org.sizePlaceholder')}
             onChange={(e) => setForm((f) => ({ ...f, size: e.target.value }))} />
         </Field>
-        <Field label="Country">
+        <Field label={t('settingsUi.org.country')}>
           <input className="input" disabled={!canEdit} value={form.country || ''}
             onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))} />
         </Field>
-        <Field label="Risk appetite">
-          <input className="input" disabled={!canEdit} value={form.risk_appetite || ''} placeholder="e.g. Moderate — low appetite for regulatory risk"
+        <Field label={t('settingsUi.org.riskAppetite')}>
+          <input className="input" disabled={!canEdit} value={form.risk_appetite || ''} placeholder={t('settingsUi.org.riskAppetitePlaceholder')}
             onChange={(e) => setForm((f) => ({ ...f, risk_appetite: e.target.value }))} />
         </Field>
       </div>
 
-      <Field label="Cybersecurity operating model" hint="Affects how the generator assigns responsibility across roles.">
+      <Field label={t('settingsUi.org.operatingModel')} hint={t('settingsUi.org.operatingModelHint')}>
         <input className="input" disabled={!canEdit} value={form.operating_model || ''}
-          placeholder="e.g. Centralised cybersecurity function with federated system ownership"
+          placeholder={t('settingsUi.org.operatingModelPlaceholder')}
           onChange={(e) => setForm((f) => ({ ...f, operating_model: e.target.value }))} />
       </Field>
 
       <div className="field-row">
-        <Field label="Regulators" hint="One per line.">
+        <Field label={t('settingsUi.org.regulators')} hint={t('settingsUi.org.onePerLine')}>
           <textarea className="textarea" disabled={!canEdit} value={listField('regulators')}
             onChange={(e) => setList('regulators', e.target.value)} />
         </Field>
-        <Field label="Technology environment" hint="One per line. Referenced in generated scope statements.">
+        <Field label={t('settingsUi.org.technologyEnv')} hint={t('settingsUi.org.technologyEnvHint')}>
           <textarea className="textarea" disabled={!canEdit} value={listField('technology_env')}
             onChange={(e) => setList('technology_env', e.target.value)} />
         </Field>
-        <Field label="Data classification levels"
-          hint="One per line. NCA DCC scopes controls by Public, Confidential, Secret and Top Secret; levels named that way are evaluated against it.">
+        <Field label={t('settingsUi.org.dataClassifications')}
+          hint={t('settingsUi.org.dataClassificationsHint')}>
           <textarea className="textarea" disabled={!canEdit} value={listField('data_classifications')}
             onChange={(e) => setList('data_classifications', e.target.value)} />
         </Field>
       </div>
 
       <div className="field-row">
-        <Field label="Operational technology facility level"
-          hint="NCA OTCC applies each control to facility levels L1 (highest criticality) to L3. Leave unset if the organisation operates no OT/ICS facility.">
-          <Select value={form.ot_facility_level || ''} disabled={!canEdit} placeholder="Not set"
+        <Field label={t('settingsUi.org.otLevel')}
+          hint={t('settingsUi.org.otLevelHint')}>
+          <Select value={form.ot_facility_level || ''} disabled={!canEdit} placeholder={t('settingsUi.org.notSet')}
             onChange={(v) => setForm((f) => ({ ...f, ot_facility_level: v || null }))}
             options={[
-              { value: 'L1', label: 'L1 — high criticality' },
-              { value: 'L2', label: 'L2 — moderate criticality' },
-              { value: 'L3', label: 'L3 — low criticality' }
+              { value: 'L1', label: t('settingsUi.org.otL1') },
+              { value: 'L2', label: t('settingsUi.org.otL2') },
+              { value: 'L3', label: t('settingsUi.org.otL3') }
             ]} />
         </Field>
-        <Field label="Cloud services role"
-          hint="NCA CCC addresses each control to the cloud service provider (CSP) or the cloud service tenant (CST).">
+        <Field label={t('settingsUi.org.cloudRole')}
+          hint={t('settingsUi.org.cloudRoleHint')}>
           <div className="checkbox-row">
-            {[['CSP', 'Provides cloud services (CSP)'], ['CST', 'Uses cloud services (CST)']].map(([value, label]) => {
+            {[['CSP', t('settingsUi.org.cloudCsp')], ['CST', t('settingsUi.org.cloudCst')]].map(([value, label]) => {
               const selected = (form.cloud_roles || []).includes(value);
               return (
                 <label key={value} className={`checkbox-chip ${selected ? 'on' : ''}`}>
@@ -178,15 +179,15 @@ function OrgSettings({ canEdit }) {
         </Field>
       </div>
 
-      <Field label="Business requirements" hint="What the cybersecurity programme must enable or protect.">
+      <Field label={t('settingsUi.org.businessRequirements')} hint={t('settingsUi.org.businessRequirementsHint')}>
         <textarea className="textarea" disabled={!canEdit} value={form.business_requirements || ''}
           onChange={(e) => setForm((f) => ({ ...f, business_requirements: e.target.value }))} />
       </Field>
 
       <div className="divider" />
-      <h4>Platform access policy</h4>
-      <Field label="Roles that must use two-step verification"
-        hint="These accounts cannot sign in on a password alone, and cannot turn the second factor off themselves. The default mirrors the platform's own IAM Standard: privileged access carries a second factor.">
+      <h4>{t('settingsUi.org.accessPolicy')}</h4>
+      <Field label={t('settingsUi.org.mfaRoles')}
+        hint={t('settingsUi.org.mfaRolesHint')}>
         <div className="checkbox-row">
           {ROLE_OPTIONS.map((role) => {
             const selected = (form.mfa_required_roles || []).includes(role.value);
@@ -198,7 +199,7 @@ function OrgSettings({ canEdit }) {
                     if (e.target.checked) current.add(role.value); else current.delete(role.value);
                     return { ...f, mfa_required_roles: [...current] };
                   })} />
-                {role.label}
+                {labels.role(role.value)}
               </label>
             );
           })}
@@ -206,7 +207,7 @@ function OrgSettings({ canEdit }) {
       </Field>
       {canEdit && (form.mfa_required_roles || []).length === 0 && (
         <p className="tiny" style={{ color: 'var(--warn)' }}>
-          No role requires a second factor. Every account will be reachable with a password alone.
+          {t('settingsUi.org.noMfaRoles')}
         </p>
       )}
 
@@ -216,10 +217,10 @@ function OrgSettings({ canEdit }) {
             try {
               await api.put('/admin/org', form);
               await refreshOrg();
-              toast.success('Organisation profile saved');
+              toast.success(t('settingsUi.org.saved'));
               reload();
-            } catch (err) { toast.error('Could not save', err.message); }
-          }}><IconCheck width={13} height={13} />Save profile</button>
+            } catch (err) { toast.error(t('settingsUi.couldNotSave'), err.message); }
+          }}><IconCheck width={13} height={13} />{t('settingsUi.org.saveProfile')}</button>
         </div>
       )}
 
@@ -239,6 +240,7 @@ function OrgSettings({ canEdit }) {
  * while editing an address.
  */
 function ApplicableFrameworks({ canEdit, current, onSaved }) {
+  const t = useT();
   const toast = useToast();
   const { refreshOrg } = useAuth();
   const { data, loading, error, reload } = useFetch('/frameworks');
@@ -253,12 +255,12 @@ function ApplicableFrameworks({ canEdit, current, onSaved }) {
   const changed = selected.slice().sort().join(',') !== current.slice().sort().join(',');
 
   return (
-    <Card title="Applicable frameworks and regulations"
-      subtitle="Chosen once for the organisation. Every generated package cites this set; a domain shows only the sources it maps to.">
+    <Card title={t('settingsUi.frameworks.title')}
+      subtitle={t('settingsUi.frameworks.subtitle')}>
       <FrameworkPicker frameworks={data.items} selected={selected} onChange={setSelected} disabled={!canEdit || busy} />
       {!selected.length && (
         <p className="tiny" style={{ color: 'var(--warn)' }}>
-          Nothing selected. Documents will still generate, but without framework traceability or compliance mapping.
+          {t('settingsUi.frameworks.noneSelected')}
         </p>
       )}
       {canEdit && (
@@ -268,12 +270,12 @@ function ApplicableFrameworks({ canEdit, current, onSaved }) {
             try {
               await api.put('/admin/org/frameworks', { codes: selected });
               await refreshOrg();
-              toast.success('Applicable frameworks saved');
+              toast.success(t('settingsUi.frameworks.saved'));
               onSaved?.();
-            } catch (err) { toast.error('Could not save', err.message); }
+            } catch (err) { toast.error(t('settingsUi.couldNotSave'), err.message); }
             finally { setBusy(false); }
-          }}><IconCheck width={13} height={13} />Save applicable sources</button>
-          {changed && <span className="tiny muted">Applies to packages generated from now on. Existing documents keep the mapping they were generated with.</span>}
+          }}><IconCheck width={13} height={13} />{t('settingsUi.frameworks.save')}</button>
+          {changed && <span className="tiny muted">{t('settingsUi.frameworks.changedNote')}</span>}
         </div>
       )}
     </Card>
@@ -283,6 +285,7 @@ function ApplicableFrameworks({ canEdit, current, onSaved }) {
 /* -------------------------------------------------------------------- users */
 
 function UserSettings() {
+  const t = useT();
   const labels = useLabels();
   const toast = useToast();
   const { data, loading, error, reload } = useFetch('/admin/users');
@@ -299,47 +302,47 @@ function UserSettings() {
     <div className="stack">
       <div className="between">
         <div>
-          <h3>User accounts</h3>
+          <h3>{t('settingsUi.users.title')}</h3>
           <p className="small muted" style={{ marginBottom: 0 }}>
-            Access is granted by role. Each role holds a fixed set of permissions applied consistently across every route.
+            {t('settingsUi.users.subtitle')}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setAddOpen(true)}><IconPlus />Add user</button>
+        <button className="btn btn-primary" onClick={() => setAddOpen(true)}><IconPlus />{t('settingsUi.users.addUser')}</button>
       </div>
 
       <Card flush>
         <DataTable
           columns={[
-            { key: 'name', header: 'User', render: (u) => (<><div className="cell-title">{u.name}</div><div className="cell-sub">{u.email}</div></>) },
-            { key: 'job_title', header: 'Job title', render: (u) => u.job_title || <span className="muted">—</span> },
-            { key: 'role', header: 'Role', nowrap: true, render: (u) => <Badge tone={u.role === 'admin' ? 'critical' : 'info'}>{u.role_label}</Badge> },
-            { key: 'permissions', header: 'Permissions', align: 'right' },
+            { key: 'name', header: t('settingsUi.users.colUser'), render: (u) => (<><div className="cell-title">{u.name}</div><div className="cell-sub">{u.email}</div></>) },
+            { key: 'job_title', header: t('settingsUi.users.colJobTitle'), render: (u) => u.job_title || <span className="muted">—</span> },
+            { key: 'role', header: t('settingsUi.users.colRole'), nowrap: true, render: (u) => <Badge tone={u.role === 'admin' ? 'critical' : 'info'}>{labels.role(u.role, u.role_label)}</Badge> },
+            { key: 'permissions', header: t('settingsUi.users.colPermissions'), align: 'right' },
             {
-              key: 'status', header: 'Status', nowrap: true,
+              key: 'status', header: t('settingsUi.users.colStatus'), nowrap: true,
               render: (u) => u.locked_until && new Date(u.locked_until) > new Date()
-                ? <Badge tone="danger"><IconLock width={11} height={11} />Locked</Badge>
-                : <Badge tone={u.status === 'active' ? 'ok' : 'neutral'}>{labels.humanise(u.status)}</Badge>
+                ? <Badge tone="danger"><IconLock width={11} height={11} />{t('settingsUi.users.locked')}</Badge>
+                : <Badge tone={u.status === 'active' ? 'ok' : 'neutral'}>{u.status === 'active' ? t('settingsUi.users.statusActive') : u.status === 'suspended' ? t('settingsUi.users.statusSuspended') : labels.humanise(u.status)}</Badge>
             },
             {
-              key: 'mfa_enabled', header: 'Two-step', nowrap: true,
+              key: 'mfa_enabled', header: t('settingsUi.users.colTwoStep'), nowrap: true,
               render: (u) => (u.mfa_enabled
-                ? <Badge tone="ok" dot title={`Enrolled ${formatDate(u.mfa_enrolled_at)}`}>On</Badge>
-                : <Badge tone="neutral">Off</Badge>)
+                ? <Badge tone="ok" dot title={t('settingsUi.users.enrolledOn', { date: formatDate(u.mfa_enrolled_at) })}>{t('settingsUi.on')}</Badge>
+                : <Badge tone="neutral">{t('settingsUi.off')}</Badge>)
             },
-            { key: 'last_login_at', header: 'Last sign-in', nowrap: true, render: (u) => u.last_login_at ? <span className="small">{relativeTime(u.last_login_at)}</span> : <span className="muted">Never</span> }
+            { key: 'last_login_at', header: t('settingsUi.users.colLastSignIn'), nowrap: true, render: (u) => u.last_login_at ? <span className="small">{relativeTime(u.last_login_at)}</span> : <span className="muted">{t('settingsUi.users.never')}</span> }
           ]}
           rows={data.items}
           onRowClick={(u) => { setEditing(u); setTemporaryPassword(null); }}
         />
       </Card>
 
-      <Card title="Permission matrix" subtitle="What each role may do. Routes check the permission, never the role directly." flush>
+      <Card title={t('settingsUi.users.matrixTitle')} subtitle={t('settingsUi.users.matrixSubtitle')} flush>
         <div className="table-wrap" style={{ maxHeight: 420, overflow: 'auto' }}>
           <table className="data">
             <thead>
               <tr>
-                <th style={{ minWidth: 200 }}>Permission</th>
-                {data.roles.map((r) => <th key={r.value} className="center" style={{ minWidth: 92 }}>{r.label}</th>)}
+                <th style={{ minWidth: 200 }}>{t('settingsUi.users.permission')}</th>
+                {data.roles.map((r) => <th key={r.value} className="center" style={{ minWidth: 92 }}>{labels.role(r.value, r.label)}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -360,72 +363,72 @@ function UserSettings() {
         </div>
       </Card>
 
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Add user"
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('settingsUi.users.addUser')}
         footer={
           <>
-            <button className="btn" onClick={() => setAddOpen(false)}>Cancel</button>
+            <button className="btn" onClick={() => setAddOpen(false)}>{t('settingsUi.cancel')}</button>
             <button className="btn btn-primary" onClick={async () => {
               try {
                 await api.post('/admin/users', form);
-                toast.success('User created', `${form.email} can now sign in.`);
+                toast.success(t('settingsUi.users.created'), t('settingsUi.users.createdBody', { email: form.email }));
                 setAddOpen(false);
                 setForm({ name: '', email: '', role: 'cyber_user', job_title: '', password: '' });
                 reload();
               } catch (err) {
-                toast.error('Could not create the user', Array.isArray(err.payload?.detail) ? err.payload.detail.join(' ') : err.message);
+                toast.error(t('settingsUi.users.createFailed'), Array.isArray(err.payload?.detail) ? err.payload.detail.join(' ') : err.message);
               }
-            }}>Create user</button>
+            }}>{t('settingsUi.users.createUser')}</button>
           </>
         }>
         <div className="field-row">
-          <Field label="Full name" required>
+          <Field label={t('settingsUi.users.fullName')} required>
             <input className="input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </Field>
-          <Field label="Email" required>
+          <Field label={t('settingsUi.users.email')} required>
             <input className="input" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
           </Field>
         </div>
         <div className="field-row">
-          <Field label="Job title">
+          <Field label={t('settingsUi.users.colJobTitle')}>
             <input className="input" value={form.job_title} onChange={(e) => setForm((f) => ({ ...f, job_title: e.target.value }))} />
           </Field>
-          <Field label="Role" required>
+          <Field label={t('settingsUi.users.colRole')} required>
             <Select value={form.role} onChange={(v) => setForm((f) => ({ ...f, role: v }))}
-              options={data.roles.map((r) => ({ value: r.value, label: r.label }))} />
+              options={data.roles.map((r) => ({ value: r.value, label: labels.role(r.value, r.label) }))} />
           </Field>
         </div>
-        <Field label="Initial password" required
-          hint="At least 12 characters with upper case, lower case and a digit. The user should change it after signing in.">
+        <Field label={t('settingsUi.users.initialPassword')} required
+          hint={t('settingsUi.users.initialPasswordHint')}>
           <input className="input" type="text" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
         </Field>
       </Modal>
 
-      <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title={editing ? `Edit ${editing.name}` : ''}
+      <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title={editing ? t('settingsUi.users.editTitle', { name: editing.name }) : ''}
         footer={
           editing && (
             <>
               {editing.locked_until && new Date(editing.locked_until) > new Date() && (
                 <button className="btn" style={{ marginInlineEnd: 'auto' }} onClick={async () => {
                   await api.post(`/admin/users/${editing.id}/unlock`);
-                  toast.success('Account unlocked');
+                  toast.success(t('settingsUi.users.unlocked'));
                   setEditing(null);
                   reload();
-                }}><IconLock width={13} height={13} />Unlock account</button>
+                }}><IconLock width={13} height={13} />{t('settingsUi.users.unlock')}</button>
               )}
-              <button className="btn" onClick={() => setEditing(null)}>Cancel</button>
+              <button className="btn" onClick={() => setEditing(null)}>{t('settingsUi.cancel')}</button>
               <button className="btn btn-primary" onClick={async () => {
                 try {
                   await api.patch(`/admin/users/${editing.id}`, {
                     name: editing.name, role: editing.role, job_title: editing.job_title,
                     status: editing.status, ...(editing.newPassword ? { password: editing.newPassword } : {})
                   });
-                  toast.success('User updated');
+                  toast.success(t('settingsUi.users.updated'));
                   setEditing(null);
                   reload();
                 } catch (err) {
-                  toast.error('Update failed', Array.isArray(err.payload?.detail) ? err.payload.detail.join(' ') : err.message);
+                  toast.error(t('settingsUi.users.updateFailed'), Array.isArray(err.payload?.detail) ? err.payload.detail.join(' ') : err.message);
                 }
-              }}>Save changes</button>
+              }}>{t('settingsUi.users.saveChanges')}</button>
             </>
           )
         }>
@@ -435,76 +438,73 @@ function UserSettings() {
               <div className="callout" data-callout="warn" style={{ marginBottom: 14 }}>
                 <div className="row-tight">
                   <IconAlert width={14} height={14} />
-                  <strong style={{ margin: 0 }}>Temporary password — shown once</strong>
+                  <strong style={{ margin: 0 }}>{t('settingsUi.users.tempPasswordTitle')}</strong>
                 </div>
                 <p style={{ marginTop: 6, marginBottom: 6 }}>
-                  Give this to {editing.name} through a channel other than email. Every session was signed
-                  out, and the account can do nothing until the password is changed.
+                  {t('settingsUi.users.tempPasswordBody', { name: editing.name })}
                 </p>
                 <code className="temp-password">{temporaryPassword}</code>
                 <button className="btn btn-sm" style={{ marginTop: 8 }} onClick={() => {
                   navigator.clipboard?.writeText(temporaryPassword)
-                    .then(() => toast.success('Copied'))
-                    .catch(() => toast.error('Could not copy', 'Select the password and copy it manually.'));
-                }}><IconCopy width={13} height={13} />Copy</button>
+                    .then(() => toast.success(t('settingsUi.copied')))
+                    .catch(() => toast.error(t('settingsUi.couldNotCopy'), t('settingsUi.users.copyPasswordManually')));
+                }}><IconCopy width={13} height={13} />{t('settingsUi.copy')}</button>
               </div>
             )}
 
             <div className="field-row">
-              <Field label="Full name">
+              <Field label={t('settingsUi.users.fullName')}>
                 <input className="input" value={editing.name} onChange={(e) => setEditing((u) => ({ ...u, name: e.target.value }))} />
               </Field>
-              <Field label="Job title">
+              <Field label={t('settingsUi.users.colJobTitle')}>
                 <input className="input" value={editing.job_title || ''} onChange={(e) => setEditing((u) => ({ ...u, job_title: e.target.value }))} />
               </Field>
             </div>
             <div className="field-row">
-              <Field label="Role">
+              <Field label={t('settingsUi.users.colRole')}>
                 <Select value={editing.role} onChange={(v) => setEditing((u) => ({ ...u, role: v }))}
-                  options={data.roles.map((r) => ({ value: r.value, label: r.label }))} />
+                  options={data.roles.map((r) => ({ value: r.value, label: labels.role(r.value, r.label) }))} />
               </Field>
-              <Field label="Status" hint="Suspending an account revokes every active session immediately.">
+              <Field label={t('settingsUi.users.colStatus')} hint={t('settingsUi.users.statusHint')}>
                 <Select value={editing.status} onChange={(v) => setEditing((u) => ({ ...u, status: v }))}
-                  options={[{ value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]} />
+                  options={[{ value: 'active', label: t('settingsUi.users.statusActive') }, { value: 'suspended', label: t('settingsUi.users.statusSuspended') }]} />
               </Field>
             </div>
-            <Field label="Set a password directly"
-              hint="Leave blank to keep the current one. Setting a password here revokes every active session but does not force a change at next sign-in.">
+            <Field label={t('settingsUi.users.setPassword')}
+              hint={t('settingsUi.users.setPasswordHint')}>
               <input className="input" type="text" value={editing.newPassword || ''}
                 onChange={(e) => setEditing((u) => ({ ...u, newPassword: e.target.value }))} />
             </Field>
 
             <div className="divider" />
-            <h4>Recovery</h4>
+            <h4>{t('settingsUi.users.recovery')}</h4>
             <p className="small muted">
-              For someone who is locked out. There is no self-service reset: the platform has no mail
-              transport, and a governance tool should not pretend to have one.
+              {t('settingsUi.users.recoveryBody')}
             </p>
             <div className="row-tight" style={{ marginTop: 10, flexWrap: 'wrap' }}>
               <button className="btn btn-sm" onClick={async () => {
                 try {
                   const res = await api.post(`/admin/users/${editing.id}/reset-password`);
                   setTemporaryPassword(res.temporaryPassword);
-                  toast.success('Password reset', 'Pass the temporary password on out of band.');
+                  toast.success(t('settingsUi.users.passwordReset'), t('settingsUi.users.passwordResetBody'));
                   reload();
-                } catch (err) { toast.error('Reset failed', err.message); }
-              }}><IconRefresh width={13} height={13} />Issue a temporary password</button>
+                } catch (err) { toast.error(t('settingsUi.users.resetFailed'), err.message); }
+              }}><IconRefresh width={13} height={13} />{t('settingsUi.users.issueTempPassword')}</button>
 
               {editing.mfa_enabled && (
                 <button className="btn btn-sm btn-danger-ghost" onClick={async () => {
                   try {
                     const res = await api.post(`/admin/users/${editing.id}/reset-mfa`);
-                    toast.success('Second factor removed', res.message);
+                    toast.success(t('settingsUi.users.mfaRemoved'), res.message);
                     setEditing((u) => ({ ...u, mfa_enabled: 0 }));
                     reload();
-                  } catch (err) { toast.error('Could not remove it', err.message); }
-                }}><IconShield width={13} height={13} />Remove their second factor</button>
+                  } catch (err) { toast.error(t('settingsUi.users.mfaRemoveFailed'), err.message); }
+                }}><IconShield width={13} height={13} />{t('settingsUi.users.removeMfa')}</button>
               )}
             </div>
             {editing.mfa_enabled && (
               <p className="tiny muted" style={{ marginTop: 8 }}>
-                Removing a second factor is a way past a control, so it is recorded in the audit log
-                against your account.
+                {t('settingsUi.users.removeMfaNote')}
               </p>
             )}
           </>
@@ -522,6 +522,8 @@ function UserSettings() {
  * this, rather than offering a button that returns a 403.
  */
 function MfaPanel() {
+  const t = useT();
+  const labels = useLabels();
   const toast = useToast();
   const { applySession } = useAuth();
   const { data, loading, reload } = useFetch('/auth/mfa/status');
@@ -529,35 +531,35 @@ function MfaPanel() {
   const [password, setPassword] = useState('');
   const [newCodes, setNewCodes] = useState(null);
 
-  if (loading || !data) return <Card title="Two-step verification"><Loading /></Card>;
+  if (loading || !data) return <Card title={t('settingsUi.mfa.title')}><Loading /></Card>;
 
   if (enrolling) {
     return (
       <div>
         <EnrolMfa embedded onDone={() => { setEnrolling(false); reload(); }} />
         <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => { setEnrolling(false); reload(); }}>
-          Cancel
+          {t('settingsUi.cancel')}
         </button>
       </div>
     );
   }
 
   return (
-    <Card title="Two-step verification"
-      subtitle="A six-digit code from your phone, in addition to your password."
+    <Card title={t('settingsUi.mfa.title')}
+      subtitle={t('settingsUi.mfa.subtitle')}
       actions={data.enabled
-        ? <Badge tone="ok" dot>On</Badge>
-        : <Badge tone={data.required ? 'danger' : 'warn'}>{data.required ? 'Required' : 'Off'}</Badge>}>
+        ? <Badge tone="ok" dot>{t('settingsUi.on')}</Badge>
+        : <Badge tone={data.required ? 'danger' : 'warn'}>{data.required ? t('settingsUi.mfa.required') : t('settingsUi.off')}</Badge>}>
 
       {!data.enabled && (
         <>
           <p className="small">
             {data.required
-              ? `Your role is one of the roles this organisation requires a second factor for (${data.requiredRoles.map(titleCase).join(', ')}). You will not be able to use the platform until it is enrolled.`
-              : 'Not required for your role, but recommended. It is the control the platform\'s own IAM Standard mandates for privileged access.'}
+              ? t('settingsUi.mfa.requiredBody', { roles: data.requiredRoles.map((r) => labels.role(r, titleCase(r))).join(t('settingsUi.listSeparator')) })
+              : t('settingsUi.mfa.recommendedBody')}
           </p>
           <button className="btn btn-primary btn-sm" style={{ marginTop: 10 }} onClick={() => setEnrolling(true)}>
-            <IconShield width={13} height={13} />Set it up
+            <IconShield width={13} height={13} />{t('settingsUi.mfa.setUp')}
           </button>
         </>
       )}
@@ -565,29 +567,29 @@ function MfaPanel() {
       {data.enabled && (
         <div className="stack">
           <dl className="definition">
-            <dt>Enrolled</dt><dd>{formatDate(data.enrolledAt, { withTime: true })}</dd>
-            <dt>Recovery codes left</dt>
+            <dt>{t('settingsUi.mfa.enrolled')}</dt><dd>{formatDate(data.enrolledAt, { withTime: true })}</dd>
+            <dt>{t('settingsUi.mfa.codesLeft')}</dt>
             <dd>
               <Badge tone={data.recoveryCodesRemaining > 2 ? 'neutral' : 'warn'}>
-                {data.recoveryCodesRemaining} of 10
+                {t('settingsUi.mfa.codesOfTen', { count: data.recoveryCodesRemaining })}
               </Badge>
             </dd>
-            <dt>Mandatory for your role</dt><dd>{data.required ? 'Yes' : 'No'}</dd>
+            <dt>{t('settingsUi.mfa.mandatory')}</dt><dd>{data.required ? t('settingsUi.yes') : t('settingsUi.no')}</dd>
           </dl>
 
           {newCodes && (
             <div>
               <div className="callout" data-callout="warn">
-                <div className="row-tight"><IconAlert width={14} height={14} /><strong style={{ margin: 0 }}>New recovery codes — the previous set no longer works</strong></div>
+                <div className="row-tight"><IconAlert width={14} height={14} /><strong style={{ margin: 0 }}>{t('settingsUi.mfa.newCodesWarning')}</strong></div>
               </div>
               <ul className="recovery-codes" style={{ marginTop: 10 }}>{newCodes.map((c) => <li key={c}>{c}</li>)}</ul>
               <button className="btn btn-sm" style={{ marginTop: 8 }} onClick={() => {
-                navigator.clipboard?.writeText(newCodes.join('\n')).then(() => toast.success('Copied')).catch(() => {});
-              }}><IconCopy width={13} height={13} />Copy all</button>
+                navigator.clipboard?.writeText(newCodes.join('\n')).then(() => toast.success(t('settingsUi.copied'))).catch(() => {});
+              }}><IconCopy width={13} height={13} />{t('settingsUi.copyAll')}</button>
             </div>
           )}
 
-          <Field label="Password" hint="Needed to change either setting below, so a borrowed session cannot.">
+          <Field label={t('settingsUi.mfa.password')} hint={t('settingsUi.mfa.passwordHint')}>
             <input className="input" type="password" autoComplete="current-password" value={password}
               onChange={(e) => setPassword(e.target.value)} style={{ maxWidth: 320 }} />
           </Field>
@@ -598,8 +600,8 @@ function MfaPanel() {
                 setNewCodes(res.recoveryCodes);
                 setPassword('');
                 reload();
-              } catch (err) { toast.error('Could not regenerate', err.message); }
-            }}><IconRefresh width={13} height={13} />New recovery codes</button>
+              } catch (err) { toast.error(t('settingsUi.mfa.regenerateFailed'), err.message); }
+            }}><IconRefresh width={13} height={13} />{t('settingsUi.mfa.newCodes')}</button>
 
             {!data.required && (
               <button className="btn btn-sm btn-danger-ghost" disabled={!password} onClick={async () => {
@@ -607,16 +609,15 @@ function MfaPanel() {
                   const res = await api.post('/auth/mfa/disable', { password });
                   applySession(res);
                   setPassword('');
-                  toast.success('Two-step verification turned off');
+                  toast.success(t('settingsUi.mfa.turnedOff'));
                   reload();
-                } catch (err) { toast.error('Could not turn it off', err.message); }
-              }}>Turn it off</button>
+                } catch (err) { toast.error(t('settingsUi.mfa.turnOffFailed'), err.message); }
+              }}>{t('settingsUi.mfa.turnOff')}</button>
             )}
           </div>
           {data.required && (
             <p className="tiny muted">
-              This organisation requires two-step verification for {data.requiredRoles.map(titleCase).join(', ')},
-              so it cannot be turned off from here. An administrator can reset it if you lose your device.
+              {t('settingsUi.mfa.requiredNote', { roles: data.requiredRoles.map((r) => labels.role(r, titleCase(r))).join(t('settingsUi.listSeparator')) })}
             </p>
           )}
         </div>
@@ -626,6 +627,8 @@ function MfaPanel() {
 }
 
 function AccountSettings({ user }) {
+  const t = useT();
+  const labels = useLabels();
   const toast = useToast();
   const { logout } = useAuth();
   const { data: sessions, reload } = useFetch('/auth/sessions');
@@ -633,31 +636,31 @@ function AccountSettings({ user }) {
 
   return (
     <div className="stack">
-      <Card title="Your account">
+      <Card title={t('settingsUi.account.title')}>
         <dl className="definition">
-          <dt>Name</dt><dd>{user.name}</dd>
-          <dt>Email</dt><dd>{user.email}</dd>
-          <dt>Role</dt><dd><Badge tone="info">{user.roleLabel}</Badge></dd>
-          <dt>Job title</dt><dd>{user.jobTitle || '—'}</dd>
-          <dt>Last sign-in</dt><dd>{user.lastLoginAt ? formatDate(user.lastLoginAt, { withTime: true }) : '—'}</dd>
+          <dt>{t('settingsUi.account.name')}</dt><dd>{user.name}</dd>
+          <dt>{t('settingsUi.users.email')}</dt><dd>{user.email}</dd>
+          <dt>{t('settingsUi.users.colRole')}</dt><dd><Badge tone="info">{labels.role(user.role, user.roleLabel)}</Badge></dd>
+          <dt>{t('settingsUi.users.colJobTitle')}</dt><dd>{user.jobTitle || '—'}</dd>
+          <dt>{t('settingsUi.users.colLastSignIn')}</dt><dd>{user.lastLoginAt ? formatDate(user.lastLoginAt, { withTime: true }) : '—'}</dd>
         </dl>
       </Card>
 
       <MfaPanel />
 
-      <Card title="Change password"
-        subtitle="Changing your password signs you out of every device, including this one.">
+      <Card title={t('settingsUi.account.changePassword')}
+        subtitle={t('settingsUi.account.changePasswordSubtitle')}>
         <div className="field-row">
-          <Field label="Current password">
+          <Field label={t('settingsUi.account.currentPassword')}>
             <input className="input" type="password" autoComplete="current-password" value={form.currentPassword}
               onChange={(e) => setForm((f) => ({ ...f, currentPassword: e.target.value }))} />
           </Field>
-          <Field label="New password" hint="At least 12 characters with upper case, lower case and a digit.">
+          <Field label={t('settingsUi.account.newPassword')} hint={t('settingsUi.account.newPasswordHint')}>
             <input className="input" type="password" autoComplete="new-password" value={form.newPassword}
               onChange={(e) => setForm((f) => ({ ...f, newPassword: e.target.value }))} />
           </Field>
-          <Field label="Confirm new password"
-            error={form.confirm && form.confirm !== form.newPassword ? 'Passwords do not match.' : null}>
+          <Field label={t('settingsUi.account.confirmPassword')}
+            error={form.confirm && form.confirm !== form.newPassword ? t('settingsUi.account.mismatch') : null}>
             <input className="input" type="password" autoComplete="new-password" value={form.confirm}
               onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))} />
           </Field>
@@ -667,32 +670,32 @@ function AccountSettings({ user }) {
           onClick={async () => {
             try {
               await api.post('/auth/change-password', { currentPassword: form.currentPassword, newPassword: form.newPassword });
-              toast.success('Password changed', 'Please sign in again.');
+              toast.success(t('settingsUi.account.passwordChanged'), t('settingsUi.account.signInAgain'));
               setTimeout(() => logout(), 1200);
             } catch (err) {
-              toast.error('Could not change the password', Array.isArray(err.payload?.detail) ? err.payload.detail.join(' ') : err.message);
+              toast.error(t('settingsUi.account.changeFailed'), Array.isArray(err.payload?.detail) ? err.payload.detail.join(' ') : err.message);
             }
-          }}><IconLock width={13} height={13} />Change password</button>
+          }}><IconLock width={13} height={13} />{t('settingsUi.account.changePassword')}</button>
       </Card>
 
-      <Card title="Active sessions" flush
+      <Card title={t('settingsUi.account.sessions')} flush
         actions={
           <button className="btn btn-sm" onClick={async () => {
             await api.del('/auth/sessions');
-            toast.success('All sessions revoked', 'Sign in again to continue.');
+            toast.success(t('settingsUi.account.sessionsRevoked'), t('settingsUi.account.sessionsRevokedBody'));
             setTimeout(() => logout(), 1000);
-          }}>Revoke all</button>
+          }}>{t('settingsUi.account.revokeAll')}</button>
         }>
         <DataTable
           columns={[
-            { key: 'user_agent', header: 'Device', render: (s) => <span className="small clamp-2">{s.user_agent || 'Unknown'}</span> },
-            { key: 'ip', header: 'Address', nowrap: true, render: (s) => <span className="mono small">{s.ip || '—'}</span> },
-            { key: 'created_at', header: 'Started', nowrap: true, render: (s) => <span className="small">{formatDate(s.created_at, { withTime: true })}</span> },
-            { key: 'last_seen_at', header: 'Last seen', nowrap: true, render: (s) => <span className="small">{relativeTime(s.last_seen_at)}</span> },
-            { key: 'revoked_at', header: 'State', nowrap: true, render: (s) => s.revoked_at ? <Badge tone="neutral">Revoked</Badge> : <Badge tone="ok">Active</Badge> }
+            { key: 'user_agent', header: t('settingsUi.account.colDevice'), render: (s) => <span className="small clamp-2">{s.user_agent || t('settingsUi.account.unknown')}</span> },
+            { key: 'ip', header: t('settingsUi.account.colAddress'), nowrap: true, render: (s) => <span className="mono small">{s.ip || '—'}</span> },
+            { key: 'created_at', header: t('settingsUi.account.colStarted'), nowrap: true, render: (s) => <span className="small">{formatDate(s.created_at, { withTime: true })}</span> },
+            { key: 'last_seen_at', header: t('settingsUi.account.colLastSeen'), nowrap: true, render: (s) => <span className="small">{relativeTime(s.last_seen_at)}</span> },
+            { key: 'revoked_at', header: t('settingsUi.account.colState'), nowrap: true, render: (s) => s.revoked_at ? <Badge tone="neutral">{t('settingsUi.account.revoked')}</Badge> : <Badge tone="ok">{t('settingsUi.account.active')}</Badge> }
           ]}
           rows={sessions || []}
-          empty={<Empty title="No sessions recorded" />}
+          empty={<Empty title={t('settingsUi.account.noSessions')} />}
         />
       </Card>
     </div>
@@ -702,10 +705,16 @@ function AccountSettings({ user }) {
 /* ---------------------------------------------------------------- audit log */
 
 function AuditLog() {
+  const t = useT();
   const [search, setSearch] = useState('');
   const [outcome, setOutcome] = useState('');
   const [action, setAction] = useState('');
   const { data, loading, error, reload } = useFetch(`/admin/audit${qs({ search, outcome, action, limit: 200 })}`);
+  const outcomeLabel = (value) => ({
+    success: t('settingsUi.audit.outcomeSuccess'),
+    denied: t('settingsUi.audit.outcomeDenied'),
+    failure: t('settingsUi.audit.outcomeFailure')
+  }[value] || titleCase(value));
 
   if (loading) return <Loading />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
@@ -713,40 +722,39 @@ function AuditLog() {
   return (
     <div className="stack">
       <div>
-        <h3>Audit log</h3>
+        <h3>{t('settingsUi.tabs.audit')}</h3>
         <p className="small muted" style={{ marginBottom: 0 }}>
-          Every authentication, authorisation decision, document change, generation, export and
-          administrative action, with the actor and outcome.
+          {t('settingsUi.audit.subtitle')}
         </p>
       </div>
 
       <Card flush>
         <div className="table-toolbar">
-          <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder="Search the log…" /></div>
-          <Select value={action} onChange={setAction} placeholder="All actions"
+          <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder={t('settingsUi.audit.search')} /></div>
+          <Select value={action} onChange={setAction} placeholder={t('settingsUi.audit.allActions')}
             options={(data.facets.actions || []).map((a) => ({ value: a.action, label: `${a.action} (${a.n})` }))} />
-          <Select value={outcome} onChange={setOutcome} placeholder="All outcomes"
-            options={(data.facets.outcomes || []).map((o) => ({ value: o.outcome, label: `${titleCase(o.outcome)} (${o.n})` }))} />
+          <Select value={outcome} onChange={setOutcome} placeholder={t('settingsUi.audit.allOutcomes')}
+            options={(data.facets.outcomes || []).map((o) => ({ value: o.outcome, label: `${outcomeLabel(o.outcome)} (${o.n})` }))} />
           {(search || outcome || action) && (
             <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setOutcome(''); setAction(''); }}>
-              <IconX width={13} height={13} />Clear
+              <IconX width={13} height={13} />{t('settingsUi.audit.clear')}
             </button>
           )}
-          <span className="table-count">{data.items.length} of {data.total}</span>
+          <span className="table-count">{t('settingsUi.audit.countOf', { shown: data.items.length, total: data.total })}</span>
         </div>
         <DataTable
           columns={[
-            { key: 'at', header: 'When', nowrap: true, render: (r) => <span className="small">{formatDate(r.at, { withTime: true })}</span> },
-            { key: 'user_email', header: 'Actor', nowrap: true, render: (r) => <span className="small">{r.user_email || 'system'}</span> },
-            { key: 'action', header: 'Action', nowrap: true, render: (r) => <span className="mono small">{r.action}</span> },
-            { key: 'summary', header: 'Summary', render: (r) => r.summary || '—' },
+            { key: 'at', header: t('settingsUi.audit.colWhen'), nowrap: true, render: (r) => <span className="small">{formatDate(r.at, { withTime: true })}</span> },
+            { key: 'user_email', header: t('settingsUi.audit.colActor'), nowrap: true, render: (r) => <span className="small">{r.user_email || t('settingsUi.audit.systemActor')}</span> },
+            { key: 'action', header: t('settingsUi.audit.colAction'), nowrap: true, render: (r) => <span className="mono small">{r.action}</span> },
+            { key: 'summary', header: t('settingsUi.audit.colSummary'), render: (r) => r.summary || '—' },
             {
-              key: 'outcome', header: 'Outcome', nowrap: true,
-              render: (r) => <Badge tone={r.outcome === 'success' ? 'ok' : r.outcome === 'denied' ? 'danger' : 'warn'}>{titleCase(r.outcome)}</Badge>
+              key: 'outcome', header: t('settingsUi.audit.colOutcome'), nowrap: true,
+              render: (r) => <Badge tone={r.outcome === 'success' ? 'ok' : r.outcome === 'denied' ? 'danger' : 'warn'}>{outcomeLabel(r.outcome)}</Badge>
             }
           ]}
           rows={data.items}
-          empty={<Empty icon={IconHistory} title="No audit entries match" />}
+          empty={<Empty icon={IconHistory} title={t('settingsUi.audit.empty')} />}
         />
       </Card>
     </div>
@@ -756,37 +764,46 @@ function AuditLog() {
 /* ------------------------------------------------------------------- system */
 
 function SystemStatus() {
+  const t = useT();
   const { data, loading, error, reload } = useFetch('/admin/system');
+  const countLabel = (key) => ({
+    users: t('settingsUi.system.countUsers'),
+    documents: t('settingsUi.system.countDocuments'),
+    controls: t('settingsUi.system.countControls'),
+    evidence: t('settingsUi.system.countEvidence'),
+    findings: t('settingsUi.system.countFindings'),
+    auditEntries: t('settingsUi.system.countAuditEntries')
+  }[key] || titleCase(key.replace(/([A-Z])/g, ' $1')));
   if (loading) return <Loading />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
   return (
     <div className="stack">
-      <Card title="AI provider">
+      <Card title={t('settingsUi.system.aiProvider')}>
         <div className="row-tight" style={{ marginBottom: 8 }}>
           <IconSparkles width={16} height={16} style={{ color: 'var(--accent)' }} />
-          <span className="strong">{data.ai.provider === 'anthropic' ? `Claude — ${data.ai.model}` : 'Built-in knowledge engine'}</span>
-          <Badge tone={data.ai.configured ? 'ok' : 'neutral'}>{data.ai.configured ? 'API configured' : 'Offline mode'}</Badge>
+          <span className="strong">{data.ai.provider === 'anthropic' ? `Claude — ${data.ai.model}` : t('settingsUi.system.builtInEngine')}</span>
+          <Badge tone={data.ai.configured ? 'ok' : 'neutral'}>{data.ai.configured ? t('settingsUi.system.apiConfigured') : t('settingsUi.system.offline')}</Badge>
         </div>
         <p className="small muted" style={{ marginBottom: 0 }}>{data.ai.description}</p>
       </Card>
 
-      <Card title="Knowledge base">
+      <Card title={t('settingsUi.system.knowledgeBase')}>
         <dl className="definition">
-          <dt>Domains</dt><dd>{data.knowledgeBase.domains}</dd>
-          <dt>Frameworks</dt><dd>{data.knowledgeBase.frameworks}</dd>
-          <dt>Framework requirements</dt><dd>{data.knowledgeBase.frameworkRequirements}</dd>
-          <dt>Cross-framework equivalences</dt><dd>{data.knowledgeBase.crosswalks}</dd>
-          <dt>Integrity</dt>
+          <dt>{t('settingsUi.system.domains')}</dt><dd>{data.knowledgeBase.domains}</dd>
+          <dt>{t('settingsUi.system.frameworks')}</dt><dd>{data.knowledgeBase.frameworks}</dd>
+          <dt>{t('settingsUi.system.frameworkRequirements')}</dt><dd>{data.knowledgeBase.frameworkRequirements}</dd>
+          <dt>{t('settingsUi.system.crosswalks')}</dt><dd>{data.knowledgeBase.crosswalks}</dd>
+          <dt>{t('settingsUi.system.integrity')}</dt>
           <dd>
             {data.knowledgeBase.integrityProblems.length === 0
-              ? <Badge tone="ok"><IconCheck width={11} height={11} />No problems</Badge>
-              : <Badge tone="danger"><IconAlert width={11} height={11} />{data.knowledgeBase.integrityProblems.length} problems</Badge>}
+              ? <Badge tone="ok"><IconCheck width={11} height={11} />{t('settingsUi.system.noProblems')}</Badge>
+              : <Badge tone="danger"><IconAlert width={11} height={11} />{t('settingsUi.system.problems', { count: data.knowledgeBase.integrityProblems.length })}</Badge>}
           </dd>
         </dl>
         {data.knowledgeBase.integrityProblems.length > 0 && (
           <div className="callout" data-callout="danger" style={{ marginTop: 12 }}>
-            <strong>Integrity problems</strong>
+            <strong>{t('settingsUi.system.integrityProblems')}</strong>
             <ul style={{ marginBottom: 0, paddingInlineStart: 18 }}>
               {data.knowledgeBase.integrityProblems.slice(0, 10).map((p, i) => <li key={i} className="small">{p}</li>)}
             </ul>
@@ -794,11 +811,11 @@ function SystemStatus() {
         )}
       </Card>
 
-      <Card title="Platform data">
+      <Card title={t('settingsUi.system.platformData')}>
         <div className="grid grid-4">
           {Object.entries(data.counts).map(([key, value]) => (
             <div key={key}>
-              <div className="kpi-label">{titleCase(key.replace(/([A-Z])/g, ' $1'))}</div>
+              <div className="kpi-label">{countLabel(key)}</div>
               <div className="strong" style={{ fontSize: 20 }}>{value.toLocaleString()}</div>
             </div>
           ))}

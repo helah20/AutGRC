@@ -13,14 +13,19 @@ import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
 import { useT } from '../i18n/index.jsx';
 
-const TIERS = [
-  { key: 'framework', label: 'Framework / Regulation', types: ['framework'], help: 'The authoritative sources adopted for this domain.' },
-  { key: 'policy', label: 'Policy', types: ['policy'], help: 'The mandatory organisational position.' },
-  { key: 'standard', label: 'Standard', types: ['standard'], help: 'Measurable requirements implementing the policy.' },
-  { key: 'procedure', label: 'Procedure', types: ['procedure'], help: 'How the requirements are carried out.' },
-  { key: 'work_instruction', label: 'Work Instruction', types: ['work_instruction', 'guideline'], help: 'Platform-specific execution detail and advisory guidance.' },
-  { key: 'supporting', label: 'Supporting', types: ['roles', 'raci', 'control_matrix'], help: 'Accountability and control records supporting the tiers above.' }
-];
+// Built per render so the labels follow the current language. `inline` is
+// the form used inside the "missing tiers" sentence; `empty` is the
+// placeholder shown when a tier has no documents.
+function buildTiers(t) {
+  return [
+    { key: 'framework', label: t('hierarchyUi.frameworkLabel'), empty: t('hierarchyUi.frameworkEmpty'), types: ['framework'], help: t('hierarchyUi.frameworkHelp') },
+    { key: 'policy', label: t('hierarchyUi.policyLabel'), inline: t('hierarchyUi.policyInline'), empty: t('hierarchyUi.policyEmpty'), types: ['policy'], help: t('hierarchyUi.policyHelp') },
+    { key: 'standard', label: t('hierarchyUi.standardLabel'), inline: t('hierarchyUi.standardInline'), empty: t('hierarchyUi.standardEmpty'), types: ['standard'], help: t('hierarchyUi.standardHelp') },
+    { key: 'procedure', label: t('hierarchyUi.procedureLabel'), inline: t('hierarchyUi.procedureInline'), empty: t('hierarchyUi.procedureEmpty'), types: ['procedure'], help: t('hierarchyUi.procedureHelp') },
+    { key: 'work_instruction', label: t('hierarchyUi.workInstructionLabel'), empty: t('hierarchyUi.workInstructionEmpty'), types: ['work_instruction', 'guideline'], help: t('hierarchyUi.workInstructionHelp') },
+    { key: 'supporting', label: t('hierarchyUi.supportingLabel'), empty: t('hierarchyUi.supportingEmpty'), types: ['roles', 'raci', 'control_matrix'], help: t('hierarchyUi.supportingHelp') }
+  ];
+}
 
 export default function Hierarchy() {
   const t = useT();
@@ -58,18 +63,19 @@ export default function Hierarchy() {
       const res = await api.post(`/ai/review/domain/${domain}`);
       setReview(res);
       const high = res.findings.filter((f) => ['critical', 'high'].includes(f.severity)).length;
-      if (high) toast.warn(`${high} high-severity finding${high === 1 ? '' : 's'}`, 'Inconsistencies between documents in this domain need reconciliation.');
-      else toast.success('Domain review complete', `Readiness score ${res.score.score}/100.`);
+      if (high) toast.warn(t('hierarchyUi.highFindings', { count: high }), t('hierarchyUi.highFindingsBody'));
+      else toast.success(t('hierarchyUi.reviewComplete'), t('hierarchyUi.readinessToast', { score: res.score.score }));
     } catch (err) {
-      toast.error('Review failed', err.message);
+      toast.error(t('hierarchyUi.reviewFailed'), err.message);
     } finally { setBusy(false); }
   }
 
-  if (loading) return <Loading label="Loading the governance hierarchy…" />;
+  if (loading) return <Loading label={t('hierarchyUi.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
   // Named `tier`, not `t`: `t` is the translator in this component now, and a
   // parameter that shadows it is a trap for the next edit.
+  const TIERS = buildTiers(t);
   const missingTiers = TIERS.slice(1, 4).filter((tier) => !inDomain.some((d) => tier.types.includes(d.doc_type)));
 
   return (
@@ -84,7 +90,7 @@ export default function Hierarchy() {
           {can('ai:use') && (
             <button className="btn btn-primary" onClick={runReview} disabled={busy}>
               {busy ? <span className="spinner" style={{ width: 13, height: 13 }} /> : <IconSparkles />}
-              Check consistency
+              {t('hierarchyUi.checkConsistency')}
             </button>
           )}
         </div>
@@ -92,17 +98,16 @@ export default function Hierarchy() {
 
       {missingTiers.length > 0 && (
         <div className="callout" data-callout="warning">
-          <strong>Incomplete chain</strong>
+          <strong>{t('hierarchyUi.incompleteChain')}</strong>
           <p style={{ marginBottom: 0 }}>
-            This domain has no {missingTiers.map((tier) => tier.label).join(' and no ')}.
-            A policy position that is not translated into measurable requirements and operational steps
-            cannot be evidenced.
-            {can('generate:run') && <> <Link to="/generator">Generate the missing tiers</Link>.</>}
+            {t('hierarchyUi.missingTiers', { tiers: missingTiers.map((tier) => tier.inline).join(t('hierarchyUi.missingTiersJoin')) })}
+            {' '}{t('hierarchyUi.missingTiersBody')}
+            {can('generate:run') && <> <Link to="/generator">{t('hierarchyUi.generateMissing')}</Link>.</>}
           </p>
         </div>
       )}
 
-      <Card title={`${domains.find((d) => d.value === domain)?.label || domain} governance chain`} style={{ marginTop: 14 }}>
+      <Card title={t('hierarchyUi.chainTitle', { domain: domains.find((d) => d.value === domain)?.label || domain })} style={{ marginTop: 14 }}>
         <div className="stack">
           {TIERS.map((tier, i) => {
             const items = inDomain.filter((d) => tier.types.includes(d.doc_type));
@@ -129,7 +134,7 @@ export default function Hierarchy() {
                     </div>
                   ) : (
                     <div className="tier-card" style={{ borderStyle: 'dashed', color: 'var(--text-faint)', textAlign: 'center', padding: 14 }}>
-                      No {tier.label.toLowerCase()} in this domain
+                      {tier.empty}
                     </div>
                   )}
                 </div>
@@ -143,23 +148,23 @@ export default function Hierarchy() {
           <div className="tier-connector"><IconArrowDown width={16} height={16} /></div>
           <div className="hierarchy-tier">
             <div className="tier-head">
-              <span>Evidence</span>
+              <span>{t('hierarchyUi.evidenceLabel')}</span>
               <span className="tier-rule" />
               <span className="tiny" style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>
-                The records that demonstrate the controls operated.
+                {t('hierarchyUi.evidenceHelp')}
               </span>
             </div>
             <Link to={`/evidence?domain=${domain}`} className="tier-card" style={{ borderColor: 'var(--ok)', background: 'var(--ok-soft)' }}>
-              <div className="tier-card-title" style={{ marginBottom: 2 }}>Evidence register</div>
-              <div className="tiny muted">View the evidence requirements for this domain</div>
+              <div className="tier-card-title" style={{ marginBottom: 2 }}>{t('hierarchyUi.evidenceRegister')}</div>
+              <div className="tiny muted">{t('hierarchyUi.evidenceView')}</div>
             </Link>
           </div>
         </div>
       </Card>
 
       {review && (
-        <Card title="Consistency findings" style={{ marginTop: 14 }}
-          subtitle={`Readiness score ${review.score.score}/100 across ${review.documents} documents in this domain.`}>
+        <Card title={t('hierarchyUi.findingsTitle')} style={{ marginTop: 14 }}
+          subtitle={t('hierarchyUi.findingsSubtitle', { score: review.score.score, documents: review.documents })}>
           {review.scorecard && (
             <div style={{ marginBottom: 14 }}>
               <Scorecard scorecard={review.scorecard} />
@@ -172,15 +177,15 @@ export default function Hierarchy() {
                   onStatusChange={async (finding, status) => {
                     try {
                       await api.patch(`/findings/${finding.id}`, { status });
-                      toast.success('Finding updated', labels.status(status));
+                      toast.success(t('hierarchyUi.findingUpdated'), labels.status(status));
                       setReview((r) => ({ ...r, findings: r.findings.filter((x) => x.id !== finding.id) }));
-                    } catch (err) { toast.error('Update failed', err.message); }
+                    } catch (err) { toast.error(t('hierarchyUi.updateFailed'), err.message); }
                   }} />
               ))}
             </div>
           ) : (
-            <Empty title="No inconsistencies found">
-              Every document in this domain states the same commitments, and the chain is complete.
+            <Empty title={t('hierarchyUi.noInconsistencies')}>
+              {t('hierarchyUi.noInconsistenciesBody')}
             </Empty>
           )}
         </Card>
