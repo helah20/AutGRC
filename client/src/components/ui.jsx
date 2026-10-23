@@ -1,6 +1,6 @@
 /** Shared UI primitives used across every page. */
 
-import { useEffect, useRef, useState, createContext, useContext, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, createContext, useContext, useCallback, useMemo, useId, Children, isValidElement, cloneElement } from 'react';
 import { createPortal } from 'react-dom';
 import {
   IconX, IconCheck, IconAlert, IconInfo, IconChevronDown, IconSearch, IconChevronRight
@@ -92,7 +92,7 @@ export function Kpi({ label, value, meta, tone, progress, to, onClick }) {
   const Tag = to ? 'a' : onClick ? 'button' : 'div';
   const props = to ? { href: to } : onClick ? { onClick, type: 'button' } : {};
   return (
-    <Tag className="kpi" style={Tag === 'button' ? { textAlign: 'left', font: 'inherit', cursor: 'pointer' } : undefined} {...props}>
+    <Tag className="kpi" style={Tag === 'button' ? { textAlign: 'start', font: 'inherit', cursor: 'pointer' } : undefined} {...props}>
       {tone && <span className={`kpi-accent ${tone}`} />}
       <span className="kpi-label">{label}</span>
       <span className="kpi-value">{value}</span>
@@ -117,17 +117,19 @@ export function Empty({ icon: Icon = IconInfo, title, children, action }) {
   );
 }
 
-export function Loading({ label = 'Loading…' }) {
-  return <div className="loading-block"><span className="spinner" />{label}</div>;
+export function Loading({ label }) {
+  const { t } = useI18n();
+  return <div className="loading-block"><span className="spinner" />{label ?? t('common.loading')}</div>;
 }
 
 export function ErrorNote({ error, onRetry }) {
+  const { t } = useI18n();
   if (!error) return null;
   return (
     <div className="callout" data-callout="danger">
-      <strong>Something went wrong</strong>
+      <strong>{t('uiKit.somethingWentWrong')}</strong>
       <p>{error.message || String(error)}</p>
-      {onRetry && <button className="btn btn-sm" onClick={onRetry} type="button">Try again</button>}
+      {onRetry && <button className="btn btn-sm" onClick={onRetry} type="button">{t('common.retry')}</button>}
     </div>
   );
 }
@@ -135,6 +137,7 @@ export function ErrorNote({ error, onRetry }) {
 /* ----------------------------------------------------------------- modal -- */
 
 export function Modal({ open, onClose, title, children, footer, size = '' }) {
+  const { t } = useI18n();
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -150,7 +153,7 @@ export function Modal({ open, onClose, title, children, footer, size = '' }) {
       <div className={`modal ${size}`} role="dialog" aria-modal="true" aria-label={title}>
         <header className="modal-head">
           <h3>{title}</h3>
-          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose} aria-label="Close"><IconX /></button>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose} aria-label={t('common.close')}><IconX /></button>
         </header>
         <div className="modal-body">{children}</div>
         {footer && <footer className="modal-foot">{footer}</footer>}
@@ -161,6 +164,7 @@ export function Modal({ open, onClose, title, children, footer, size = '' }) {
 }
 
 export function Drawer({ open, onClose, title, children, footer, wide }) {
+  const { t } = useI18n();
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -175,7 +179,7 @@ export function Drawer({ open, onClose, title, children, footer, wide }) {
       <aside className={`drawer ${wide ? 'drawer-wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <header className="drawer-head">
           <h3 className="truncate">{title}</h3>
-          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose} aria-label="Close"><IconX /></button>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose} aria-label={t('common.close')}><IconX /></button>
         </header>
         <div className="drawer-body">{children}</div>
         {footer && <footer className="drawer-foot">{footer}</footer>}
@@ -185,16 +189,17 @@ export function Drawer({ open, onClose, title, children, footer, wide }) {
   );
 }
 
-export function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmLabel = 'Confirm', danger }) {
+export function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmLabel, danger }) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   return (
     <Modal open={open} onClose={onClose} title={title}
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Cancel</button>
+          <button className="btn" onClick={onClose} disabled={busy}>{t('common.cancel')}</button>
           <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} disabled={busy}
             onClick={async () => { setBusy(true); try { await onConfirm(); } finally { setBusy(false); } }}>
-            {busy && <span className="spinner" style={{ width: 13, height: 13 }} />}{confirmLabel}
+            {busy && <span className="spinner" style={{ width: 13, height: 13 }} />}{confirmLabel ?? t('common.confirm')}
           </button>
         </>
       }>
@@ -208,6 +213,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, message, confir
 const ToastContext = createContext(null);
 
 export function ToastProvider({ children }) {
+  const { t } = useI18n();
   const [toasts, setToasts] = useState([]);
   const dismiss = useCallback((id) => setToasts((t) => t.filter((x) => x.id !== id)), []);
   const push = useCallback((toast) => {
@@ -229,16 +235,16 @@ export function ToastProvider({ children }) {
       {children}
       {createPortal(
         <div className="toast-stack">
-          {toasts.map((t) => (
-            <div key={t.id} className={`toast ${t.tone || ''}`} role="status">
-              {t.tone === 'ok' ? <IconCheck style={{ color: 'var(--ok)' }} />
-                : t.tone === 'danger' ? <IconAlert style={{ color: 'var(--danger)' }} />
+          {toasts.map((item) => (
+            <div key={item.id} className={`toast ${item.tone || ''}`} role="status">
+              {item.tone === 'ok' ? <IconCheck style={{ color: 'var(--ok)' }} />
+                : item.tone === 'danger' ? <IconAlert style={{ color: 'var(--danger)' }} />
                 : <IconInfo style={{ color: 'var(--info)' }} />}
               <div className="toast-body">
-                <div className="toast-title">{t.title}</div>
-                {t.msg && <div className="toast-msg">{t.msg}</div>}
+                <div className="toast-title">{item.title}</div>
+                {item.msg && <div className="toast-msg">{item.msg}</div>}
               </div>
-              <button className="btn btn-ghost btn-icon btn-sm" onClick={() => dismiss(t.id)} aria-label="Dismiss"><IconX /></button>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={() => dismiss(item.id)} aria-label={t('uiKit.dismiss')}><IconX /></button>
             </div>
           ))}
         </div>,
@@ -273,15 +279,24 @@ export function Tabs({ tabs, active, onChange }) {
 
 /* ----------------------------------------------------------------- forms -- */
 
+/** Controls a Field can name with its label: native ones, and the Select wrapper. */
+const LABELLABLE = new Set(['input', 'select', 'textarea']);
+
 export function Field({ label, hint, error, children, required }) {
+  // A visible label that is not tied to its control is read by nobody using a
+  // screen reader. Tie it when the Field holds one control and it has no id.
+  const generated = useId();
+  const only = Children.count(children) === 1 && isValidElement(children) ? children : null;
+  const tie = only && !only.props.id && (LABELLABLE.has(only.type) || only.type === Select);
+  const controlId = tie ? generated : only?.props.id;
   return (
     <div className="field">
       {label && (
-        <label className="label">
+        <label className="label" htmlFor={controlId}>
           {label}{required && <span style={{ color: 'var(--danger)' }}> *</span>}
         </label>
       )}
-      {children}
+      {tie ? cloneElement(only, { id: generated }) : children}
       {hint && !error && <span className="hint">{hint}</span>}
       {error && <span className="error-text">{error}</span>}
     </div>
@@ -289,8 +304,11 @@ export function Field({ label, hint, error, children, required }) {
 }
 
 export function Select({ value, onChange, options, placeholder, ...rest }) {
+  // A filter select has no visible label; its placeholder names it. Inside a
+  // Field, the Field's label names it instead.
   return (
-    <select className="select" value={value ?? ''} onChange={(e) => onChange(e.target.value)} {...rest}>
+    <select className="select" value={value ?? ''} onChange={(e) => onChange(e.target.value)}
+      aria-label={rest.id ? undefined : placeholder} {...rest}>
       {placeholder && <option value="">{placeholder}</option>}
       {options.map((o) => (
         <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? titleCase(o.value ?? o)}</option>
@@ -299,15 +317,17 @@ export function Select({ value, onChange, options, placeholder, ...rest }) {
   );
 }
 
-export function SearchInput({ value, onChange, placeholder = 'Search…', className = '' }) {
+export function SearchInput({ value, onChange, placeholder: placeholderProp, className = '' }) {
+  const { t } = useI18n();
+  const placeholder = placeholderProp ?? t('uiKit.searchPlaceholder');
   return (
     <div className={`topbar-search ${className}`} style={{ maxWidth: 'none' }}>
       <IconSearch width={14} height={14} />
-      <input className="input" style={{ paddingLeft: 30, paddingRight: 28 }} value={value}
-        onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      <input className="input" style={{ paddingInlineStart: 30, paddingInlineEnd: 28 }} value={value}
+        onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder} />
       {value && (
-        <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', right: 2 }}
-          onClick={() => onChange('')} aria-label="Clear search"><IconX width={13} height={13} /></button>
+        <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', insetInlineEnd: 2 }}
+          onClick={() => onChange('')} aria-label={t('uiKit.clearSearch')}><IconX width={13} height={13} /></button>
       )}
     </div>
   );
@@ -320,7 +340,7 @@ export function Collapsible({ title, subtitle, defaultOpen = false, children, ba
   return (
     <div className="card">
       <button type="button" className="card-head" onClick={() => setOpen((o) => !o)}
-        style={{ width: '100%', background: 'none', border: 'none', borderBottom: open ? '1px solid var(--border)' : 'none', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}>
+        style={{ width: '100%', background: 'none', border: 'none', borderBottom: open ? '1px solid var(--border)' : 'none', cursor: 'pointer', font: 'inherit', textAlign: 'start' }}>
         <IconChevronRight style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .15s', flex: '0 0 auto', color: 'var(--text-muted)' }} />
         <h3 style={{ flex: 1 }}>{title}</h3>
         {badge}
@@ -334,11 +354,13 @@ export function Collapsible({ title, subtitle, defaultOpen = false, children, ba
 /* ---------------------------------------------------------------- tables -- */
 
 export function DataTable({ columns, rows, onRowClick, empty, keyOf, rowClass }) {
+  const { t } = useI18n();
   if (!rows?.length) {
-    return <div className="card-body">{empty || <Empty title="Nothing to show" />}</div>;
+    return <div className="card-body">{empty || <Empty title={t('uiKit.nothingToShow')} />}</div>;
   }
   return (
-    <div className="table-wrap">
+    // Focusable so a keyboard user can scroll a table wider than the screen.
+    <div className="table-wrap" tabIndex={0}>
       <table className="data">
         <thead>
           <tr>{columns.map((c) => <th key={c.key} className={c.align === 'right' ? 'num' : ''} style={c.width ? { width: c.width } : undefined}>{c.header}</th>)}</tr>
@@ -364,6 +386,7 @@ export function DataTable({ columns, rows, onRowClick, empty, keyOf, rowClass })
 /* ------------------------------------------------------------ misc bits --- */
 
 export function ScoreRing({ score, size = 76 }) {
+  const { t } = useI18n();
   const tone = score >= 85 ? 'ok' : score >= 60 ? 'warn' : 'danger';
   const colour = { ok: 'var(--ok)', warn: 'var(--warn)', danger: 'var(--danger)' }[tone];
   const r = (size - 9) / 2;
@@ -378,7 +401,7 @@ export function ScoreRing({ score, size = 76 }) {
       </svg>
       <div>
         <div className="score-value" style={{ color: colour }}>{score}</div>
-        <div className="tiny muted">out of 100</div>
+        <div className="tiny muted">{t('uiKit.outOf100')}</div>
       </div>
     </div>
   );

@@ -3,6 +3,8 @@
 import { SeverityBadge, Badge, ProvenanceTag } from './ui.jsx';
 import { titleCase, relativeTime } from '../lib/format.js';
 import { IconCheck, IconX, IconAlert } from './Icons.jsx';
+import { useI18n } from '../i18n/index.jsx';
+import { useLabels } from '../i18n/labels.js';
 
 function parseEvidence(evidence) {
   if (!evidence) return null;
@@ -13,6 +15,8 @@ function parseEvidence(evidence) {
 }
 
 export default function FindingCard({ finding, onStatusChange, canManage }) {
+  const { t } = useI18n();
+  const labels = useLabels();
   const evidence = parseEvidence(finding.evidence);
 
   return (
@@ -20,9 +24,9 @@ export default function FindingCard({ finding, onStatusChange, canManage }) {
       <div className="finding-head">
         <SeverityBadge severity={finding.severity} />
         <span className="finding-title">{finding.title}</span>
-        <Badge tone="neutral">{titleCase(finding.category)}</Badge>
+        <Badge tone="neutral">{labels.findingCategory(finding.category, titleCase(finding.category))}</Badge>
         {finding.source === 'ai' && <ProvenanceTag provenance="ai_recommendation" />}
-        {finding.status && finding.status !== 'open' && <Badge tone="info">{titleCase(finding.status)}</Badge>}
+        {finding.status && finding.status !== 'open' && <Badge tone="info">{labels.findingStatus(finding.status, titleCase(finding.status))}</Badge>}
       </div>
 
       {finding.location && <div className="tiny muted mono" style={{ marginTop: 4 }}>{finding.location}</div>}
@@ -32,7 +36,7 @@ export default function FindingCard({ finding, onStatusChange, canManage }) {
         <div className="finding-evidence">
           <div className="evidence-quote conflict">
             <div className="evidence-quote-label">
-              Conflicting — {evidence.conflicting.document}
+              {t('findingsUi.conflicting', { document: evidence.conflicting.document })}
               {evidence.conflicting.section ? ` · ${evidence.conflicting.section}` : ''}
             </div>
             “{evidence.conflicting.statement}”
@@ -40,7 +44,7 @@ export default function FindingCard({ finding, onStatusChange, canManage }) {
           {evidence.agreeing && (
             <div className="evidence-quote agree">
               <div className="evidence-quote-label">
-                Agrees with the Standard — {evidence.agreeing.document}
+                {t('findingsUi.agreesWithStandard', { document: evidence.agreeing.document })}
                 {evidence.agreeing.section ? ` · ${evidence.agreeing.section}` : ''}
               </div>
               “{evidence.agreeing.statement}”
@@ -48,8 +52,8 @@ export default function FindingCard({ finding, onStatusChange, canManage }) {
           )}
           {evidence.agreedValue && (
             <div className="tiny muted">
-              Agreed organisational value: <span className="strong">{evidence.agreedValue}</span>
-              {evidence.parameter ? <> (parameter <span className="mono">{evidence.parameter}</span>)</> : null}
+              {t('findingsUi.agreedValue')} <span className="strong">{evidence.agreedValue}</span>
+              {evidence.parameter ? <> ({t('findingsUi.parameter')} <span className="mono">{evidence.parameter}</span>)</> : null}
             </div>
           )}
         </div>
@@ -57,7 +61,7 @@ export default function FindingCard({ finding, onStatusChange, canManage }) {
 
       {evidence?.statement && !evidence.conflicting && (
         <div className="evidence-quote" style={{ marginTop: 8 }}>
-          <div className="evidence-quote-label">Statement</div>“{evidence.statement}”
+          <div className="evidence-quote-label">{t('findingsUi.statement')}</div>“{evidence.statement}”
         </div>
       )}
 
@@ -73,26 +77,26 @@ export default function FindingCard({ finding, onStatusChange, canManage }) {
 
       {evidence?.roles && (
         <div className="tiny muted" style={{ marginTop: 6 }}>
-          Roles marked accountable: <span className="strong">{evidence.roles.join(', ')}</span>
+          {t('findingsUi.rolesAccountable')} <span className="strong">{evidence.roles.join(', ')}</span>
         </div>
       )}
 
       {evidence?.refs && (
         <div className="row-tight" style={{ marginTop: 6, flexWrap: 'wrap' }}>
           {evidence.refs.slice(0, 12).map((r) => <span key={r} className="pill mono">{r}</span>)}
-          {evidence.refs.length > 12 && <span className="tiny muted">+{evidence.refs.length - 12} more</span>}
+          {evidence.refs.length > 12 && <span className="tiny muted">{t('findingsUi.more', { count: evidence.refs.length - 12 })}</span>}
         </div>
       )}
 
-      {finding.recommendation && <div className="finding-rec"><strong>Recommendation. </strong>{finding.recommendation}</div>}
+      {finding.recommendation && <div className="finding-rec"><strong>{t('findingsUi.recommendation')} </strong>{finding.recommendation}</div>}
 
       {canManage && onStatusChange && finding.id && (
-        <div className="row-tight" style={{ marginTop: 9 }}>
-          <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'acknowledged')}>Acknowledge</button>
-          <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'resolved')}><IconCheck width={12} height={12} />Resolved</button>
-          <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'accepted_risk')}><IconAlert width={12} height={12} />Accept risk</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => onStatusChange(finding, 'false_positive')}><IconX width={12} height={12} />False positive</button>
-          {finding.created_at && <span className="tiny faint" style={{ marginLeft: 'auto' }}>Raised {relativeTime(finding.created_at)}</span>}
+        <div className="row-tight" style={{ marginTop: 9, flexWrap: 'wrap' }}>
+          <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'acknowledged')}>{t('findingsUi.acknowledge')}</button>
+          <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'resolved')}><IconCheck width={12} height={12} />{t('findingsUi.resolved')}</button>
+          <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'accepted_risk')}><IconAlert width={12} height={12} />{t('findingsUi.acceptRisk')}</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => onStatusChange(finding, 'false_positive')}><IconX width={12} height={12} />{t('findingsUi.falsePositive')}</button>
+          {finding.created_at && <span className="tiny faint" style={{ marginInlineStart: 'auto' }}>{t('findingsUi.raised', { when: relativeTime(finding.created_at) })}</span>}
         </div>
       )}
     </article>

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './lib/auth.jsx';
+import { useI18n } from './i18n/index.jsx';
 import { Loading } from './components/ui.jsx';
 import Shell from './components/Shell.jsx';
 import Login from './pages/Login.jsx';
@@ -31,11 +32,22 @@ import SearchPage from './pages/SearchPage.jsx';
 import Settings from './pages/Settings.jsx';
 import Setup from './pages/Setup.jsx';
 
+/**
+ * A page whose navigation link is hidden for want of a permission is not
+ * reachable by typing its address either: the server would refuse the work,
+ * and a form that cannot be submitted only misleads.
+ */
+function Permitted({ permission, children }) {
+  const { can } = useAuth();
+  return can(permission) ? children : <Navigate to="/dashboard" replace />;
+}
+
 export default function App() {
   const { session, loading, accountBlock } = useAuth();
+  const { t } = useI18n();
 
   if (loading) {
-    return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><Loading label="Starting AutGRC…" /></div>;
+    return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><Loading label={t('auth.starting')} /></div>;
   }
 
   if (!session) {
@@ -64,7 +76,7 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/my-work" element={<MyWork />} />
-        <Route path="/generator" element={<Generator />} />
+        <Route path="/generator" element={<Permitted permission="generate:run"><Generator /></Permitted>} />
         <Route path="/documents" element={<Documents />} />
         <Route path="/documents/:id" element={<DocumentDetail />} />
         <Route path="/policies" element={<Documents fixedType="policy" />} />
@@ -86,7 +98,7 @@ export default function App() {
         <Route path="/risks" element={<Risks />} />
         <Route path="/actions" element={<Actions />} />
         <Route path="/soa" element={<Soa />} />
-        <Route path="/imports" element={<Imports />} />
+        <Route path="/imports" element={<Permitted permission="import:write"><Imports /></Permitted>} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/management-reviews" element={<ManagementReviews />} />
         <Route path="/search" element={<SearchPage />} />

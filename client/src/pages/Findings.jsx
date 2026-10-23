@@ -19,7 +19,7 @@ export default function Findings() {
   const [status, setStatus] = useState('open,acknowledged');
   const { data, loading, error, reload } = useFetch(`/findings${qs({ severity, category, status })}`);
 
-  if (loading) return <Loading label="Loading findings…" />;
+  if (loading) return <Loading label={t('findingsUi.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
   const bySeverity = Object.fromEntries((data.facets.bySeverity || []).map((r) => [r.severity, r.n]));
@@ -34,27 +34,27 @@ export default function Findings() {
       </div>
 
       <div className="grid grid-kpi" style={{ marginBottom: 14 }}>
-        <Kpi label="Critical" value={bySeverity.critical || 0} tone="danger" />
-        <Kpi label="High" value={bySeverity.high || 0} tone="danger" />
-        <Kpi label="Medium" value={bySeverity.medium || 0} tone="warn" />
-        <Kpi label="Low" value={bySeverity.low || 0} />
-        <Kpi label="Informational" value={bySeverity.info || 0} />
+        <Kpi label={labels.rating('critical')} value={bySeverity.critical || 0} tone="danger" />
+        <Kpi label={labels.rating('high')} value={bySeverity.high || 0} tone="danger" />
+        <Kpi label={labels.rating('medium')} value={bySeverity.medium || 0} tone="warn" />
+        <Kpi label={labels.rating('low')} value={bySeverity.low || 0} />
+        <Kpi label={t('findingsUi.informational')} value={bySeverity.info || 0} />
       </div>
 
       <Card flush>
         <div className="table-toolbar">
-          <Select value={status} onChange={setStatus}
+          <Select value={status} onChange={setStatus} aria-label={t('common.status')}
             options={[
-              { value: 'open,acknowledged', label: 'Open and acknowledged' },
-              { value: 'open', label: 'Open only' },
-              { value: 'resolved', label: 'Resolved' },
-              { value: 'accepted_risk', label: 'Risk accepted' },
-              { value: 'false_positive', label: 'False positives' },
-              { value: '', label: 'All statuses' }
+              { value: 'open,acknowledged', label: t('findingsUi.filterOpenAcknowledged') },
+              { value: 'open', label: t('findingsUi.filterOpenOnly') },
+              { value: 'resolved', label: t('findingsUi.filterResolved') },
+              { value: 'accepted_risk', label: t('findingsUi.filterRiskAccepted') },
+              { value: 'false_positive', label: t('findingsUi.filterFalsePositives') },
+              { value: '', label: t('findingsUi.filterAllStatuses') }
             ]} />
-          <Select value={severity} onChange={setSeverity} placeholder="All severities"
-            options={['critical', 'high', 'medium', 'low', 'info'].map((v) => ({ value: v, label: titleCase(v) }))} />
-          <Select value={category} onChange={setCategory} placeholder="All categories"
+          <Select value={severity} onChange={setSeverity} placeholder={t('findingsUi.allSeverities')}
+            options={['critical', 'high', 'medium', 'low', 'info'].map((v) => ({ value: v, label: labels.rating(v) }))} />
+          <Select value={category} onChange={setCategory} placeholder={t('findingsUi.allCategories')}
             options={(data.facets.byCategory || []).map((c) => ({ value: c.category, label: `${labels.findingCategory(c.category)} (${c.n})` }))} />
           <span className="table-count">{t('counts.findings', { count: formatNumber(data.items.length) })}</span>
         </div>
@@ -71,16 +71,16 @@ export default function Findings() {
                     onStatusChange={async (finding, next) => {
                       try {
                         await api.patch(`/findings/${finding.id}`, { status: next });
-                        toast.success('Finding updated', titleCase(next));
+                        toast.success(t('findingsUi.updated'), labels.findingStatus(next));
                         reload();
-                      } catch (err) { toast.error('Update failed', err.message); }
+                      } catch (err) { toast.error(t('findingsUi.updateFailed'), err.message); }
                     }} />
                 </div>
               ))}
             </div>
           ) : (
-            <Empty icon={IconCheck} title="No findings match">
-              Either the governance library is clean, or the filters are too narrow.
+            <Empty icon={IconCheck} title={t('findingsUi.emptyTitle')}>
+              {t('findingsUi.emptyBody')}
             </Empty>
           )}
         </div>

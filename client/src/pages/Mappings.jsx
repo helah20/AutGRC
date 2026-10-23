@@ -13,6 +13,17 @@ import { titleCase, TONE_COLORS } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
 import { useT } from '../i18n/index.jsx';
 
+/** Crosswalk relation enum, translated at render time; unknown values fall back to Title Case. */
+function relationLabel(t, value) {
+  const map = {
+    equivalent: t('mappingsUi.relation.equivalent'),
+    broader: t('mappingsUi.relation.broader'),
+    narrower: t('mappingsUi.relation.narrower'),
+    related: t('mappingsUi.relation.related')
+  };
+  return map[value] || titleCase(value);
+}
+
 export default function Mappings() {
   const t = useT();
   const labels = useLabels();
@@ -22,7 +33,7 @@ export default function Mappings() {
   const { data: crosswalks } = useFetch(`/frameworks/crosswalks${domain ? `?domain=${domain}` : ''}`);
   const [trace, setTrace] = useState(null);
 
-  if (loading) return <Loading label="Building the coverage picture…" />;
+  if (loading) return <Loading label={t('mappingsUi.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
   const chartData = data.frameworks.map((f) => ({ name: f.code, value: f.coverage, mandatory: f.is_mandatory }));
@@ -36,14 +47,14 @@ export default function Mappings() {
         </div>
         <div className="page-actions">
           <button className="btn" onClick={() => api.download('/export/mappings.xlsx', 'Framework Mapping.xlsx')
-            .then(() => toast.success('Exported')).catch((e) => toast.error('Export failed', e.message))}>
-            <IconDownload />Export
+            .then(() => toast.success(t('common.exported'))).catch((e) => toast.error(t('common.exportFailed'), e.message))}>
+            <IconDownload />{t('common.export')}
           </button>
         </div>
       </div>
 
       <div className="grid grid-2" style={{ marginBottom: 14 }}>
-        <Card title="Coverage by source" subtitle="Partial mappings count as half. Not-applicable requirements are excluded from the denominator.">
+        <Card title={t('mappingsUi.bySource')} subtitle={t('mappingsUi.bySourceSub')}>
           <div style={{ height: 250 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
@@ -51,7 +62,7 @@ export default function Mappings() {
                 <XAxis dataKey="name" stroke="var(--text-faint)" fontSize={10} tickLine={false} axisLine={false}
                   angle={-32} textAnchor="end" height={62} interval={0} />
                 <YAxis stroke="var(--text-faint)" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
-                <Tooltip formatter={(v) => [`${v}%`, 'Coverage']}
+                <Tooltip formatter={(v) => [`${v}%`, t('mappingsUi.coverage')]}
                   contentStyle={{ background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12 }} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {chartData.map((e) => (
@@ -63,10 +74,10 @@ export default function Mappings() {
           </div>
         </Card>
 
-        <Card title="Coverage by domain" subtitle="How much of each domain's catalogued requirement set has a mapped control." flush>
-          <div className="table-wrap" style={{ maxHeight: 300, overflowY: 'auto' }}>
+        <Card title={t('mappingsUi.byDomain')} subtitle={t('mappingsUi.byDomainSub')} flush>
+          <div className="table-wrap" tabIndex={0} style={{ maxHeight: 300, overflowY: 'auto' }}>
             <table className="data">
-              <thead><tr><th>Domain</th><th className="num">Requirements</th><th className="num">Mapped</th><th style={{ width: 150 }}>Coverage</th></tr></thead>
+              <thead><tr><th>{t('mappingsUi.colDomain')}</th><th className="num">{t('mappingsUi.colRequirements')}</th><th className="num">{t('mappingsUi.colMapped')}</th><th style={{ width: 150 }}>{t('mappingsUi.coverage')}</th></tr></thead>
               <tbody>
                 {data.domains.filter((d) => d.requirements > 0).map((d) => (
                   <tr key={d.key}>
@@ -82,35 +93,35 @@ export default function Mappings() {
         </Card>
       </div>
 
-      <Card title="Source coverage detail" flush style={{ marginBottom: 14 }}>
+      <Card title={t('mappingsUi.sourceDetail')} flush style={{ marginBottom: 14 }}>
         <DataTable
           columns={[
-            { key: 'code', header: 'Source', nowrap: true, render: (f) => (<><span className="ref-tag">{f.code}</span>{f.is_mandatory ? <Badge tone="critical" >Regulatory</Badge> : null}</>) },
-            { key: 'name', header: 'Name', render: (f) => <span className="small">{f.name}</span> },
-            { key: 'total', header: 'Requirements', align: 'right' },
-            { key: 'covered', header: 'Covered', align: 'right' },
-            { key: 'partial', header: 'Partial', align: 'right' },
-            { key: 'notCovered', header: 'Not covered', align: 'right', render: (f) => f.notCovered > 0 ? <span style={{ color: 'var(--danger)' }}>{f.notCovered}</span> : f.notCovered },
-            { key: 'notApplicable', header: 'N/A', align: 'right' },
-            { key: 'coverage', header: 'Coverage', render: (f) => <CoverageBar value={f.coverage} /> }
+            { key: 'code', header: t('mappingsUi.colSource'), nowrap: true, render: (f) => (<><span className="ref-tag">{f.code}</span>{f.is_mandatory ? <Badge tone="critical" >{t('mappingsUi.regulatory')}</Badge> : null}</>) },
+            { key: 'name', header: t('mappingsUi.colName'), render: (f) => <span className="small">{f.name}</span> },
+            { key: 'total', header: t('mappingsUi.colRequirements'), align: 'right' },
+            { key: 'covered', header: t('mappingsUi.colCovered'), align: 'right' },
+            { key: 'partial', header: t('mappingsUi.colPartial'), align: 'right' },
+            { key: 'notCovered', header: t('mappingsUi.colNotCovered'), align: 'right', render: (f) => f.notCovered > 0 ? <span style={{ color: 'var(--danger)' }}>{f.notCovered}</span> : f.notCovered },
+            { key: 'notApplicable', header: t('mappingsUi.colNotApplicable'), align: 'right' },
+            { key: 'coverage', header: t('mappingsUi.coverage'), render: (f) => <CoverageBar value={f.coverage} /> }
           ]}
           rows={data.frameworks}
           keyOf={(f) => f.code}
         />
       </Card>
 
-      <Card title="Cross-framework equivalences"
-        subtitle="Curated relationships between requirements in different sources. One control mapped here contributes to every equivalent requirement."
+      <Card title={t('mappingsUi.equivalences')}
+        subtitle={t('mappingsUi.equivalencesSub')}
         flush
         actions={
-          <Select value={domain} onChange={setDomain} placeholder="All domains"
+          <Select value={domain} onChange={setDomain} placeholder={t('mappingsUi.allDomains')}
             options={data.domains.filter((d) => d.requirements > 0).map((d) => ({ value: d.key, label: d.name }))} />
         }>
         {crosswalks?.items?.length ? (
-          <div className="table-wrap" style={{ maxHeight: 520, overflowY: 'auto' }}>
+          <div className="table-wrap" tabIndex={0} style={{ maxHeight: 520, overflowY: 'auto' }}>
             <table className="data">
               <thead>
-                <tr><th>Domain</th><th>Source requirement</th><th style={{ width: 40 }} /><th>Equivalent requirement</th><th>Relation</th></tr>
+                <tr><th>{t('mappingsUi.colDomain')}</th><th>{t('mappingsUi.colSourceRequirement')}</th><th style={{ width: 40 }} /><th>{t('mappingsUi.colEquivalentRequirement')}</th><th>{t('mappingsUi.colRelation')}</th></tr>
               </thead>
               <tbody>
                 {crosswalks.items.map((cw) => (
@@ -120,7 +131,7 @@ export default function Mappings() {
                       <button className="btn btn-ghost btn-sm" style={{ padding: 0, height: 'auto' }}
                         onClick={async () => {
                           try { setTrace(await api.get(`/frameworks/requirements/${cw.source_id}/trace`)); }
-                          catch (err) { toast.error('Could not load traceability', err.message); }
+                          catch (err) { toast.error(t('mappingsUi.traceFailed'), err.message); }
                         }}>
                         <span className="ref-tag">{cw.source_framework} {cw.source_ref}</span>
                       </button>
@@ -131,19 +142,19 @@ export default function Mappings() {
                       <button className="btn btn-ghost btn-sm" style={{ padding: 0, height: 'auto' }}
                         onClick={async () => {
                           try { setTrace(await api.get(`/frameworks/requirements/${cw.target_id}/trace`)); }
-                          catch (err) { toast.error('Could not load traceability', err.message); }
+                          catch (err) { toast.error(t('mappingsUi.traceFailed'), err.message); }
                         }}>
                         <span className="ref-tag">{cw.target_framework} {cw.target_ref}</span>
                       </button>
                       <div className="cell-sub clamp-2">{cw.target_title}</div>
                     </td>
-                    <td className="nowrap"><Badge tone={cw.relation === 'equivalent' ? 'ok' : 'neutral'}>{titleCase(cw.relation)}</Badge></td>
+                    <td className="nowrap"><Badge tone={cw.relation === 'equivalent' ? 'ok' : 'neutral'}>{relationLabel(t, cw.relation)}</Badge></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        ) : <div className="card-body"><Empty icon={IconLink} title="No equivalences for this domain" /></div>}
+        ) : <div className="card-body"><Empty icon={IconLink} title={t('mappingsUi.noEquivalences')} /></div>}
       </Card>
 
       <Drawer open={Boolean(trace)} onClose={() => setTrace(null)} wide

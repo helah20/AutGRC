@@ -69,7 +69,7 @@ export default function Soa() {
           </p>
         </div>
         <div className="page-actions">
-          <Select value={code} onChange={setCode}
+          <Select value={code} onChange={setCode} aria-label={t('common.framework')}
             options={(catalogue?.items || []).map((f) => ({
               value: f.code,
               label: `${f.code}${f.version ? ` (${f.version})` : ''}${f.edition_status === 'superseded' ? ' — superseded' : ''}`

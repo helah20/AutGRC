@@ -89,7 +89,7 @@ export default function Evidence() {
               {
                 key: 'file_count', header: t('evidence.columnArtefacts'), nowrap: true, width: 96,
                 render: (e) => (e.file_count
-                  ? <Badge tone="ok" title={`Most recent ${formatDate(e.latest_file_at)}`}>{t('evidence.artefactCount', { count: formatNumber(e.file_count) })}</Badge>
+                  ? <Badge tone="ok" title={t('evidenceUi.mostRecent', { date: formatDate(e.latest_file_at) })}>{t('evidence.artefactCount', { count: formatNumber(e.file_count) })}</Badge>
                   : <span className="small muted">{t('evidence.noArtefacts')}</span>)
               },
               { key: 'status', header: t('common.status'), nowrap: true, render: (e) => <Badge tone={EVIDENCE_TONE[e.status] || 'neutral'}>{labels.evidenceStatus(e.status)}</Badge> }
@@ -125,11 +125,11 @@ export default function Evidence() {
               <Badge tone={EVIDENCE_TONE[selected.status] || 'neutral'}>{labels.evidenceStatus(selected.status)}</Badge>
             </div>
             <p className="muted small">{selected.description}</p>
-            <div className="definition">
+            <dl className="definition">
               <dt>{t('evidence.control')}</dt><dd>{selected.control_ref ? `${selected.control_ref} — ${selected.control_name}` : '—'}</dd>
               <dt>{t('evidence.columnFrequency')}</dt><dd>{selected.frequency || '—'}</dd>
               <dt>{t('evidence.retention')}</dt><dd>{selected.retention || '—'}</dd>
-            </div>
+            </dl>
 
             <Attachments evidenceId={selected.id} onRegisterChange={reload} />
 
@@ -138,7 +138,7 @@ export default function Evidence() {
                 <h4>{t('evidence.registerEntry')}</h4>
                 <Field label={t('common.status')}>
                   <Select value={selected.status} onChange={(v) => setSelected((s) => ({ ...s, status: v }))}
-                    options={['required', 'collected', 'verified', 'missing', 'expired'].map((v) => ({ value: v, label: titleCase(v) }))} />
+                    options={['required', 'collected', 'verified', 'missing', 'expired'].map((v) => ({ value: v, label: labels.evidenceStatus(v, titleCase(v)) }))} />
                 </Field>
                 <Field label={t('evidence.ownerRole')}>
                   <input className="input" value={selected.owner_role || ''} onChange={(e) => setSelected((s) => ({ ...s, owner_role: e.target.value }))} />
@@ -228,7 +228,7 @@ function Attachments({ evidenceId, onRegisterChange }) {
       setFiles(res.files || []);
       toast.success(t('evidence.verifiedToast'));
       onRegisterChange?.();
-    } catch (err) { toast.error('Verification failed', err.message); }
+    } catch (err) { toast.error(t('evidenceUi.verificationFailed'), err.message); }
   }
 
   async function remove(file) {
@@ -237,7 +237,7 @@ function Attachments({ evidenceId, onRegisterChange }) {
       setFiles(res.files || []);
       toast.success(t('evidence.removed'));
       onRegisterChange?.();
-    } catch (err) { toast.error('Could not remove', err.message); }
+    } catch (err) { toast.error(t('evidenceUi.couldNotRemove'), err.message); }
   }
 
   return (
@@ -266,7 +266,7 @@ function Attachments({ evidenceId, onRegisterChange }) {
                   <div className="attachment-meta">
                     {formatBytes(file.size_bytes)} · {formatDate(file.collected_at)}
                     {file.period ? ` · ${file.period}` : ''}
-                    {file.uploaded_by_name ? ` · by ${file.uploaded_by_name}` : ''}
+                    {file.uploaded_by_name ? ` · ${t('evidenceUi.byName', { name: file.uploaded_by_name })}` : ''}
                   </div>
                   {file.note && <div className="attachment-note">{file.note}</div>}
                   <div className="attachment-meta tiny mono" title="SHA-256">
@@ -308,7 +308,7 @@ function Attachments({ evidenceId, onRegisterChange }) {
             </Field>
           </div>
           <Field label={t('evidence.note')} hint={t('evidence.noteHint')}>
-            <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Export from the identity provider, all privileged accounts" />
+            <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('evidenceUi.notePlaceholder')} />
           </Field>
           <input ref={fileInput} type="file" onChange={attach} disabled={busy} style={{ display: 'none' }} />
           <button className="btn btn-primary btn-sm" onClick={() => fileInput.current?.click()} disabled={busy}>
