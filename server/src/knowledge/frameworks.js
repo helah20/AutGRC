@@ -264,6 +264,7 @@ export const REQUIREMENTS = {
     ['2-3-1', 'Cybersecurity requirements for protection of information system and processing facilities of the entity shall be identified, documented, and approved.', 'endpoint_security', 3, '2-3'],
     ['2-3-2', 'Cybersecurity requirements for protection of information systems and processing facilities of the entity shall be implemented.', 'endpoint_security', 3, '2-3'],
     ['2-3-3', 'Cybersecurity requirements for protection of information systems and processing facilities of the entity shall include the following as a minimum:', 'endpoint_security', 3, '2-3'],
+    ['2-3-4', 'The implementation of cybersecurity requirements for protection of the information system and processing facilities of the entity shall be periodically reviewed.', 'endpoint_security', 3, '2-3'],
     ['2-4', 'Email Protection', 'email_security', 2, '2'],
     ['2-4-1', 'Cybersecurity requirements for protection of the email service of the entity shall be identified, documented, and approved.', 'email_security', 3, '2-4'],
     ['2-4-2', 'Cybersecurity requirements for protection of email service of the entity shall be implemented.', 'email_security', 3, '2-4'],

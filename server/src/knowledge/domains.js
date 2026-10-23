@@ -53,6 +53,8 @@ export const DOMAIN_META = [
     description: 'Segmentation, perimeter defence, secure remote access, wireless security and network service hardening.' },
   { key: 'email_security', name: 'Email Security', short: 'EML', category: 'protect',
     description: 'Message filtering, sender authentication, mailbox access, advanced threat protection, archiving and impersonation defence.' },
+  { key: 'database_security', name: 'Database Security', short: 'DBS', category: 'protect',
+    description: 'Database register, hardening, access through applications, administrator control, activity monitoring, encryption and recovery.' },
   { key: 'endpoint_security', name: 'Endpoint Security', short: 'END', category: 'protect',
     description: 'Workstation, server and mobile device protection, malware defence, hardening and removable media control.' },
   { key: 'cloud_security', name: 'Cloud Security', short: 'CLD', category: 'protect',

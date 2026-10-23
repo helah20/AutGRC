@@ -394,6 +394,9 @@ const AR_PARAMETER_TOPICS = {
   emailRestoreTestFrequency: ['سترجاع', 'بريد'],
   phishingTriageSla: ['بلاغ', 'تصيد'],
   emailReviewFrequency: ['راجع', 'بريد'],
+  // databases. The review sentence does not name recovery, for the same reason.
+  dbAccessReviewFrequency: ['صلاحيات', 'قواعد'],
+  dbRestoreTestFrequency: ['ستعاد', 'قواعد'],
   dataReturnSla: ['بيانات', 'عاد'],
   fourthPartyReview: ['مورد', 'عتمد'],
   supplierExitTesting: ['خروج', 'مورد']

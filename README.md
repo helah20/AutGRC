@@ -151,9 +151,9 @@ server/                 Node.js + Express + SQLite (better-sqlite3)
 
 | File | Contents |
 | --- | --- |
-| `frameworks.js` | 16 frameworks, 542 requirement references, 126 cross-framework equivalences |
+| `frameworks.js` | 16 frameworks, 543 requirement references, 126 cross-framework equivalences |
 | `domains.js` | 24 cybersecurity domains and the placeholder resolver |
-| `req-*.js` | Canonical requirement models: 227 requirements across 25 domains, every one traced to at least one framework requirement |
+| `req-*.js` | Canonical requirement models: 239 requirements across 26 domains, every one traced to at least one framework requirement |
 | `roles.js` | 14 cybersecurity roles with authority, approvals and escalations |
 | `index.js` | Assembly and a load-time integrity validator |
 
@@ -274,7 +274,7 @@ document types, roles, coverage, risk bands, treatments, finding categories —
 which are re-labelled on the client from the key the API sends, so no endpoint
 needs to know the reader's language.
 
-**Generated documents in Arabic.** All twenty-five domains generate a complete
+**Generated documents in Arabic.** All twenty-six domains generate a complete
 Arabic package: every policy clause, standard requirement, procedure step,
 decision branch, escalation condition, role definition, RACI activity, control
 name, KPI and piece of required evidence.

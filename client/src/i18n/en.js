@@ -698,6 +698,7 @@ export default {
     cryptography: 'Cryptography',
     network_security: 'Network Security',
     email_security: 'Email Security',
+    database_security: 'Database Security',
     endpoint_security: 'Endpoint Security',
     cloud_security: 'Cloud Security',
     application_security: 'Application Security',

@@ -439,7 +439,7 @@ export const ROLE_LIBRARY = [
     activities: ['Chair the change advisory board.', 'Deploy patches within the applicable service levels.', 'Monitor security tooling health and availability.', 'Execute recovery testing on the defined cycle.'],
     approvals: ['Standard and normal changes at the change advisory board.', 'Emergency change authorisation.', 'Technical implementation approach for approved controls.'],
     escalations: ['Escalate controls that cannot be implemented as specified to the Security Architect and CISO.', 'Escalate degraded security tooling as an operational incident.', 'Escalate repeated backup failures to the System Owner and Cybersecurity GRC Manager.'],
-    domains: ['change_management', 'endpoint_security', 'network_security', 'email_security', 'backup_recovery']
+    domains: ['change_management', 'endpoint_security', 'database_security', 'network_security', 'email_security', 'backup_recovery']
   },
   {
     code: 'internal_auditor', name: 'Internal Auditor', shortName: 'Internal Audit', category: 'Assurance',
