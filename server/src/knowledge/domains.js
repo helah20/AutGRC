@@ -55,6 +55,8 @@ export const DOMAIN_META = [
     description: 'Message filtering, sender authentication, mailbox access, advanced threat protection, archiving and impersonation defence.' },
   { key: 'database_security', name: 'Database Security', short: 'DBS', category: 'protect',
     description: 'Database register, hardening, access through applications, administrator control, activity monitoring, encryption and recovery.' },
+  { key: 'ot_security', name: 'OT/ICS Security', short: 'OTS', category: 'protect',
+    description: 'Operational technology and industrial control systems: facility levels, zones, remote access, hardening, monitoring and safe operation (NCA OTCC).' },
   { key: 'endpoint_security', name: 'Endpoint Security', short: 'END', category: 'protect',
     description: 'Workstation, server and mobile device protection, malware defence, hardening and removable media control.' },
   { key: 'cloud_security', name: 'Cloud Security', short: 'CLD', category: 'protect',

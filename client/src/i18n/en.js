@@ -740,6 +740,7 @@ export default {
     network_security: 'Network Security',
     email_security: 'Email Security',
     database_security: 'Database Security',
+    ot_security: 'OT/ICS Security',
     endpoint_security: 'Endpoint Security',
     cloud_security: 'Cloud Security',
     application_security: 'Application Security',

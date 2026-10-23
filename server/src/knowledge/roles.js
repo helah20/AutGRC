@@ -169,7 +169,7 @@ export const ROLE_LIBRARY = [
     ],
     approvals: ['Security design approval at project gates.', 'Deviations from approved architecture patterns.', 'Cryptographic algorithm selections outside the standard list.'],
     escalations: ['Escalate designs that cannot meet security requirements to the CISO for risk acceptance.', 'Escalate systemic architectural weaknesses to the Cybersecurity Steering Committee.'],
-    domains: ['network_security', 'cryptography', 'cloud_security', 'secure_sdlc']
+    domains: ['network_security', 'cryptography', 'cloud_security', 'secure_sdlc', 'ot_security']
   },
   {
     code: 'soc_analyst', name: 'SOC Analyst', shortName: 'SOC Analyst', category: 'Operations',

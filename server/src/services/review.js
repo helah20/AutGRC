@@ -397,6 +397,9 @@ const AR_PARAMETER_TOPICS = {
   // databases. The review sentence does not name recovery, for the same reason.
   dbAccessReviewFrequency: ['صلاحيات', 'قواعد'],
   dbRestoreTestFrequency: ['ستعاد', 'قواعد'],
+  // operational technology
+  otVulnAssessmentFrequency: ['تقييم', 'ثغرات'],
+  otAssetInventoryReview: ['جرد', 'راجع'],
   dataReturnSla: ['بيانات', 'عاد'],
   fourthPartyReview: ['مورد', 'عتمد'],
   supplierExitTesting: ['خروج', 'مورد']

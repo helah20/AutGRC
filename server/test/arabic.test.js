@@ -45,7 +45,7 @@ const placeholders = (text) =>
  * Run `fn` with one domain's Arabic entry withheld.
  *
  * The fallback to English matters most for a domain that has no translation
- * yet, and all twenty-six now do, so there is no longer a domain in the
+ * yet, and all twenty-seven now do, so there is no longer a domain in the
  * shipped set to exercise it against. Withholding one for the duration of the
  * assertion runs the real code path rather than replacing it with a test of
  * something else; the entry is restored in a finally so a failure here cannot
@@ -406,6 +406,7 @@ const PLANTED = {
   network_security: { docType: 'procedure', agreed: 'بتكرار نصف سنوي', wrong: 'بتكرار سنوي', parameter: 'firewallReviewFrequency' },
   email_security: { docType: 'standard', agreed: '٤ ساعات', wrong: '٨ ساعات', parameter: 'phishingTriageSla' },
   database_security: { docType: 'standard', agreed: 'بتكرار ربع سنوي', wrong: 'بتكرار سنوي', parameter: 'dbAccessReviewFrequency' },
+  ot_security: { docType: 'standard', agreed: 'بتكرار نصف سنوي', wrong: 'بتكرار سنوي', parameter: 'otAssetInventoryReview' },
   application_security: { docType: 'procedure', agreed: '١٥ يوماً', wrong: '٤٥ يوماً', parameter: 'criticalAppFindingSla' },
   change_management: { docType: 'procedure', agreed: '٥ أيام عمل', wrong: '١٥ يوم عمل', parameter: 'emergencyChangeReviewSla' },
   physical_security: { docType: 'procedure', agreed: 'بتكرار ربع سنوي', wrong: 'بتكرار سنوي', parameter: 'accessReviewFrequency' },

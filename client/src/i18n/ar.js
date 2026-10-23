@@ -742,6 +742,7 @@ export default {
     network_security: 'أمن الشبكات',
     email_security: 'أمن البريد الإلكتروني',
     database_security: 'أمن قواعد البيانات',
+    ot_security: 'أمن التقنيات التشغيلية',
     endpoint_security: 'أمن الأجهزة الطرفية',
     cloud_security: 'أمن الحوسبة السحابية',
     application_security: 'أمن التطبيقات',
