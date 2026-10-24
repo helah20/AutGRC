@@ -54,7 +54,7 @@ export function internalAuditPlan() {
   const rows = [];
   for (const d of DOMAIN_META) {
     const controls = q.get('SELECT COUNT(*) AS n FROM controls WHERE domain_key = ?', d.key).n;
-    const docs = q.get('SELECT COUNT(*) AS n FROM documents WHERE domain_key = ?', d.key).n;
+    const docs = q.get('SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND domain_key = ?', d.key).n;
     if (!controls && !docs) continue;
 
     const criticalControls = q.get("SELECT COUNT(*) AS n FROM controls WHERE domain_key = ? AND risk_rating IN ('high','critical')", d.key).n;
@@ -64,7 +64,7 @@ export function internalAuditPlan() {
     const findings = q.get(`SELECT COUNT(*) AS n FROM findings WHERE scope_type = 'domain' AND scope_id = ? AND ${OPEN_FINDING} AND severity IN ('high','critical')`, d.key).n;
     const risks = openRisksAtOrAbove(d.key, ['high', 'critical']);
     const overdue = q.get(`SELECT COUNT(*) AS n FROM corrective_actions WHERE domain_key = ? AND ${OPEN_ACTION} AND due_date < date('now')`, d.key).n;
-    const policy = q.get("SELECT COUNT(*) AS n FROM documents WHERE domain_key = ? AND doc_type = 'policy' AND status = 'published'", d.key).n;
+    const policy = q.get("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND domain_key = ? AND doc_type = 'policy' AND status = 'published'", d.key).n;
 
     const basis = [];
     let points = 0;
@@ -132,8 +132,8 @@ export function managementReviewInputs() {
   const assessments = count('SELECT COUNT(*) AS n FROM assessments');
   const chains = DOMAIN_META.filter((d) =>
     ['policy', 'standard', 'procedure'].every((t) =>
-      count("SELECT COUNT(*) AS n FROM documents WHERE domain_key = ? AND doc_type = ? AND status = 'published'", d.key, t)));
-  const overdueReviews = count("SELECT COUNT(*) AS n FROM documents WHERE status != 'retired' AND review_date < date('now')");
+      count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND domain_key = ? AND doc_type = ? AND status = 'published'", d.key, t)));
+  const overdueReviews = count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND status != 'retired' AND review_date < date('now')");
   const openRisks = q.all(`SELECT ${CURRENT_RISK}, residual_assessed, status, acceptance_expires FROM risks WHERE status != 'closed'`);
   const riskBands = { critical: 0, high: 0, medium: 0, low: 0 };
   for (const r of openRisks) riskBands[rating(r.l, r.i)] += 1;

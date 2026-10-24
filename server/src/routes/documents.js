@@ -109,7 +109,8 @@ router.get('/meta/options', asyncHandler(async (req, res) => {
     counts: {
       byType: q.all('SELECT doc_type, COUNT(*) AS n FROM documents GROUP BY doc_type'),
       byStatus: q.all('SELECT status, COUNT(*) AS n FROM documents GROUP BY status'),
-      byDomain: q.all('SELECT domain_key, COUNT(*) AS n FROM documents GROUP BY domain_key')
+      byDomain: q.all('SELECT domain_key, COUNT(*) AS n FROM documents GROUP BY domain_key'),
+      byLanguage: q.all('SELECT language, COUNT(*) AS n FROM documents GROUP BY language')
     }
   });
 }));
@@ -134,8 +135,17 @@ router.get('/:id', asyncHandler(async (req, res) => {
       WHERE dl.to_id = ?`, doc.id
   );
 
+  // The same document in its other language: the version made from it, or
+  // the original it was made from, or a sibling made from the same original.
+  const otherLanguages = q.all(
+    `SELECT id, reference, title, language, status FROM documents
+      WHERE id != ? AND (translation_of = ? OR id = ? OR (translation_of IS NOT NULL AND translation_of = ?))`,
+    doc.id, doc.id, doc.translation_of || '', doc.translation_of || ''
+  );
+
   res.json({
     document: enrichDocument(doc),
+    otherLanguages,
     sections: loadSections(doc.id),
     flow,
     links,

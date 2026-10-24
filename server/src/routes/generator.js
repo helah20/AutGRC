@@ -34,7 +34,7 @@ router.get('/options', asyncHandler(async (req, res) => {
       ...d,
       requirements: DOMAIN_MODELS[d.key]?.requirements.length || 0,
       activities: DOMAIN_MODELS[d.key]?.raciActivities.length || 0,
-      existingDocuments: q.get('SELECT COUNT(*) AS n FROM documents WHERE domain_key = ?', d.key).n
+      existingDocuments: q.get('SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND domain_key = ?', d.key).n
     })),
     // The adopted set, not the catalogue: the wizard reports which sources the
     // package will cite rather than asking again.

@@ -43,6 +43,7 @@ import riskRoutes from './routes/risks.js';
 import actionRoutes from './routes/actions.js';
 import managementReviewRoutes from './routes/management-reviews.js';
 import soaRoutes from './routes/soa.js';
+import { localiseResponses } from './services/localise.js';
 
 const app = express();
 
@@ -114,6 +115,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Knowledge-base text in the reader's language; see services/localise.js.
+app.use('/api', localiseResponses);
 app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/generator', generatorRoutes);

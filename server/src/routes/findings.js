@@ -7,6 +7,7 @@ import { id } from '../utils/ids.js';
 import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound } from '../middleware/errors.js';
 import { listParam } from './_shared.js';
+import { DOMAIN_INDEX, domainName } from '../knowledge/index.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -41,7 +42,9 @@ router.get('/', asyncHandler(async (req, res) => {
     items: rows.map((f) => ({
       ...f,
       evidence: fromJson(f.evidence, null),
-      scope_label: f.scope_type === 'document' ? (docs[f.scope_id]?.reference || f.scope_id) : f.scope_id
+      scope_label: f.scope_type === 'document' ? (docs[f.scope_id]?.reference || f.scope_id)
+        : f.scope_type === 'domain' && DOMAIN_INDEX[f.scope_id] ? domainName(f.scope_id)
+          : f.scope_id
     })),
     facets: {
       bySeverity: q.all("SELECT severity, COUNT(*) AS n FROM findings WHERE status IN ('open','acknowledged') GROUP BY severity"),

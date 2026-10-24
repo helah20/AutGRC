@@ -15,7 +15,7 @@ import config from '../config.js';
 import { hashPassword } from '../middleware/auth.js';
 import {
   FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE,
-  DOMAIN_MODELS, domainShort, validateKnowledgeBase
+  DOMAIN_MODELS, domainShort, validateKnowledgeBase, buildParameterSet, resolveText
 } from '../knowledge/index.js';
 import { startingPosition } from '../services/risk.js';
 import { generatePackage } from '../services/generator.js';
@@ -180,6 +180,48 @@ export function seedDemoPackages(users, org) {
     }));
   }
   return results;
+}
+
+/**
+ * The Arabic version of each demonstration package. An organisation reading
+ * the platform in Arabic expects its documents in Arabic too; generating them
+ * from the same requirement model gives the same commitments in the other
+ * language. Each version takes its English original's status and dates, since
+ * it is the approved document in another language rather than a new draft,
+ * and adds no second set of controls (see generatePackage).
+ */
+export function seedTranslations(users, org, packages) {
+  const adopted = fromJson(org?.applicable_frameworks, []);
+  const known = new Set(q.all('SELECT code FROM frameworks').map((f) => f.code));
+  const applicable = adopted.filter((code) => known.has(code));
+  let created = 0;
+  for (const pkg of packages) {
+    const spec = DEMO_PACKAGES.find((p) => p.domain === pkg.domainKey);
+    if (!spec) continue;
+    if (q.get("SELECT id FROM documents WHERE domain_key = ? AND language = 'ar' LIMIT 1", spec.domain)) continue;
+    const result = generatePackage({
+      domainKey: spec.domain,
+      docTypes: spec.docTypes,
+      frameworkCodes: applicable,
+      org,
+      userId: users.grc_manager?.id,
+      ownerId: users.grc_manager?.id,
+      approverId: users.approver?.id,
+      classification: spec.classification,
+      provider: 'builtin',
+      language: 'ar',
+      translationOf: pkg.packageId
+    });
+    for (const doc of result.documents) {
+      const original = q.get(
+        "SELECT * FROM documents WHERE package_id = ? AND doc_type = ? AND language = 'en'", pkg.packageId, doc.docType);
+      if (!original) continue;
+      q.run('UPDATE documents SET status = ?, version = ?, effective_date = ?, review_date = ? WHERE id = ?',
+        original.status, original.version, original.effective_date, original.review_date, doc.id);
+      created += 1;
+    }
+  }
+  return created;
 }
 
 /**
@@ -357,6 +399,8 @@ export function seedRisks(users) {
   for (const domainKey of domains) {
     const model = DOMAIN_MODELS[domainKey];
     if (!model) continue;
+    const orgRow = q.get('SELECT org_name FROM org_profile WHERE id = 1');
+    const params = buildParameterSet(domainKey, { org_name: orgRow?.org_name });
     let sequence = 0;
 
     for (const requirement of model.requirements) {
@@ -380,7 +424,7 @@ export function seedRisks(users) {
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         riskId, reference,
         requirement.title,
-        requirement.risk,
+        resolveText(requirement.risk, params),
         domainKey,
         requirement.key,
         riskCategoryFor(domainKey, requirement),
@@ -530,6 +574,11 @@ export function runSeed({ quiet = false } = {}) {
   log('Raising corrective actions against the most severe findings…');
   const actions = seedCorrectiveActions(users);
   log(`  ${actions} corrective actions`);
+
+  // After the findings, which demonstrate the review engine on the English
+  // originals; the Arabic versions mirror those originals.
+  log('Generating the Arabic version of each package…');
+  log(`  ${seedTranslations(users, org, packages)} Arabic documents`);
 
   return {
     frameworks: q.get('SELECT COUNT(*) AS n FROM frameworks').n,
