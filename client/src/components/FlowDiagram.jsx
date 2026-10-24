@@ -18,6 +18,8 @@
  * at the first lane rather than the last.
  */
 
+import { useT } from '../i18n/index.jsx';
+
 const LANE_W = 176;
 const ROW_H = 58;
 const HEAD_H = 46;
@@ -146,14 +148,15 @@ function truncate(text, max) {
 }
 
 /** Decision points listed in full beneath the diagram. */
-export function DecisionList({ steps, params = {}, strings = {} }) {
+export function DecisionList({ steps, params = {} }) {
+  const t = useT();
   const resolve = (text) => String(text || '').replace(/\{\{(\w+)\}\}/g, (m, k) => params[k] ?? m);
   const decisions = steps.map((s, i) => ({ ...s, no: i + 1 })).filter((s) => s.decision);
   if (!decisions.length) return null;
 
-  const stepLabel = strings.step || 'Step';
-  const yes = strings.yes || 'Yes';
-  const no = strings.no || 'No';
+  const stepLabel = t('documentDetail.stepLabel');
+  const yes = t('documentDetail.branchYes');
+  const no = t('documentDetail.branchNo');
 
   return (
     <div className="flow-decision-list">

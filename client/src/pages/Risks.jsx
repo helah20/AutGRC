@@ -7,7 +7,7 @@ import {
   useToast, Drawer, Field, Tabs, Modal
 } from '../components/ui.jsx';
 import { IconTarget, IconX, IconCheck, IconShield, IconAlert } from '../components/Icons.jsx';
-import { titleCase, RISK_TONE, formatDate } from '../lib/format.js';
+import { RISK_TONE, formatDate } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
 import { useI18n } from '../i18n/index.jsx';
 
@@ -292,7 +292,7 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
           <div className="stack">
             <div className="row-tight" style={{ flexWrap: 'wrap' }}>
               <Badge tone="info">{labels.domain(r.domain_key, r.domain_label)}</Badge>
-              <Badge tone="neutral">{labels.humanise(r.category)}</Badge>
+              <Badge tone="neutral">{labels.riskCategory(r.category)}</Badge>
               <Badge tone={r.status === 'accepted' ? 'warn' : 'neutral'}>{labels.riskStatus(r.status)}</Badge>
               {r.provenance === 'ai_recommendation' && (
                 <Badge tone="warn" title={t('risks.startingPositionTitle')}>
@@ -375,7 +375,7 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
                   <li key={c.link_id} className="attachment">
                     <div className="attachment-main">
                       <div className="attachment-name"><span className="ref-tag">{c.control_id}</span> {c.name}</div>
-                      <div className="attachment-meta">{titleCase(c.effect.replace(/_/g, ' '))} · {labels.status(c.status)}</div>
+                      <div className="attachment-meta">{labels.riskEffect(c.effect)} · {labels.status(c.status)}</div>
                     </div>
                   </li>
                 ))}

@@ -30,30 +30,6 @@ export function SeverityBadge({ severity }) {
   return <Badge tone={SEVERITY_TONE[severity] || 'neutral'}>{labels.rating(severity)}</Badge>;
 }
 
-const PROVENANCE_LABEL = {
-  regulatory_requirement: 'Regulatory requirement',
-  framework_guidance: 'Framework guidance',
-  organizational_policy: 'Organisational policy',
-  organizational_standard: 'Organisational standard',
-  procedure: 'Procedure',
-  implementation_guidance: 'Implementation guidance',
-  ai_recommendation: 'AI-generated',
-  user_input: 'Authored by a user',
-  uploaded_source: 'Uploaded source'
-};
-
-const PROVENANCE_HELP = {
-  regulatory_requirement: 'Comes from a regulation. Authoritative source material, reproduced as reference metadata.',
-  framework_guidance: 'Comes from an adopted framework. Authoritative source material, reproduced as reference metadata.',
-  organizational_policy: "The organisation's own policy position. Not a regulatory requirement.",
-  organizational_standard: "The organisation's own standard. Not a regulatory requirement.",
-  procedure: 'Operational steps defined by the organisation.',
-  implementation_guidance: 'Advisory guidance. Creates no obligation.',
-  ai_recommendation: 'Generated content. Review and approve before relying on it.',
-  user_input: 'Authored or edited by a user of this platform.',
-  uploaded_source: 'Extracted from a document uploaded to this platform.'
-};
-
 export function ProvenanceTag({ provenance }) {
   const { t } = useI18n();
   if (!provenance) return null;
@@ -62,10 +38,8 @@ export function ProvenanceTag({ provenance }) {
   const help = t(`provenanceHelp.${provenance}`);
   return (
     <span className={`provenance-tag ${provenance}`}
-      title={help === provenance ? (PROVENANCE_HELP[provenance] || '') : help}>
-      {t(`provenance.${provenance}`) === provenance
-        ? (PROVENANCE_LABEL[provenance] || titleCase(provenance))
-        : t(`provenance.${provenance}`)}
+      title={help === provenance ? '' : help}>
+      {t(`provenance.${provenance}`) === provenance ? titleCase(provenance) : t(`provenance.${provenance}`)}
     </span>
   );
 }
@@ -89,13 +63,14 @@ export function Card({ title, subtitle, actions, children, flush, footer, classN
 }
 
 export function Kpi({ label, value, meta, tone, progress, to, onClick }) {
+  const { formatNumber } = useI18n();
   const Tag = to ? 'a' : onClick ? 'button' : 'div';
   const props = to ? { href: to } : onClick ? { onClick, type: 'button' } : {};
   return (
     <Tag className="kpi" style={Tag === 'button' ? { textAlign: 'start', font: 'inherit', cursor: 'pointer' } : undefined} {...props}>
       {tone && <span className={`kpi-accent ${tone}`} />}
       <span className="kpi-label">{label}</span>
-      <span className="kpi-value">{value}</span>
+      <span className="kpi-value">{typeof value === 'number' ? formatNumber(value) : value}</span>
       {meta && <span className="kpi-meta">{meta}</span>}
       {progress !== undefined && (
         <div className={`meter ${tone || ''}`}><span style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} /></div>
@@ -354,7 +329,7 @@ export function Collapsible({ title, subtitle, defaultOpen = false, children, ba
 /* ---------------------------------------------------------------- tables -- */
 
 export function DataTable({ columns, rows, onRowClick, empty, keyOf, rowClass }) {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   if (!rows?.length) {
     return <div className="card-body">{empty || <Empty title={t('uiKit.nothingToShow')} />}</div>;
   }
@@ -372,7 +347,7 @@ export function DataTable({ columns, rows, onRowClick, empty, keyOf, rowClass })
               onClick={onRowClick ? () => onRowClick(row) : undefined}>
               {columns.map((c) => (
                 <td key={c.key} className={`${c.align === 'right' ? 'num' : ''} ${c.nowrap ? 'nowrap' : ''}`}>
-                  {c.render ? c.render(row) : row[c.key]}
+                  {c.render ? c.render(row) : typeof row[c.key] === 'number' ? formatNumber(row[c.key]) : row[c.key]}
                 </td>
               ))}
             </tr>

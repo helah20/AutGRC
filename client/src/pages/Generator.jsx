@@ -345,7 +345,7 @@ export default function Generator() {
                     <tr key={c.control_id}>
                       <td className="mono nowrap">{c.control_id}</td>
                       <td><div className="cell-title">{c.name}</div><div className="cell-sub">{t('generatorUi.evidenceItemCount', { count: c.evidenceItems.length })}</div></td>
-                      <td className="nowrap"><Badge tone="neutral">{titleCase(c.control_type)}</Badge></td>
+                      <td className="nowrap"><Badge tone="neutral">{labels.controlType(c.control_type)}</Badge></td>
                       <td className="small">{c.frequency}</td>
                       <td className="small nowrap">{c.responsible_role}</td>
                       <td className="tiny mono">{c.mappingLabel || '—'}</td>

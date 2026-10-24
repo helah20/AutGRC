@@ -4,11 +4,27 @@ import { useFetch } from '../lib/useApi.js';
 import { Card, Loading, ErrorNote, Empty, useToast, Badge } from '../components/ui.jsx';
 import { IconChart, IconDownload, IconChevronRight, IconX } from '../components/Icons.jsx';
 import { useLabels } from '../i18n/labels.js';
-import { useT } from '../i18n/index.jsx';
+import { useI18n } from '../i18n/index.jsx';
+
+/** Report headings and values are fixed English from the API; the dictionary keys are their slugs. */
+const slug = (value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
+function translated(t, namespace, key, fallback) {
+  const value = t(`${namespace}.${key}`);
+  return value === key ? fallback : value;
+}
 
 export default function Reports() {
-  const t = useT();
+  const { t, formatNumber } = useI18n();
   const labels = useLabels();
+  const cellText = (value) => {
+    if (/^[a-z_]+$/.test(value)) {
+      return translated(t, 'domainCategory', value, null)
+        ?? translated(t, 'coverage', value, null)
+        ?? labels.anyValue(value);
+    }
+    return translated(t, 'reportValue', slug(value), value);
+  };
   const toast = useToast();
   const { data: reports, loading, error, reload } = useFetch('/reports');
   const [active, setActive] = useState(null);
@@ -40,8 +56,8 @@ export default function Reports() {
               <div className="between" style={{ alignItems: 'flex-start', marginBottom: 8 }}>
                 <IconChart width={20} height={20} style={{ color: 'var(--accent)' }} />
               </div>
-              <h3 style={{ marginBottom: 4 }}>{r.name}</h3>
-              <p className="small muted" style={{ minHeight: 40 }}>{r.description}</p>
+              <h3 style={{ marginBottom: 4 }}>{translated(t, 'reportName', r.key, r.name)}</h3>
+              <p className="small muted" style={{ minHeight: 40 }}>{translated(t, 'reportDescription', r.key, r.description)}</p>
               <div className="row-tight">
                 <button className="btn btn-sm btn-primary" onClick={() => setActive(r.key)}>
                   {t('reportsUi.view')}<IconChevronRight width={12} height={12} />
@@ -57,8 +73,8 @@ export default function Reports() {
           <div className="table-toolbar">
             <button className="btn btn-sm" onClick={() => setActive(null)}><IconX width={13} height={13} />{t('reportsUi.allReports')}</button>
             <div style={{ minWidth: 0 }}>
-              <span className="strong">{report?.name || ''}</span>
-              {report?.description && <div className="tiny muted">{report.description}</div>}
+              <span className="strong">{report ? translated(t, 'reportName', report.key, report.name) : ''}</span>
+              {report?.description && <div className="tiny muted">{translated(t, 'reportDescription', report.key, report.description)}</div>}
             </div>
             <div className="row-tight" style={{ marginInlineStart: 'auto' }}>
               <button className="btn btn-sm" onClick={() => download(active, 'xlsx')}><IconDownload width={13} height={13} />Excel</button>
@@ -72,13 +88,13 @@ export default function Reports() {
             report.rows.length ? (
               <div className="table-wrap" style={{ maxHeight: '68vh', overflow: 'auto' }}>
                 <table className="data">
-                  <thead><tr>{report.headers.map((h) => <th key={h}>{h}</th>)}</tr></thead>
+                  <thead><tr>{report.headers.map((h) => <th key={h}>{translated(t, 'reportHeader', slug(h), h)}</th>)}</tr></thead>
                   <tbody>
                     {report.rows.map((row, i) => (
                       <tr key={i}>
                         {row.map((cell, j) => (
                           <td key={j} className={typeof cell === 'number' ? 'num' : ''}>
-                            {formatCell(cell)}
+                            {formatCell(cell, cellText, formatNumber)}
                           </td>
                         ))}
                       </tr>
@@ -102,11 +118,14 @@ const TONE_BY_VALUE = {
   compliant: 'ok', partially_compliant: 'warn', non_compliant: 'danger'
 };
 
-function formatCell(cell) {
+function formatCell(cell, cellText, formatNumber) {
+  if (typeof cell === 'number') return formatNumber(cell);
   const value = String(cell ?? '');
   if (TONE_BY_VALUE[value]) {
-    return <Badge tone={TONE_BY_VALUE[value]}>{value.replace(/_/g, ' ')}</Badge>;
+    return <Badge tone={TONE_BY_VALUE[value]}>{cellText(value)}</Badge>;
   }
+  if (/^[a-z_]+$/.test(value)) return cellText(value);
+  if (value.length < 40 && !/\d/.test(value)) return cellText(value);
   if (/^\d+%$/.test(value)) {
     const n = Number(value.slice(0, -1));
     return <Badge tone={n >= 80 ? 'ok' : n >= 50 ? 'warn' : 'danger'}>{value}</Badge>;

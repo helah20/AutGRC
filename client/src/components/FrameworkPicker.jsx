@@ -14,8 +14,10 @@
  */
 
 import { Badge } from './ui.jsx';
+import { useT } from '../i18n/index.jsx';
 
-export default function FrameworkPicker({ frameworks, selected, onChange, disabled = false, strings = {} }) {
+export default function FrameworkPicker({ frameworks, selected, onChange, disabled = false }) {
+  const t = useT();
   const regulatory = frameworks.filter((f) => f.is_mandatory);
   const voluntary = frameworks.filter((f) => !f.is_mandatory);
 
@@ -37,8 +39,8 @@ export default function FrameworkPicker({ frameworks, selected, onChange, disabl
               <span className="option-card-title">
                 {f.code}
                 {f.is_mandatory
-                  ? <Badge tone="critical">{strings.regulatory || 'Regulatory'}</Badge>
-                  : <Badge tone="neutral">{strings.framework || 'Framework'}</Badge>}
+                  ? <Badge tone="critical">{t('setup.regulatory')}</Badge>
+                  : <Badge tone="neutral">{t('setup.framework')}</Badge>}
               </span>
               <span className="option-card-desc">{f.name}</span>
               <span className="tiny faint" style={{ display: 'block', marginTop: 3 }}>
@@ -53,10 +55,8 @@ export default function FrameworkPicker({ frameworks, selected, onChange, disabl
 
   return (
     <div>
-      {group(regulatory, strings.regulatoryTitle || 'Regulations',
-        strings.regulatoryHint || 'These apply by law or by supervision. Select the ones your organisation is subject to.')}
-      {group(voluntary, strings.frameworkTitle || 'Frameworks and standards',
-        strings.frameworkHint || 'These apply because the organisation adopts them — for certification, for assurance, or as good practice.')}
+      {group(regulatory, t('setup.regulatoryTitle'), t('setup.regulatoryHint'))}
+      {group(voluntary, t('setup.frameworkTitle'), t('setup.frameworkHint'))}
     </div>
   );
 }

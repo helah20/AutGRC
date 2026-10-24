@@ -173,7 +173,7 @@ export default function Soa() {
                 render: (r) => (r.controls.length
                   ? <div className="row-tight">{r.controls.slice(0, 3).map((c) => <span key={c.id} className="pill mono">{c.control_id}</span>)}
                       {r.controls.length > 3 && <span className="tiny muted">+{r.controls.length - 3}</span>}</div>
-                  : <span className="muted small">None</span>)
+                  : <span className="muted small">{t('soa.noControls')}</span>)
               },
               {
                 key: 'justification', header: t('soa.columnDecision'), width: 220,

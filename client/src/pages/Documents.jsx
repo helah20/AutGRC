@@ -33,7 +33,7 @@ const TYPE_SUBTITLE = {
 
 export default function Documents({ fixedType }) {
   const labels = useLabels();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, language } = useI18n();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -44,18 +44,24 @@ export default function Documents({ fixedType }) {
   const [type, setType] = useState(fixedType || params.get('type') || '');
   const [domain, setDomain] = useState(params.get('domain') || '');
   const [status, setStatus] = useState(params.get('status') || '');
-  const [docLanguage, setDocLanguage] = useState('');
+  // null until the reader picks: the list then opens on documents in the
+  // reader's own language, when there are any. 'all' shows every language.
+  const [docLanguage, setDocLanguage] = useState(params.get('language'));
   const [reviewDue, setReviewDue] = useState(params.get('reviewDue') === 'true');
   const [sort, setSort] = useState('updated_at');
 
   useEffect(() => { if (fixedType) setType(fixedType); }, [fixedType]);
 
+  const { data: meta } = useFetch('/documents/meta/options');
+  const inReaderLanguage = meta?.counts?.byLanguage?.find((l) => l.language === language)?.n;
+  const effectiveLanguage = docLanguage ?? (meta && !inReaderLanguage ? 'all' : language);
+
   const query = qs({
     search: debounced, type: fixedType || type, domain, status,
-    reviewDue: reviewDue ? 'true' : '', sort, limit: 200, language: docLanguage || undefined });
+    reviewDue: reviewDue ? 'true' : '', sort, limit: 200,
+    language: effectiveLanguage === 'all' ? undefined : effectiveLanguage });
 
   const { data, loading, error, reload } = useFetch(`/documents${query}`);
-  const { data: meta } = useFetch('/documents/meta/options');
 
   useEffect(() => {
     const next = {};
@@ -64,8 +70,9 @@ export default function Documents({ fixedType }) {
     if (domain) next.domain = domain;
     if (status) next.status = status;
     if (reviewDue) next.reviewDue = 'true';
+    if (docLanguage) next.language = docLanguage;
     setParams(next, { replace: true });
-  }, [debounced, type, domain, status, reviewDue, fixedType, setParams]);
+  }, [debounced, type, domain, status, reviewDue, docLanguage, fixedType, setParams]);
 
   const domainOptions = useMemo(() => {
     const counts = meta?.counts?.byDomain || [];
@@ -82,7 +89,7 @@ export default function Documents({ fixedType }) {
       render: (d) => (
         <>
           <div className="cell-title">{d.title}</div>
-          <div className="cell-sub">{labels.domain(d.domain_key, d.domain_label)} · v{d.version} · {d.classification.replace('_', ' ')}</div>
+          <div className="cell-sub">{labels.domain(d.domain_key, d.domain_label)} · v{d.version} · {labels.classification(d.classification)}</div>
         </>
       )
     },
@@ -145,14 +152,14 @@ export default function Documents({ fixedType }) {
           <Select value={domain} onChange={setDomain} placeholder={t('documentsUi.allDomains')} options={domainOptions} />
           <Select value={status} onChange={setStatus} placeholder={t('documentsUi.allStatuses')}
             options={['draft', 'under_review', 'approved', 'published', 'under_revision', 'retired'].map((v) => ({ value: v, label: labels.status(v, titleCase(v)) }))} />
-          <Select value={docLanguage} onChange={setDocLanguage} placeholder={t('documents.allLanguages')}
-            options={[{ value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }]} />
+          <Select value={effectiveLanguage} onChange={(v) => setDocLanguage(v || 'all')}
+            options={[{ value: 'all', label: t('documents.allLanguages') }, { value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }]} />
           <button className={`btn btn-sm ${reviewDue ? 'btn-primary' : ''}`} onClick={() => setReviewDue((r) => !r)}>
             <IconFilter width={13} height={13} />{t('documentsUi.columnReviewDue')}
           </button>
           {activeFilters > 0 && (
             <button className="btn btn-ghost btn-sm" onClick={() => {
-              setSearch(''); if (!fixedType) setType(''); setDomain(''); setStatus(''); setDocLanguage(''); setReviewDue(false);
+              setSearch(''); if (!fixedType) setType(''); setDomain(''); setStatus(''); setDocLanguage(null); setReviewDue(false);
             }}><IconX width={13} height={13} />{t('common.clear')}</button>
           )}
           <span className="table-count">{data ? `${formatNumber(data.items.length)} ${t('common.of')} ${formatNumber(data.total)}` : '—'}</span>

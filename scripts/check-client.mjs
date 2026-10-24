@@ -128,15 +128,18 @@ for (const file of files) {
 // checks says nothing about text written straight into JSX, which renders in
 // English whatever language is selected. Names that are the same in every
 // language are allowed; anything else goes through t().
-const SAME_IN_EVERY_LANGUAGE = new Set(['AutGRC', 'English', 'Excel', 'PDF', 'Word', 'SHA-256', 'Q3 2026']);
+const SAME_IN_EVERY_LANGUAGE = new Set(['AutGRC', 'Claude', 'English', 'Excel', 'PDF', 'Word', 'SHA-256', 'Q3 2026']);
 const HARDCODED = [
-  />\s*([A-Z][A-Za-z][^<>{}]{3,}?)\s*</g,
+  />\s*([A-Z][a-z]{2,}[^<>{}]*?)\s*</g,
+  // A fallback or a branch that renders English: `x || 'No owner'`, `ok ? 'Yes' : 'No'`.
+  /(?:\|\||\?\?|[?:])\s*'([A-Z][a-z]{1,}(?: [A-Za-z]+)*)'/g,
   /(?:title|placeholder|label|hint|aria-label|header)="([A-Z][^"]{3,})"/g,
   /toast\.(?:success|error|info|warn)\(\s*'([A-Z][^']{3,})'/g
 ];
 for (const file of files) {
   const rel = path.relative(ROOT, file);
-  if (!rel.endsWith('.jsx')) continue;
+  // The language list names each language in English for the switcher.
+  if (!rel.endsWith('.jsx') || rel.startsWith('i18n/')) continue;
   const src = readFileSync(file, 'utf8');
   for (const re of HARDCODED) {
     for (const m of src.matchAll(re)) {

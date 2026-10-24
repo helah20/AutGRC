@@ -40,7 +40,7 @@ export default function Login() {
       }
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err.message || 'Unable to sign in');
+      setError(err.message || t('auth.signInFailed'));
     } finally {
       setBusy(false);
     }
@@ -54,7 +54,7 @@ export default function Login() {
       await completeMfa(challenge.mfaToken, code.trim());
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err.message || 'Unable to verify that code');
+      setError(err.message || t('auth.codeFailed'));
       // An expired challenge cannot be retried; send them back to the password.
       if (err.status === 401 && /expired/i.test(err.message || '')) setChallenge(null);
     } finally {

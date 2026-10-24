@@ -706,6 +706,8 @@ function AccountSettings({ user }) {
 
 function AuditLog() {
   const t = useT();
+  const labels = useLabels();
+  const { language } = labels;
   const [search, setSearch] = useState('');
   const [outcome, setOutcome] = useState('');
   const [action, setAction] = useState('');
@@ -747,7 +749,7 @@ function AuditLog() {
             { key: 'at', header: t('settingsUi.audit.colWhen'), nowrap: true, render: (r) => <span className="small">{formatDate(r.at, { withTime: true })}</span> },
             { key: 'user_email', header: t('settingsUi.audit.colActor'), nowrap: true, render: (r) => <span className="small">{r.user_email || t('settingsUi.audit.systemActor')}</span> },
             { key: 'action', header: t('settingsUi.audit.colAction'), nowrap: true, render: (r) => <span className="mono small">{r.action}</span> },
-            { key: 'summary', header: t('settingsUi.audit.colSummary'), render: (r) => r.summary || '—' },
+            { key: 'summary', header: t('settingsUi.audit.colSummary'), render: (r) => (r.summary ? <span title={language === 'ar' ? r.summary : undefined}>{labels.activity(r)}</span> : '—') },
             {
               key: 'outcome', header: t('settingsUi.audit.colOutcome'), nowrap: true,
               render: (r) => <Badge tone={r.outcome === 'success' ? 'ok' : r.outcome === 'denied' ? 'danger' : 'warn'}>{outcomeLabel(r.outcome)}</Badge>

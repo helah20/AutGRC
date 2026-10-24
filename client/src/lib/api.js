@@ -14,6 +14,19 @@ export function setAccessToken(token) {
   accessToken = token;
 }
 
+/**
+ * The reader's language, sent with every request so the server can return
+ * labels and knowledge-base text in it. Anything a person typed is returned
+ * as typed.
+ */
+let requestLanguage = 'en';
+export function setRequestLanguage(language) {
+  requestLanguage = language;
+}
+export function getRequestLanguage() {
+  return requestLanguage;
+}
+
 export function getAccessToken() {
   return accessToken;
 }
@@ -64,6 +77,7 @@ async function request(method, path, { body, retry = true, signal } = {}) {
     signal,
     headers: {
       ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
+      'x-language': requestLanguage,
       ...(body !== undefined ? { 'content-type': 'application/json' } : {})
     },
     body: body !== undefined ? JSON.stringify(body) : undefined

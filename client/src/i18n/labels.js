@@ -1,12 +1,13 @@
 /**
  * Labels for values the API returns as English strings.
  *
- * The server sends `domain_label`, `status_label` and the rest already
- * rendered in English. Rather than adding a locale to every endpoint and
- * sending both, the client maps the underlying key — which the API also sends —
- * through the dictionaries, and falls back to whatever the server said when
- * there is no entry. A new domain therefore appears in English rather than as
- * a missing key.
+ * Fixed values — statuses, types, categories — come from the API as keys,
+ * and the client maps each key through the dictionaries, falling back to
+ * whatever the server said when there is no entry. A new value therefore
+ * appears in English rather than as a missing key. Text from the knowledge
+ * base (control wording, role descriptions, domain and framework names) is a
+ * different matter: the server sends that in the reader's language itself,
+ * see server/src/services/localise.js.
  */
 
 import { useI18n } from './index.jsx';
@@ -55,6 +56,45 @@ export function useLabels() {
     gapStatus: (key, serverLabel) => label('gapStatus', key, serverLabel),
     provenance: (key, serverLabel) => label('provenance', key, serverLabel),
     sourceStatus: (key, serverLabel) => label('sourceStatus', key, serverLabel),
+    classification: (key, serverLabel) => label('classification', key, serverLabel),
+    evidenceType: (key, serverLabel) => label('evidenceType', key, serverLabel),
+    roleCategory: (key, serverLabel) => label('roleCategory', key, serverLabel),
+    raciPhase: (key, serverLabel) => label('raciPhase', key, serverLabel),
+    controlType: (key, serverLabel) => label('controlType', key, serverLabel),
+    controlNature: (key, serverLabel) => label('controlNature', key, serverLabel),
+    linkType: (key, serverLabel) => label('linkType', key, serverLabel),
+    changeType: (key, serverLabel) => label('changeType', key, serverLabel),
+    riskCategory: (key, serverLabel) => label('riskCategory', key, serverLabel),
+    riskEffect: (key, serverLabel) => label('riskEffect', key, serverLabel),
+    findingScope: (key, serverLabel) => label('findingScope', key, serverLabel),
+    searchType: (key, serverLabel) => label('searchType', key, serverLabel),
+    frameworkKind: (key, serverLabel) => label('frameworkKind', key, serverLabel),
+    /**
+     * One audit-log entry. The stored summary is an English record of what
+     * happened; an Arabic reader gets the action in Arabic, with any document
+     * or control references the summary names.
+     */
+    activity: (entry) => {
+      const action = String(entry?.action || '');
+      if (language !== 'ar') return entry?.summary || action;
+      const key = action.startsWith('denied:') ? 'denied' : action.replace(/:/g, '__');
+      const translated = t(`activity.${key}`);
+      const phrase = translated !== key ? translated : (entry?.summary || action);
+      const refs = String(entry?.summary || '').match(/\b[A-Z]{2,4}-(?:[A-Z]{2,4}-)?\d{3,4}\b/g) || [];
+      return refs.length ? `${phrase}: ${[...new Set(refs)].slice(0, 3).join('، ')}` : phrase;
+    },
+    /**
+     * A value whose kind the caller does not know, such as a search result's
+     * badge: the first dictionary that has it wins.
+     */
+    anyValue: (key) => {
+      for (const ns of ['docType', 'status', 'controlType', 'controlNature', 'evidenceType', 'evidenceStatus',
+        'roleCategory', 'riskCategory', 'riskStatus', 'rating', 'gapStatus', 'actionStatus', 'findingStatus', 'classification']) {
+        const translated = t(`${ns}.${key}`);
+        if (translated && translated !== String(key)) return translated;
+      }
+      return humanise(key);
+    },
     /** Anything with no dictionary: presentable, but still English. */
     humanise
   };

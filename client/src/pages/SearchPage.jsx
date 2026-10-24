@@ -63,7 +63,7 @@ export default function SearchPage() {
               </button>
               {data.groups.map((g) => (
                 <button key={g.type} className={`btn btn-sm ${type === g.type ? 'active' : ''}`} onClick={() => setType(g.type)}>
-                  {g.label} ({g.items.length})
+                  {labels.searchType(g.type, g.label)} ({g.items.length})
                 </button>
               ))}
             </div>
@@ -71,14 +71,14 @@ export default function SearchPage() {
 
           {data.groups.length ? data.groups.map((group) => (
             <section key={group.type} className="search-group">
-              <h3 style={{ marginBottom: 8 }}>{group.label} <span className="muted small">({group.items.length})</span></h3>
+              <h3 style={{ marginBottom: 8 }}>{labels.searchType(group.type, group.label)} <span className="muted small">({group.items.length})</span></h3>
               {group.items.map((item) => (
                 <Link key={item.id} to={ROUTE[group.type]?.(item) || '/dashboard'} className="search-hit">
                   <div className="between" style={{ alignItems: 'flex-start' }}>
                     <span className="search-hit-title">{item.title}</span>
                     <span className="row-tight">
                       {item.domainLabel && <Badge tone="neutral">{item.domainLabel}</Badge>}
-                      {item.badge && <Badge tone="info">{String(item.badge).replace(/_/g, ' ')}</Badge>}
+                      {item.badge && <Badge tone="info">{labels.anyValue(item.badge)}</Badge>}
                     </span>
                   </div>
                   {item.excerpt && (

@@ -14,6 +14,8 @@
 import { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
 import en from './en.js';
 import ar from './ar.js';
+import { setFormatLocale } from '../lib/format.js';
+import { setRequestLanguage } from '../lib/api.js';
 
 const DICTIONARIES = { en, ar };
 
@@ -45,6 +47,9 @@ function lookup(dictionary, key) {
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState(readStored);
   const dir = LANGUAGES.find((l) => l.code === language)?.dir || 'ltr';
+  // Set during render, before any child formats a date in this language.
+  setFormatLocale(language);
+  setRequestLanguage(language);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -73,7 +78,10 @@ export function LanguageProvider({ children }) {
     }
 
     if (value && typeof value === 'object') {
-      const count = Number(params?.count);
+      // A count may arrive already formatted, in Arabic-Indic digits.
+      const count = Number(String(params?.count ?? '')
+        .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+        .replace(/[^\d.-]/g, ''));
       const category = Number.isFinite(count)
         ? new Intl.PluralRules(language).select(count)
         : 'other';
@@ -81,13 +89,18 @@ export function LanguageProvider({ children }) {
     }
 
     if (!params) return value;
-    return String(value).replace(/\{(\w+)\}/g, (match, name) => (
-      params[name] === undefined ? match : String(params[name])
-    ));
+    return String(value).replace(/\{(\w+)\}/g, (match, name) => {
+      if (params[name] === undefined) return match;
+      // Plain numbers are written in the reader's digits.
+      return typeof params[name] === 'number'
+        ? new Intl.NumberFormat(language === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB',
+          { useGrouping: Math.abs(params[name]) >= 10000 }).format(params[name])
+        : String(params[name]);
+    });
   }, [language]);
 
   /** Numbers and dates in the reader's own locale. */
-  const locale = language === 'ar' ? 'ar-SA' : 'en-GB';
+  const locale = language === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB';
   const formatNumber = useCallback(
     (value, options) => new Intl.NumberFormat(locale, options).format(Number(value) || 0),
     [locale]
