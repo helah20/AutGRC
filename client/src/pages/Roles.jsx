@@ -5,7 +5,6 @@ import { useFetch } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import { Card, Loading, ErrorNote, Empty, Badge, Modal, Field, useToast, DataTable } from '../components/ui.jsx';
 import { IconUsers, IconPlus, IconDownload } from '../components/Icons.jsx';
-import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
 import { useT } from '../i18n/index.jsx';
 
@@ -63,7 +62,7 @@ export default function Roles() {
               key: 'name', header: t('rolesUi.colRole'),
               render: (r) => (<><div className="cell-title">{r.name}</div><div className="cell-sub clamp-2">{r.purpose}</div></>)
             },
-            { key: 'category', header: t('rolesUi.colCategory'), nowrap: true, render: (r) => <Badge tone="neutral">{r.category}</Badge> },
+            { key: 'category', header: t('rolesUi.colCategory'), nowrap: true, render: (r) => <Badge tone="neutral">{labels.roleCategory(r.category)}</Badge> },
             { key: 'reporting_line', header: t('rolesUi.colReportingLine'), render: (r) => <span className="small clamp-2">{r.reporting_line || '—'}</span> },
             { key: 'domain_label', header: t('rolesUi.colPrimaryDomain'), nowrap: true, render: (r) => r.domain_label || <span className="muted">{t('rolesUi.crossDomain')}</span> },
             { key: 'item_count', header: t('rolesUi.colStatements'), align: 'right', render: (r) => r.item_count }
@@ -89,7 +88,7 @@ export default function Roles() {
               style={{ textAlign: 'start', font: 'inherit' }} onClick={() => addFromLibrary(r.code)}>
               <span className="option-card-body">
                 <span className="option-card-title">{r.name}{busy === r.code && <span className="spinner" style={{ width: 12, height: 12 }} />}</span>
-                <span className="option-card-desc">{r.category}</span>
+                <span className="option-card-desc">{labels.roleCategory(r.category)}</span>
               </span>
             </button>
           ))}

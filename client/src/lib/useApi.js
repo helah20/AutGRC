@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { api } from './api.js';
+import { useI18n } from '../i18n/index.jsx';
 
 export function useFetch(path, deps = []) {
   const [data, setData] = useState(null);
@@ -9,6 +10,8 @@ export function useFetch(path, deps = []) {
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
   const mounted = useRef(true);
+  // Responses carry text in the reader's language, so a change of language refetches.
+  const { language } = useI18n();
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
@@ -26,7 +29,7 @@ export function useFetch(path, deps = []) {
       .finally(() => { if (mounted.current) setLoading(false); });
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, tick, ...deps]);
+  }, [path, tick, language, ...deps]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
   return { data, error, loading, reload, setData };

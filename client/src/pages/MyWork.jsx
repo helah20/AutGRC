@@ -39,7 +39,7 @@ export default function MyWork() {
             {data?.total > 0 && <Badge tone="warn">{t('myWork.outstanding', { count: data.total })}</Badge>}
           </h1>
           <p className="page-sub">
-{t('myWork.subtitle', { name: user?.name?.split(' ')[0] || '', role: user?.roleLabel || '' })}
+{t('myWork.subtitle', { name: user?.name?.split(' ')[0] || '', role: labels.role(user?.role, user?.roleLabel || '') })}
           </p>
         </div>
       </div>

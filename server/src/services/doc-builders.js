@@ -15,6 +15,7 @@ import { resolveText, domainShort, roleName, roleShort, arParameterLabel } from 
 import { h, joinBlocks, escapeHtml } from './html.js';
 import { swimlanes, handoffs } from './swimlane.js';
 import { translator, arabicTitle } from './doc-strings.js';
+import { AR_FRAMEWORKS } from '../knowledge/ar/ar-frameworks.js';
 
 const P = {
   REGULATORY: 'regulatory_requirement',
@@ -85,6 +86,10 @@ const section = (key, heading, body, provenance, sourceRefs = []) => ({
 const docTitle = (model, type) => (activeT.isRtl
   ? arabicTitle(type, model.name)
   : `${model.name} ${type}`);
+
+/** A framework's name and publisher in the language of the document being built. */
+const fwName = (f) => (activeT.isRtl && AR_FRAMEWORKS[f.code]?.name) || f.name;
+const fwPublisher = (f) => (activeT.isRtl && AR_FRAMEWORKS[f.code]?.publisher) || f.publisher;
 
 /** Translate a phrase inside a builder. Falls back to the English unchanged. */
 const T = (text, values) => activeT(text, values);
@@ -244,7 +249,7 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks }) 
           h.p(TP('compliance.sourcesLead', 'This Policy supports compliance with the following authoritative sources:')),
           h.table([TP('compliance.colSource', 'Source'), TP('compliance.colType', 'Type'), TP('compliance.colRequirements', 'Referenced requirements')],
             frameworks.map((f) => [
-              f.name,
+              fwName(f),
               f.kind === 'regulation' ? TP('provenance.regulatory', 'Regulatory requirement') : TP('provenance.framework', 'Framework guidance'),
               refLabel(reqs.flatMap((r) => applicableRefs(r, [f.code])))
             ])),
@@ -302,7 +307,7 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks }) 
             TP('references.incident', 'Cybersecurity Incident Management Procedure')
           ]),
           h.p(TP('references.sourcesLead', 'Authoritative sources:')),
-          h.ul(frameworks.map((f) => `${f.name} — ${f.publisher}${f.version ? `, ${f.version}` : ''}`))
+          h.ul(frameworks.map((f) => `${fwName(f)} — ${fwPublisher(f)}${f.version ? `, ${f.version}` : ''}`))
         ), P.POLICY, [])
     ]
   };
@@ -427,7 +432,7 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
             reqs.map((r, i) => [
               `${domainShort(model.key)}-${String(i + 1).padStart(3, '0')}`,
               r.controlName,
-              r.controlType,
+              T(r.controlType),
               resolveText(r.frequency, params),
               RN(defaultResponsible(model, r))
             ]))
@@ -454,7 +459,7 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
         joinBlocks(
           h.p(TP('standard.complianceLead', 'This Standard supports compliance with the following authoritative sources:')),
           h.table([T('Source'), TP('compliance.colRequirements', 'Referenced requirements')],
-            frameworks.map((f) => [f.name, refLabel(reqs.flatMap((r) => applicableRefs(r, [f.code])))])),
+            frameworks.map((f) => [fwName(f), refLabel(reqs.flatMap((r) => applicableRefs(r, [f.code])))])),
           h.p(TP('standard.nonCompliance', 'Non-compliance identified through testing or audit shall be recorded as a finding, risk-rated and tracked to closure.'))
         ), P.FRAMEWORK, [])
     ]
@@ -837,7 +842,7 @@ export function buildFrameworkDoc({ model, params, frameworks, frameworkCodes })
       section('sources', 'Adopted Sources',
         joinBlocks(
           h.table([T('Source'), TP('framework.colPublisher', 'Publisher'), T('Type'), TP('framework.colVersion', 'Version')],
-            frameworks.map((f) => [f.name, f.publisher,
+            frameworks.map((f) => [fwName(f), fwPublisher(f),
               f.kind === 'regulation' ? TP('framework.kindRegulatory', 'Regulatory') : TP('framework.kindFramework', 'Framework'),
               f.version || '—'])),
           h.callout('note', TP('framework.provenanceTitle', 'Provenance'),

@@ -431,3 +431,6 @@ export function translator(language = 'en') {
 export function translatedStringCount() {
   return Object.keys(AR).length;
 }
+
+/** The headings and fixed phrases, for the read-time localiser. */
+export const DOC_STRINGS_AR = AR;

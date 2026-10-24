@@ -177,7 +177,7 @@ function ControlDetail({ data }) {
               <div key={e.id} className="between" style={{ padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 7 }}>
                 <div style={{ minWidth: 0 }}>
                   <div className="row-tight"><span className="pill mono">{e.evidence_id}</span><span className="small strong">{e.name}</span></div>
-                  <div className="tiny muted">{titleCase(e.evidence_type)} · {e.frequency || t('controlsUi.noFrequency')} · {e.owner_role || t('controlsUi.noOwner')}</div>
+                  <div className="tiny muted">{labels.evidenceType(e.evidence_type)} · {e.frequency || t('controlsUi.noFrequency')} · {e.owner_role || t('controlsUi.noOwner')}</div>
                 </div>
                 <Badge tone={e.status === 'verified' ? 'ok' : e.status === 'missing' ? 'danger' : 'neutral'}>{labels.evidenceStatus(e.status)}</Badge>
               </div>

@@ -602,6 +602,9 @@ table.data .cell-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 
  * punctuation and numbers reordered by the surrounding right-to-left context.
  */
 .input, .textarea, .select { unicode-bidi: plaintext; }
+/* The chevron sits at the inline end, where the padding leaves room for it;
+   a background position has no logical form, so it is mirrored here. */
+[dir='rtl'] .select { background-position: left 10px center; }
 
 /*
  * Layout mirrors through logical properties above; these are the cases that

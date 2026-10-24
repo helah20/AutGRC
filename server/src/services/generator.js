@@ -155,28 +155,26 @@ export function generatePackage(opts) {
   const evidenceIdFor = nextEvidenceId(domainKey);
   let evidenceCounter = 0;
 
+  // An Arabic version of a domain that already has its controls is the same
+  // control set in another language, not a second one: the localiser already
+  // shows the registered controls in Arabic. It adds documents only, and its
+  // control matrix cites the controls that exist.
+  const existingControls = documentLanguage === 'ar' || translationOf
+    ? q.all('SELECT control_id, requirement_key FROM controls WHERE domain_key = ?', domainKey)
+    : [];
+  const documentsOnly = existingControls.length > 0;
+  const existingByRequirement = Object.fromEntries(existingControls.map((c) => [c.requirement_key, c.control_id]));
+
   const controlDrafts = model.requirements.map((req, i) => {
     const mappings = applicableRefs(req, frameworkCodes);
-    const responsible = defaultResponsible(model, req);
-    const accountable = defaultAccountable(model, req);
     return {
       id: id('ctl'),
-      control_id: controlIdFor(i + 1),
-      name: req.controlName,
+      control_id: (documentsOnly && existingByRequirement[req.key]) || controlIdFor(i + 1),
       requirementKey: req.key,
-      description: resolveText(req.policy, params),
-      requirement: resolveText(req.standard, params),
+      ...controlText(model, req, params, documentLanguage),
       control_type: req.controlType,
       control_nature: req.controlNature,
-      implementation: resolveText(req.guidance || req.standard, params),
-      responsible_role: roleName(responsible, documentLanguage),
-      accountable_role: roleName(accountable, documentLanguage),
-      frequency: resolveText(req.frequency, params),
-      kpi: resolveText(req.kpi, params),
-      risk: resolveText(req.risk, params),
       risk_rating: req.riskRating,
-      testing_method: 'Inspection of evidence and sample testing against the stated frequency',
-      evidenceItems: req.evidence.map((e) => resolveText(e, params)),
       mappings,
       mappingLabel: mappings.map((m) => `${m.framework} ${m.ref}`).join('; ')
     };
@@ -234,7 +232,12 @@ export function generatePackage(opts) {
           ? `${model.name} — ${DOC_TYPE_LABEL_AR[type] || DOC_TYPE_LABEL[type]}. مُولَّدة من نموذج متطلبات ${model.name} مقابل ${frameworkCodes.join('، ') || 'لا إطار محدد'}.`
           : `${model.name} — ${DOC_TYPE_LABEL[type]}. Generated from the ${model.name} requirement model against ${frameworkCodes.join(', ') || 'no selected framework'}.`,
         packageId, toJson(genMeta), doc.provenance, userId, at, at,
-        documentLanguage, translationOf
+        documentLanguage,
+        // translationOf names the source package; each document points at its
+        // own counterpart in it, so the two versions can be shown side by side.
+        translationOf
+          ? (q.get('SELECT id FROM documents WHERE package_id = ? AND doc_type = ?', translationOf, type)?.id || translationOf)
+          : null
       );
 
       doc.sections.forEach((s, i) => {
@@ -295,7 +298,7 @@ export function generatePackage(opts) {
 
     // ------------------------------------------------------- controls -----
     const controlRows = [];
-    for (const c of controlDrafts) {
+    for (const c of documentsOnly ? [] : controlDrafts) {
       q.run(
         `INSERT INTO controls
            (id, control_id, name, domain_key, description, requirement, control_type, control_nature,
@@ -388,7 +391,7 @@ export function generatePackage(opts) {
 
     // ----------------------------------------------------------- RACI -----
     let matrixId = null;
-    if (created.raci) {
+    if (created.raci && !documentsOnly) {
       matrixId = id('mtx');
       q.run(
         'INSERT INTO raci_matrices (id, name, domain_key, mode, description, document_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)',
@@ -444,6 +447,33 @@ function classifyEvidence(text) {
   if (/(certificate|attestation|assurance)/.test(t)) return 'attestation';
   if (/(test|exercise|scan|assessment)/.test(t)) return 'test_result';
   return 'record';
+}
+
+export const TESTING_METHOD = {
+  en: 'Inspection of evidence and sample testing against the stated frequency',
+  ar: 'فحص الأدلة واختبار عيّنة منها وفق الدورية المحددة'
+};
+
+/**
+ * The wording of one control as generated from its requirement. Shared with
+ * the read-time localiser, which compares a stored control with this text to
+ * tell knowledge-base wording (shown in the reader's language) from wording a
+ * person has edited (shown as written).
+ */
+export function controlText(model, req, params, language) {
+  return {
+    name: req.controlName,
+    description: resolveText(req.policy, params),
+    requirement: resolveText(req.standard, params),
+    implementation: resolveText(req.guidance || req.standard, params),
+    responsible_role: roleName(defaultResponsible(model, req), language),
+    accountable_role: roleName(defaultAccountable(model, req), language),
+    frequency: resolveText(req.frequency, params),
+    kpi: resolveText(req.kpi, params),
+    risk: resolveText(req.risk, params),
+    testing_method: TESTING_METHOD[language] || TESTING_METHOD.en,
+    evidenceItems: req.evidence.map((e) => resolveText(e, params))
+  };
 }
 
 /** Preview a package without persisting it — used by the wizard. */

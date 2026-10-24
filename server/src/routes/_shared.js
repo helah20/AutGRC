@@ -101,7 +101,7 @@ export function applicableFrameworkCodes() {
 }
 
 export function domainOptions() {
-  return DOMAIN_META.map((d) => ({ ...d, documents: q.get('SELECT COUNT(*) AS n FROM documents WHERE domain_key = ?', d.key).n }));
+  return DOMAIN_META.map((d) => ({ ...d, documents: q.get('SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND domain_key = ?', d.key).n }));
 }
 
 /** Parse comma-separated query parameters into a clean array. */

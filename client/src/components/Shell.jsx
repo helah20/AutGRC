@@ -5,6 +5,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import { api } from '../lib/api.js';
 import { initials, relativeTime } from '../lib/format.js';
+import { useLabels } from '../i18n/labels.js';
 import { useI18n } from '../i18n/index.jsx';
 import {
   IconDashboard, IconDocument, IconWand, IconUsers, IconGrid, IconShield, IconLayers,
@@ -69,6 +70,7 @@ const NAV = [
 ];
 
 export default function Shell({ children }) {
+  const labels = useLabels();
   const { user, org, logout, can } = useAuth();
   const { t, formatNumber } = useI18n();
   const navigate = useNavigate();
@@ -180,7 +182,7 @@ export default function Shell({ children }) {
               <span className="avatar" title={user?.email}>{initials(user?.name)}</span>
               <div style={{ lineHeight: 1.25 }} className="hide-sm">
                 <div className="small strong truncate" style={{ maxWidth: 150 }}>{user?.name}</div>
-                <div className="tiny muted">{user?.roleLabel}</div>
+                <div className="tiny muted">{labels.role(user?.role, user?.roleLabel)}</div>
               </div>
             </div>
             <button className="btn btn-ghost btn-icon" onClick={() => logout().then(() => navigate('/login'))}

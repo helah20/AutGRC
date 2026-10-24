@@ -83,7 +83,7 @@ export default function Evidence() {
             columns={[
               { key: 'evidence_id', header: t('evidence.columnId'), nowrap: true, width: 118, render: (e) => <span className="ref-tag">{e.evidence_id}</span> },
               { key: 'name', header: t('evidence.columnRequired'), render: (e) => (<><div className="cell-title">{e.name}</div><div className="cell-sub">{e.control_ref ? `${t('evidence.control')} ${e.control_ref} — ${e.control_name}` : t('evidence.notLinked')}</div></>) },
-              { key: 'evidence_type', header: t('common.type'), nowrap: true, render: (e) => <Badge tone="neutral">{labels.humanise(e.evidence_type)}</Badge> },
+              { key: 'evidence_type', header: t('common.type'), nowrap: true, render: (e) => <Badge tone="neutral">{labels.evidenceType(e.evidence_type)}</Badge> },
               { key: 'domain_label', header: t('common.domain'), nowrap: true, render: (e) => <span className="small">{labels.domain(e.domain_key, e.domain_label)}</span> },
               { key: 'frequency', header: t('evidence.columnFrequency'), render: (e) => <span className="small">{e.frequency || '—'}</span> },
               {
@@ -120,7 +120,7 @@ export default function Evidence() {
           <div className="stack">
             <div className="row-tight">
               <span className="ref-tag">{selected.evidence_id}</span>
-              <Badge tone="neutral">{labels.humanise(selected.evidence_type)}</Badge>
+              <Badge tone="neutral">{labels.evidenceType(selected.evidence_type)}</Badge>
               <Badge tone="info">{labels.domain(selected.domain_key, selected.domain_label)}</Badge>
               <Badge tone={EVIDENCE_TONE[selected.status] || 'neutral'}>{labels.evidenceStatus(selected.status)}</Badge>
             </div>

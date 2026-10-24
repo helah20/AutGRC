@@ -14,14 +14,14 @@ router.use(authenticate);
 router.get('/', asyncHandler(async (req, res) => {
   const count = (sql, ...args) => q.get(sql, ...args).n;
 
-  const totalDocs = count('SELECT COUNT(*) AS n FROM documents');
-  const published = count("SELECT COUNT(*) AS n FROM documents WHERE status = 'published'");
-  const underReview = count("SELECT COUNT(*) AS n FROM documents WHERE status IN ('under_review','under_revision')");
-  const draft = count("SELECT COUNT(*) AS n FROM documents WHERE status = 'draft'");
+  const totalDocs = count('SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL');
+  const published = count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND status = 'published'");
+  const underReview = count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND status IN ('under_review','under_revision')");
+  const draft = count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND status = 'draft'");
 
   const reviewDue = q.all(
     `SELECT * FROM documents
-      WHERE review_date IS NOT NULL AND status != 'retired' AND review_date <= date('now','+90 day')
+      WHERE translation_of IS NULL AND review_date IS NOT NULL AND status != 'retired' AND review_date <= date('now','+90 day')
       ORDER BY review_date LIMIT 25`
   );
   const overdue = reviewDue.filter((d) => d.review_date < new Date().toISOString().slice(0, 10));
@@ -54,10 +54,10 @@ router.get('/', asyncHandler(async (req, res) => {
   const byDomain = DOMAIN_META.map((d) => ({
     key: d.key, name: d.name, short: d.short, category: d.category,
     categoryLabel: DOMAIN_CATEGORIES[d.category],
-    documents: count('SELECT COUNT(*) AS n FROM documents WHERE domain_key = ?', d.key),
+    documents: count('SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND domain_key = ?', d.key),
     controls: count('SELECT COUNT(*) AS n FROM controls WHERE domain_key = ?', d.key),
     evidence: count('SELECT COUNT(*) AS n FROM evidence WHERE domain_key = ?', d.key),
-    published: count("SELECT COUNT(*) AS n FROM documents WHERE domain_key = ? AND status = 'published'", d.key)
+    published: count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND domain_key = ? AND status = 'published'", d.key)
   })).filter((d) => d.documents > 0 || d.controls > 0);
 
   const findingsBySeverity = q.all(
@@ -70,10 +70,10 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json({
     kpis: {
       totalDocuments: totalDocs,
-      policies: count("SELECT COUNT(*) AS n FROM documents WHERE doc_type = 'policy'"),
-      procedures: count("SELECT COUNT(*) AS n FROM documents WHERE doc_type = 'procedure'"),
-      standards: count("SELECT COUNT(*) AS n FROM documents WHERE doc_type = 'standard'"),
-      guidelines: count("SELECT COUNT(*) AS n FROM documents WHERE doc_type = 'guideline'"),
+      policies: count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND doc_type = 'policy'"),
+      procedures: count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND doc_type = 'procedure'"),
+      standards: count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND doc_type = 'standard'"),
+      guidelines: count("SELECT COUNT(*) AS n FROM documents WHERE translation_of IS NULL AND doc_type = 'guideline'"),
       frameworks: count('SELECT COUNT(*) AS n FROM frameworks'),
       frameworkRequirements: count('SELECT COUNT(*) AS n FROM framework_requirements'),
       roles: count('SELECT COUNT(*) AS n FROM roles'),
@@ -97,9 +97,9 @@ router.get('/', asyncHandler(async (req, res) => {
       overdueActions: count("SELECT COUNT(*) AS n FROM corrective_actions WHERE status IN ('open','in_progress','blocked') AND due_date < date('now')")
     },
     charts: {
-      byStatus: q.all('SELECT status, COUNT(*) AS n FROM documents GROUP BY status')
+      byStatus: q.all('SELECT status, COUNT(*) AS n FROM documents WHERE translation_of IS NULL GROUP BY status')
         .map((r) => ({ name: STATUS_LABEL[r.status] || r.status, value: r.n, key: r.status })),
-      byType: q.all('SELECT doc_type, COUNT(*) AS n FROM documents GROUP BY doc_type')
+      byType: q.all('SELECT doc_type, COUNT(*) AS n FROM documents WHERE translation_of IS NULL GROUP BY doc_type')
         .map((r) => ({ name: DOC_TYPE_LABEL[r.doc_type] || r.doc_type, value: r.n, key: r.doc_type })),
       byDomain,
       coverage,
@@ -113,7 +113,7 @@ router.get('/', asyncHandler(async (req, res) => {
       findingsByCategory: findingsByCategory.map((r) => ({ name: r.category, value: r.n })),
       activityTrend: q.all(
         `SELECT date(created_at) AS day, COUNT(*) AS n FROM documents
-          WHERE created_at >= date('now','-30 day') GROUP BY day ORDER BY day`
+          WHERE translation_of IS NULL AND created_at >= date('now','-30 day') GROUP BY day ORDER BY day`
       )
     },
     recentlyUpdated: enrichDocuments(q.all('SELECT * FROM documents ORDER BY updated_at DESC LIMIT 8')),

@@ -29,6 +29,16 @@ export function titleCase(value) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * The reader's locale. The language provider sets it as the language changes,
+ * so dates and relative times follow the interface without every caller
+ * having to pass it.
+ */
+let currentLocale = 'en-GB';
+export function setFormatLocale(language) {
+  currentLocale = language === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB';
+}
+
 export function formatDate(value, { withTime = false } = {}) {
   if (!value) return '—';
   const date = new Date(value);
@@ -36,19 +46,20 @@ export function formatDate(value, { withTime = false } = {}) {
   const opts = withTime
     ? { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }
     : { year: 'numeric', month: 'short', day: '2-digit' };
-  return new Intl.DateTimeFormat('en-GB', opts).format(date);
+  return new Intl.DateTimeFormat(currentLocale, opts).format(date);
 }
 
 export function relativeTime(value) {
   if (!value) return '—';
   const diff = Date.now() - new Date(value).getTime();
   const minutes = Math.round(diff / 60000);
-  if (Math.abs(minutes) < 1) return 'just now';
-  if (Math.abs(minutes) < 60) return `${minutes}m ago`;
+  const rtf = new Intl.RelativeTimeFormat(currentLocale, { numeric: 'auto' });
+  if (Math.abs(minutes) < 1) return rtf.format(0, 'second');
+  if (Math.abs(minutes) < 60) return rtf.format(-minutes, 'minute');
   const hours = Math.round(minutes / 60);
-  if (Math.abs(hours) < 24) return `${hours}h ago`;
+  if (Math.abs(hours) < 24) return rtf.format(-hours, 'hour');
   const days = Math.round(hours / 24);
-  if (Math.abs(days) < 30) return `${days}d ago`;
+  if (Math.abs(days) < 30) return rtf.format(-days, 'day');
   return formatDate(value);
 }
 

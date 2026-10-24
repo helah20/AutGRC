@@ -102,7 +102,7 @@ export default function Actions() {
                   <div className="cell-title">{a.title}</div>
                   <div className="cell-sub">
                     {a.source
-                      ? `${a.source.label}: ${(a.source.ref ? `${a.source.ref} — ` : '')}${(a.source.title || '').slice(0, 64)}`
+                      ? `${t(`actionSource.${a.source.type}`)}: ${(a.source.ref ? `${a.source.ref} — ` : '')}${(a.source.title || '').slice(0, 64)}`
                       : t('actions.raisedDirectly')}
                   </div>
                 </>)

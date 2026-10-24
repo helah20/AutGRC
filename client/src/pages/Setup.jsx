@@ -76,14 +76,6 @@ export default function Setup() {
             selected={selected}
             onChange={setSelected}
             disabled={busy}
-            strings={{
-              regulatory: t('setup.regulatory'),
-              framework: t('setup.framework'),
-              regulatoryTitle: t('setup.regulatoryTitle'),
-              regulatoryHint: t('setup.regulatoryHint'),
-              frameworkTitle: t('setup.frameworkTitle'),
-              frameworkHint: t('setup.frameworkHint')
-            }}
           />
         </div>
 

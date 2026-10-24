@@ -65,7 +65,7 @@ export default function Findings() {
               {data.items.map((f) => (
                 <div key={f.id}>
                   <div className="tiny muted mono" style={{ marginBottom: 3 }}>
-                    {titleCase(f.scope_type)} · {f.scope_label}
+                    {labels.findingScope(f.scope_type, titleCase(f.scope_type))} · {f.scope_label}
                   </div>
                   <FindingCard finding={f} canManage={can('finding:write')}
                     onStatusChange={async (finding, next) => {

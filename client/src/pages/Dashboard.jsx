@@ -249,10 +249,12 @@ export default function Dashboard() {
                       <span className="ref-tag">{d.reference}</span>
                       <span className="strong small truncate">{d.title}</span>
                     </div>
-                    <div className="tiny muted">{labels.domain(d.domain_key, d.domain_label)} · {d.owner_name || 'No owner'}</div>
+                    <div className="tiny muted">{labels.domain(d.domain_key, d.domain_label)} · {d.owner_name || t('dashboard.noOwner')}</div>
                   </div>
                   <Badge tone={d.daysRemaining < 0 ? 'danger' : d.daysRemaining <= 30 ? 'warn' : 'neutral'}>
-                    {d.daysRemaining < 0 ? `${Math.abs(d.daysRemaining)}d overdue` : `${d.daysRemaining}d`}
+                    {d.daysRemaining < 0
+                      ? t('dashboard.daysOverdue', { count: Math.abs(d.daysRemaining) })
+                      : t('dashboard.daysLeft', { count: d.daysRemaining })}
                   </Badge>
                 </Link>
               ))}
@@ -282,7 +284,7 @@ export default function Dashboard() {
             <div className="stack-sm">
               {data.topFindings.slice(0, 6).map((f) => (
                 <div key={f.id}>
-                  <div className="row-tight"><SeverityBadge severity={f.severity} /><span className="tiny muted">{titleCase(f.category)}</span></div>
+                  <div className="row-tight"><SeverityBadge severity={f.severity} /><span className="tiny muted">{labels.findingCategory(f.category, titleCase(f.category))}</span></div>
                   <div className="small" style={{ marginTop: 2 }}>{f.title}</div>
                   <div className="tiny muted truncate">{f.location}</div>
                 </div>
@@ -301,8 +303,8 @@ export default function Dashboard() {
                     background: a.outcome === 'success' ? 'var(--ok)' : a.outcome === 'denied' ? 'var(--danger)' : 'var(--warn)'
                   }} />
                   <div style={{ minWidth: 0 }}>
-                    <div className="small truncate">{a.summary || a.action}</div>
-                    <div className="tiny muted">{a.user_email || 'system'} · {relativeTime(a.at)}</div>
+                    <div className="small truncate">{labels.activity(a)}</div>
+                    <div className="tiny muted">{a.user_email || t('activity.system')} · {relativeTime(a.at)}</div>
                   </div>
                 </div>
               ))}

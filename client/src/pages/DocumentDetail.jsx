@@ -220,6 +220,26 @@ export default function DocumentDetail() {
         </div>
       </div>
 
+      {doc.language && doc.language !== language && (() => {
+        // The reader works in one language and this document is in the other.
+        const counterpart = (data.otherLanguages || []).find((d) => d.language === language);
+        const languageName = t(language === 'ar' ? 'documentDetailUi.languageArabic' : 'documentDetailUi.languageEnglish');
+        return counterpart ? (
+          <div className="callout" data-callout="note">
+            <strong>{t('documentDetailUi.inOtherLanguageTitle')}</strong>
+            <p style={{ marginBottom: 0 }}>
+              {t('documentDetailUi.inOtherLanguageBody', { language: languageName, reference: counterpart.reference })}{' '}
+              <Link to={`/documents/${counterpart.id}`}>{t('documentDetailUi.openVersion', { language: languageName })}</Link>
+            </p>
+          </div>
+        ) : (
+          <div className="callout" data-callout="note">
+            <strong>{t('documentDetailUi.noVersionTitle')}</strong>
+            <p style={{ marginBottom: 0 }}>{t('documentDetailUi.noVersionBody')}</p>
+          </div>
+        );
+      })()}
+
       {doc.status === 'published' && reviewDays !== null && reviewDays < 0 && (
         <div className="callout" data-callout="warning">
           <strong>{t('documentDetail.overdue')}</strong>
@@ -321,11 +341,7 @@ export default function DocumentDetail() {
               />
               <div>
                 <h4 style={{ marginBottom: 8 }}>{t('documentDetail.decisionPoints')}</h4>
-                <DecisionList steps={data.flow.steps} params={params} strings={{
-                  step: t('documentDetail.stepLabel'),
-                  yes: t('documentDetail.branchYes'),
-                  no: t('documentDetail.branchNo')
-                }} />
+                <DecisionList steps={data.flow.steps} params={params} />
               </div>
             </div>
           </div>
@@ -402,7 +418,7 @@ export default function DocumentDetail() {
                       {data.links.map((l) => (
                         <tr key={`o-${l.id}`}>
                           <td><Badge tone="neutral">{t('documentDetail.outbound')}</Badge></td>
-                          <td className="small">{titleCase(l.link_type)}</td>
+                          <td className="small">{labels.linkType(l.link_type)}</td>
                           <td><Link to={`/documents/${l.to_id}`}><span className="ref-tag">{l.reference}</span> {l.title}</Link></td>
                           <td><StatusBadge status={l.status} /></td>
                         </tr>
@@ -410,7 +426,7 @@ export default function DocumentDetail() {
                       {data.backlinks.map((l) => (
                         <tr key={`i-${l.id}`}>
                           <td><Badge tone="info">{t('documentDetail.inbound')}</Badge></td>
-                          <td className="small">{titleCase(l.link_type)}</td>
+                          <td className="small">{labels.linkType(l.link_type)}</td>
                           <td><Link to={`/documents/${l.from_id}`}><span className="ref-tag">{l.reference}</span> {l.title}</Link></td>
                           <td><StatusBadge status={l.status} /></td>
                         </tr>
@@ -426,7 +442,7 @@ export default function DocumentDetail() {
                 columns={[
                   { key: 'control_id', header: t('documentDetailUi.colControlId'), nowrap: true, render: (c) => <span className="mono">{c.control_id}</span> },
                   { key: 'name', header: t('documentDetailUi.colControl') },
-                  { key: 'control_type', header: t('documentDetailUi.colType'), nowrap: true, render: (c) => <Badge tone="neutral">{titleCase(c.control_type)}</Badge> },
+                  { key: 'control_type', header: t('documentDetailUi.colType'), nowrap: true, render: (c) => <Badge tone="neutral">{labels.controlType(c.control_type)}</Badge> },
                   { key: 'risk_rating', header: t('documentDetailUi.colRisk'), nowrap: true, render: (c) => <Badge tone={c.risk_rating === 'critical' ? 'critical' : c.risk_rating === 'high' ? 'danger' : c.risk_rating === 'medium' ? 'warn' : 'ok'}>{labels.rating(c.risk_rating, titleCase(c.risk_rating))}</Badge> }
                 ]}
                 rows={data.controls}
@@ -498,7 +514,7 @@ export default function DocumentDetail() {
               <DataTable
                 columns={[
                   { key: 'version', header: t('documentDetailUi.colVersion'), nowrap: true, render: (v) => <span className="mono strong">{v.version}</span> },
-                  { key: 'change_type', header: t('documentDetailUi.colType'), nowrap: true, render: (v) => <Badge tone="neutral">{titleCase(v.change_type)}</Badge> },
+                  { key: 'change_type', header: t('documentDetailUi.colType'), nowrap: true, render: (v) => <Badge tone="neutral">{labels.changeType(v.change_type)}</Badge> },
                   { key: 'change_note', header: t('documentDetailUi.colChangeNote'), render: (v) => v.change_note || <span className="muted">—</span> },
                   { key: 'author_name', header: t('documentDetailUi.colAuthor'), nowrap: true },
                   { key: 'created_at', header: t('documentDetailUi.colWhen'), nowrap: true, render: (v) => <span className="small">{formatDate(v.created_at, { withTime: true })}</span> },
