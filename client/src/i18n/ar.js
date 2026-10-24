@@ -597,7 +597,6 @@ export default {
   },
 
   auth: {
-    signInFailed: 'تعذّر تسجيل الدخول',
     codeFailed: 'تعذّر التحقق من الرمز',
     signIn: 'تسجيل الدخول',
     signInSubtitle: 'استخدم حسابك المؤسسي للوصول إلى مكتبة الحوكمة.',

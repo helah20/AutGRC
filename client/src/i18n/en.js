@@ -595,7 +595,6 @@ export default {
   },
 
   auth: {
-    signInFailed: 'Unable to sign in',
     codeFailed: 'Unable to verify that code',
     signIn: 'Sign in',
     signInSubtitle: 'Use your organisational account to access the governance library.',
