@@ -8,7 +8,7 @@ import {
 } from '../components/ui.jsx';
 import TraceChain from '../components/TraceChain.jsx';
 import { IconLayers, IconDownload, IconX, IconInfo, IconUpload, IconCheck, IconAlert } from '../components/Icons.jsx';
-import { titleCase, COVERAGE_TONE } from '../lib/format.js';
+import { COVERAGE_TONE } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
 import { useI18n } from '../i18n/index.jsx';
 
@@ -49,7 +49,7 @@ export default function Frameworks() {
       // reader may have changed in between.
       setPreview({ ...analysis, file });
     } catch (err) {
-      toast.error('The file could not be read', err.message);
+      toast.error(t('frameworksUi.fileUnreadable'), err.message);
       setPreview(null);
     } finally {
       setImportBusy(false);
@@ -64,16 +64,16 @@ export default function Frameworks() {
       form.append('file', preview.file);
       form.append('confirm', 'true');
       const res = await api.upload(`/frameworks/${active}/catalogue`, form);
-      toast.success('Catalogue imported', res.note);
+      toast.success(t('frameworksUi.imported'), res.note);
       setImportOpen(false);
       setPreview(null);
       reload();
     } catch (err) {
-      toast.error('The import failed', err.message);
+      toast.error(t('frameworksUi.importFailed'), err.message);
     } finally { setImportBusy(false); }
   }
 
-  if (loading) return <Loading label="Loading framework catalogue…" />;
+  if (loading) return <Loading label={t('frameworksUi.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
   return (
@@ -85,14 +85,14 @@ export default function Frameworks() {
         </div>
         <div className="page-actions">
           <button className="btn" onClick={() => api.download('/export/mappings.xlsx', 'Framework Mapping.xlsx')
-            .then(() => toast.success('Exported')).catch((e) => toast.error('Export failed', e.message))}>
-            <IconDownload />Export mapping
+            .then(() => toast.success(t('common.exported'))).catch((e) => toast.error(t('common.exportFailed'), e.message))}>
+            <IconDownload />{t('frameworksUi.exportMapping')}
           </button>
         </div>
       </div>
 
       <div className="callout">
-        <strong>Source status</strong>
+        <strong>{t('frameworksUi.sourceStatus')}</strong>
         <p style={{ marginBottom: 0 }}>{data.sourceNote}</p>
       </div>
 
@@ -100,23 +100,23 @@ export default function Frameworks() {
         <div className="grid grid-3" style={{ marginTop: 14 }}>
           {data.items.map((f) => (
             <button key={f.id} type="button" className="card" onClick={() => setActive(f.code)}
-              style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit', padding: 0, border: '1px solid var(--border)' }}>
+              style={{ textAlign: 'start', cursor: 'pointer', font: 'inherit', padding: 0, border: '1px solid var(--border)' }}>
               <div className="card-body">
                 <div className="row-tight" style={{ marginBottom: 6, flexWrap: 'wrap' }}>
                   <span className="ref-tag">{f.code}</span>
-                  {f.is_mandatory ? <Badge tone="critical">Regulatory</Badge> : <Badge tone="neutral">Framework</Badge>}
+                  {f.is_mandatory ? <Badge tone="critical">{t('frameworksUi.regulatory')}</Badge> : <Badge tone="neutral">{t('frameworksUi.framework')}</Badge>}
                   {f.edition_status === 'superseded' && (
                     <Badge tone="warn" title={f.superseded_by?.length
-                      ? `Replaced by ${f.superseded_by.map((e) => e.code).join(', ')}`
-                      : 'No longer the current edition'}>Superseded</Badge>
+                      ? t('frameworksUi.replacedBy', { codes: f.superseded_by.map((e) => e.code).join(', ') })
+                      : t('frameworksUi.notCurrentEdition')}>{t('frameworksUi.superseded')}</Badge>
                   )}
-                  {f.edition_status === 'draft' && <Badge tone="neutral">Draft edition</Badge>}
+                  {f.edition_status === 'draft' && <Badge tone="neutral">{t('frameworksUi.draftEdition')}</Badge>}
                 </div>
                 <div className="strong" style={{ marginBottom: 3 }}>{f.name}</div>
                 <div className="tiny muted" style={{ marginBottom: 10 }}>
                   {f.publisher}{f.version ? ` · ${f.version}` : ''}{f.jurisdiction ? ` · ${f.jurisdiction}` : ''}
-                  {f.supersedes?.code && <><br />Supersedes {f.supersedes.code}</>}
-                  {f.retires_on && <><br />Retires {f.retires_on}</>}
+                  {f.supersedes?.code && <><br />{t('frameworksUi.supersedes', { code: f.supersedes.code })}</>}
+                  {f.retires_on && <><br />{t('frameworksUi.retires', { date: f.retires_on })}</>}
                 </div>
                 <p className="small muted clamp-3" style={{ marginBottom: 12 }}>{f.description}</p>
                 <CoverageBar value={f.coverage} label={t('counts.mapped', { mapped: formatNumber(f.mapped_count), total: formatNumber(f.requirement_count) })} />
@@ -144,11 +144,11 @@ export default function Frameworks() {
         <Card flush style={{ marginTop: 14 }}>
           <div className="table-toolbar">
             <button className="btn btn-sm" onClick={() => { setActive(null); setSearch(''); setDomain(''); }}>
-              <IconX width={13} height={13} />All frameworks
+              <IconX width={13} height={13} />{t('frameworksUi.allFrameworks')}
             </button>
             <span className="strong">{detail?.framework?.name || active}</span>
-            <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder="Search requirements…" /></div>
-            <Select value={domain} onChange={setDomain} placeholder="All domains"
+            <div className="search-box"><SearchInput value={search} onChange={setSearch} placeholder={t('frameworksUi.searchPlaceholder')} /></div>
+            <Select value={domain} onChange={setDomain} placeholder={t('frameworksUi.allDomains')}
               options={(detail?.domains || []).map((d) => ({ value: d.key, label: d.name }))} />
             <span className="table-count">{detail ? t('counts.requirements', { count: formatNumber(detail.requirements.length) }) : '—'}</span>
             {canImport && (
@@ -163,7 +163,7 @@ export default function Frameworks() {
             <DataTable
               columns={[
                 {
-                  key: 'ref', header: 'Ref', nowrap: true, width: 130,
+                  key: 'ref', header: t('frameworksUi.colRef'), nowrap: true, width: 130,
                   render: (r) => (
                     <div className="stack-tiny">
                       <span className="ref-tag">{r.ref}</span>
@@ -176,32 +176,32 @@ export default function Frameworks() {
                   )
                 },
                 {
-                  key: 'title', header: 'Requirement',
+                  key: 'title', header: t('frameworksUi.colRequirement'),
                   render: (r) => (
-                    <div style={{ paddingLeft: (r.level - 1) * 14 }}>
+                    <div style={{ paddingInlineStart: (r.level - 1) * 14 }}>
                       <div className={`${r.level <= 2 ? 'cell-title' : ''} ltr-content`}>{r.title}</div>
                       {r.domain_label && <div className="cell-sub">{labels.domain(r.domain_key, r.domain_label)}</div>}
                     </div>
                   )
                 },
                 {
-                  key: 'coverage', header: 'Coverage', nowrap: true,
-                  render: (r) => <Badge tone={COVERAGE_TONE[r.coverage] || 'neutral'}>{titleCase(r.coverage)}</Badge>
+                  key: 'coverage', header: t('frameworksUi.colCoverage'), nowrap: true,
+                  render: (r) => <Badge tone={COVERAGE_TONE[r.coverage] || 'neutral'}>{labels.coverage(r.coverage)}</Badge>
                 },
                 {
-                  key: 'controls', header: 'Mapped controls',
+                  key: 'controls', header: t('frameworksUi.colMappedControls'),
                   render: (r) => r.controls.length
                     ? <div className="row-tight">{r.controls.slice(0, 4).map((c) => <span key={c.control_id} className="pill mono">{c.control_id}</span>)}
                         {r.controls.length > 4 && <span className="tiny muted">+{r.controls.length - 4}</span>}</div>
-                    : <span className="muted small">None</span>
+                    : <span className="muted small">{t('common.none')}</span>
                 }
               ]}
               rows={detail.requirements}
               onRowClick={async (r) => {
                 try { setTrace(await api.get(`/frameworks/requirements/${r.id}/trace`)); }
-                catch (err) { toast.error('Could not load traceability', err.message); }
+                catch (err) { toast.error(t('frameworksUi.traceFailed'), err.message); }
               }}
-              empty={<Empty icon={IconLayers} title="No requirements match" />}
+              empty={<Empty icon={IconLayers} title={t('frameworksUi.emptyRequirements')} />}
             />
           )}
         </Card>

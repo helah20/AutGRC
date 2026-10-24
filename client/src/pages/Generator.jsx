@@ -27,8 +27,6 @@ import { titleCase } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
 import { useI18n } from '../i18n/index.jsx';
 
-const STEPS = ['Document types', 'Domain', 'Context', 'Review & generate'];
-
 const DEFAULT_TYPES = ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'];
 
 export default function Generator() {
@@ -83,13 +81,25 @@ export default function Generator() {
     return options.domains.filter((d) => `${d.name} ${d.description}`.toLowerCase().includes(term));
   }, [options, domainFilter]);
 
-  if (loading) return <Loading label="Preparing the generator…" />;
+  if (loading) return <Loading label={t('generatorUi.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
   // The adopted sources, reported rather than chosen. A domain cites only the
   // ones it maps to, so this is the set the package draws from, not the set it
   // will necessarily show.
   const frameworkCodes = (options.frameworks || []).map((f) => f.code);
+
+  const steps = [
+    t('generatorUi.stepTypes'), t('generatorUi.domain'), t('generatorUi.stepContext'), t('generatorUi.stepReview')
+  ];
+
+  const classificationLabels = {
+    public: t('generatorUi.classPublic'),
+    internal: t('generatorUi.classInternal'),
+    confidential: t('generatorUi.classConfidential'),
+    secret: t('generatorUi.classSecret'),
+    top_secret: t('generatorUi.classTopSecret')
+  };
 
   const canAdvance = [
     docTypes.length > 0,
@@ -112,7 +122,7 @@ export default function Generator() {
       setPreviewTab(res.documents[0]?.docType || 'policy');
       setStep(3);
     } catch (err) {
-      toast.error('Preview failed', err.message);
+      toast.error(t('generatorUi.previewFailed'), err.message);
     } finally {
       setBusy(false);
     }
@@ -127,13 +137,16 @@ export default function Generator() {
         language: docLanguage
       });
       toast.success(
-        `Generated ${res.documents.length} documents`,
-        `${res.controls} controls and ${res.evidence} evidence requirements created for ${domainDetail?.name}.`
+        t('generatorUi.generatedToast', { count: res.documents.length }),
+        t('generatorUi.generatedToastBody', {
+          controls: res.controls, evidence: res.evidence,
+          domain: labels.domain(domainKey, domainDetail?.name)
+        })
       );
       const policy = res.documents.find((d) => d.doc_type === 'policy') || res.documents[0];
       navigate(policy ? `/documents/${policy.id}` : '/documents');
     } catch (err) {
-      toast.error('Generation failed', err.message);
+      toast.error(t('generatorUi.generationFailed'), err.message);
     } finally {
       setBusy(false);
     }
@@ -149,7 +162,7 @@ export default function Generator() {
       </div>
 
       <div className="wizard-steps">
-        {STEPS.map((label, i) => (
+        {steps.map((label, i) => (
           <div key={label} className={`wizard-step ${i === step ? 'active' : ''} ${i < step ? 'done' : ''}`}>
             <span className="wizard-num">{i < step ? <IconCheck width={13} height={13} /> : i + 1}</span>
             <span className="wizard-label">{label}</span>
@@ -158,7 +171,7 @@ export default function Generator() {
       </div>
 
       {step === 0 && (
-        <Card title="Which documents do you need?" subtitle="Generating the full set keeps the package internally consistent. You can add more later.">
+        <Card title={t('generatorUi.typesTitle')} subtitle={t('generatorUi.typesSubtitle')}>
           <div className="grid grid-2">
             {options.documentTypes.map((t) => (
               <label key={t.value} className={`option-card ${docTypes.includes(t.value) ? 'selected' : ''}`}>
@@ -173,58 +186,58 @@ export default function Generator() {
           </div>
           {!docTypes.includes('policy') && docTypes.includes('standard') && (
             <div className="callout" data-callout="warning">
-              <strong>No Policy selected</strong>
-              <p>A Standard without a Policy leaves the governance hierarchy incomplete, and the quality engine will raise it as a finding.</p>
+              <strong>{t('generatorUi.noPolicyTitle')}</strong>
+              <p>{t('generatorUi.noPolicyBody')}</p>
             </div>
           )}
         </Card>
       )}
 
       {step === 1 && (
-        <Card title="Select the cybersecurity domain"
-          subtitle="The domain determines the requirement model the whole package is generated from."
+        <Card title={t('generatorUi.domainTitle')}
+          subtitle={t('generatorUi.domainSubtitle')}
           actions={
-            <input className="input" style={{ width: 200, height: 30 }} placeholder="Filter domains…"
+            <input className="input" style={{ width: 200, height: 30 }} placeholder={t('generatorUi.filterDomains')}
               value={domainFilter} onChange={(e) => setDomainFilter(e.target.value)} />
           }>
           <div className="grid grid-3">
             {domains.map((d) => (
               <button key={d.key} type="button"
                 className={`option-card ${domainKey === d.key ? 'selected' : ''}`}
-                style={{ textAlign: 'left', font: 'inherit' }}
+                style={{ textAlign: 'start', font: 'inherit' }}
                 onClick={() => setDomainKey(d.key)}>
                 <span className="option-card-body">
                   <span className="option-card-title">
-                    {d.name}
+                    {labels.domain(d.key, d.name)}
                     <span className="pill mono">{d.short}</span>
                   </span>
                   <span className="option-card-desc">{d.description}</span>
                   <span className="row-tight" style={{ marginTop: 6 }}>
-                    <Badge tone="neutral">{d.requirements} requirements</Badge>
-                    <Badge tone="neutral">{d.activities} activities</Badge>
-                    {d.existingDocuments > 0 && <Badge tone="info">{d.existingDocuments} existing</Badge>}
+                    <Badge tone="neutral">{t('generatorUi.requirementsCount', { count: d.requirements })}</Badge>
+                    <Badge tone="neutral">{t('generatorUi.activitiesCount', { count: d.activities })}</Badge>
+                    {d.existingDocuments > 0 && <Badge tone="info">{t('generatorUi.existingCount', { count: d.existingDocuments })}</Badge>}
                   </span>
                 </span>
               </button>
             ))}
           </div>
-          {!domains.length && <Empty title="No matching domain" >Clear the filter to see all 28 domains.</Empty>}
+          {!domains.length && <Empty title={t('generatorUi.noMatchingDomain')} >{t('generatorUi.clearFilterHint')}</Empty>}
         </Card>
       )}
 
       {step === 2 && domainDetail && (
         <div className="stack">
-          <Card title="Organisation context" subtitle="Used to tailor the generated content. Maintained under Settings.">
-            <div className="definition">
-              <dt>Organisation</dt><dd>{options.org.org_name || 'Not set'}</dd>
-              <dt>Type</dt><dd>{options.org.org_type || <span className="muted">Not set — an assumption will be recorded</span>}</dd>
-              <dt>Industry</dt><dd>{options.org.industry || <span className="muted">Not set — an assumption will be recorded</span>}</dd>
-              <dt>Size</dt><dd>{options.org.size || <span className="muted">Not set</span>}</dd>
-              <dt>Operating model</dt><dd>{options.org.operating_model || <span className="muted">Not set</span>}</dd>
-              <dt>Risk appetite</dt><dd>{options.org.risk_appetite || <span className="muted">Not set</span>}</dd>
-              <dt>Regulators</dt><dd>{options.org.regulators?.join(', ') || <span className="muted">Not set</span>}</dd>
-              <dt>Technology</dt><dd>{options.org.technology_env?.join(', ') || <span className="muted">Not set</span>}</dd>
-            </div>
+          <Card title={t('generatorUi.orgTitle')} subtitle={t('generatorUi.orgSubtitle')}>
+            <dl className="definition">
+              <dt>{t('generatorUi.orgName')}</dt><dd>{options.org.org_name || t('generatorUi.notSet')}</dd>
+              <dt>{t('generatorUi.orgType')}</dt><dd>{options.org.org_type || <span className="muted">{t('generatorUi.notSetAssumption')}</span>}</dd>
+              <dt>{t('generatorUi.industry')}</dt><dd>{options.org.industry || <span className="muted">{t('generatorUi.notSetAssumption')}</span>}</dd>
+              <dt>{t('generatorUi.size')}</dt><dd>{options.org.size || <span className="muted">{t('generatorUi.notSet')}</span>}</dd>
+              <dt>{t('generatorUi.operatingModel')}</dt><dd>{options.org.operating_model || <span className="muted">{t('generatorUi.notSet')}</span>}</dd>
+              <dt>{t('generatorUi.riskAppetite')}</dt><dd>{options.org.risk_appetite || <span className="muted">{t('generatorUi.notSet')}</span>}</dd>
+              <dt>{t('generatorUi.regulators')}</dt><dd>{options.org.regulators?.join(', ') || <span className="muted">{t('generatorUi.notSet')}</span>}</dd>
+              <dt>{t('generatorUi.technology')}</dt><dd>{options.org.technology_env?.join(', ') || <span className="muted">{t('generatorUi.notSet')}</span>}</dd>
+            </dl>
           </Card>
 
           <Card title={t('generator.languageTitle')} subtitle={t('generator.languageSubtitle')}>
@@ -248,8 +261,8 @@ export default function Generator() {
             )}
           </Card>
 
-          <Card title="Agreed values"
-            subtitle="These are organisational decisions, not regulatory requirements. Each value is used unchanged in every document in the package.">
+          <Card title={t('generatorUi.agreedValuesTitle')}
+            subtitle={t('generatorUi.agreedValuesSubtitle')}>
             <div className="field-row">
               {domainDetail.parameters.map((p) => (
                 <Field key={p.name} label={p.label}>
@@ -260,20 +273,20 @@ export default function Generator() {
             </div>
           </Card>
 
-          <Card title="Ownership and classification">
+          <Card title={t('generatorUi.ownershipTitle')}>
             <div className="field-row">
-              <Field label="Document owner" hint="Accountable for content and the review cycle.">
+              <Field label={t('generatorUi.documentOwner')} hint={t('generatorUi.ownerHint')}>
                 <Select value={ownerId} onChange={setOwnerId}
                   options={options.users.map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
               </Field>
-              <Field label="Approver" hint="A document cannot be approved by its own owner.">
-                <Select value={approverId} onChange={setApproverId} placeholder="Assign later"
+              <Field label={t('generatorUi.approver')} hint={t('generatorUi.approverHint')}>
+                <Select value={approverId} onChange={setApproverId} placeholder={t('generatorUi.assignLater')}
                   options={options.users.filter((u) => ['approver', 'admin'].includes(u.role))
                     .map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
               </Field>
-              <Field label="Classification">
+              <Field label={t('generatorUi.classification')}>
                 <Select value={classification} onChange={setClassification}
-                  options={['public', 'internal', 'confidential', 'secret', 'top_secret'].map((v) => ({ value: v, label: titleCase(v) }))} />
+                  options={['public', 'internal', 'confidential', 'secret', 'top_secret'].map((v) => ({ value: v, label: classificationLabels[v] || titleCase(v) }))} />
               </Field>
             </div>
           </Card>
@@ -282,12 +295,12 @@ export default function Generator() {
 
       {step === 3 && preview && (
         <div className="stack">
-          <Card title="Package summary">
+          <Card title={t('generatorUi.packageSummary')}>
             <div className="grid grid-4" style={{ marginBottom: 14 }}>
-              <div><div className="kpi-label">Domain</div><div className="strong">{preview.domain.name}</div></div>
-              <div><div className="kpi-label">Documents</div><div className="strong">{preview.documents.length}</div></div>
-              <div><div className="kpi-label">Controls</div><div className="strong">{preview.controls.length}</div></div>
-              <div><div className="kpi-label">Evidence items</div><div className="strong">{preview.controls.reduce((a, c) => a + c.evidenceItems.length, 0)}</div></div>
+              <div><div className="kpi-label">{t('generatorUi.domain')}</div><div className="strong">{labels.domain(preview.domain.key || domainKey, preview.domain.name)}</div></div>
+              <div><div className="kpi-label">{t('generatorUi.documents')}</div><div className="strong">{preview.documents.length}</div></div>
+              <div><div className="kpi-label">{t('generatorUi.controls')}</div><div className="strong">{preview.controls.length}</div></div>
+              <div><div className="kpi-label">{t('generatorUi.evidenceItems')}</div><div className="strong">{preview.controls.reduce((a, c) => a + c.evidenceItems.length, 0)}</div></div>
             </div>
             {/* The adopted sources, shown so the reader knows what this package
                 will be traced to — not offered for change here, because it is a
@@ -303,8 +316,8 @@ export default function Generator() {
           </Card>
 
           {preview.assumptions.length > 0 && (
-            <Card title="Assumptions recorded"
-              subtitle="Where the organisation profile did not supply an input, the generator states the assumption rather than presenting it as fact.">
+            <Card title={t('generatorUi.assumptionsTitle')}
+              subtitle={t('generatorUi.assumptionsSubtitle')}>
               <div className="stack-sm">
                 {preview.assumptions.map((a, i) => (
                   <div key={i} className="finding low">
@@ -320,15 +333,18 @@ export default function Generator() {
             </Card>
           )}
 
-          <Card title="Controls to be created" flush>
+          <Card title={t('generatorUi.controlsToCreate')} flush>
             <div className="table-wrap" style={{ maxHeight: 320, overflowY: 'auto' }}>
               <table className="data">
-                <thead><tr><th>ID</th><th>Control</th><th>Type</th><th>Frequency</th><th>Responsible</th><th>Mapping</th></tr></thead>
+                <thead><tr>
+                  <th>{t('generatorUi.colId')}</th><th>{t('generatorUi.colControl')}</th><th>{t('generatorUi.colType')}</th>
+                  <th>{t('generatorUi.colFrequency')}</th><th>{t('generatorUi.colResponsible')}</th><th>{t('generatorUi.colMapping')}</th>
+                </tr></thead>
                 <tbody>
                   {preview.controls.map((c) => (
                     <tr key={c.control_id}>
                       <td className="mono nowrap">{c.control_id}</td>
-                      <td><div className="cell-title">{c.name}</div><div className="cell-sub">{c.evidenceItems.length} evidence item(s)</div></td>
+                      <td><div className="cell-title">{c.name}</div><div className="cell-sub">{t('generatorUi.evidenceItemCount', { count: c.evidenceItems.length })}</div></td>
                       <td className="nowrap"><Badge tone="neutral">{titleCase(c.control_type)}</Badge></td>
                       <td className="small">{c.frequency}</td>
                       <td className="small nowrap">{c.responsible_role}</td>
@@ -340,9 +356,9 @@ export default function Generator() {
             </div>
           </Card>
 
-          <Card title="Document preview" flush>
+          <Card title={t('generatorUi.documentPreview')} flush>
             <Tabs
-              tabs={preview.documents.map((d) => ({ key: d.docType, label: titleCase(d.docType) }))}
+              tabs={preview.documents.map((d) => ({ key: d.docType, label: labels.docType(d.docType, titleCase(d.docType)) }))}
               active={previewTab} onChange={setPreviewTab} />
             {preview.documents.filter((d) => d.docType === previewTab).map((d) => (
               <div key={d.docType} style={{ padding: 16 }}>
@@ -370,25 +386,25 @@ export default function Generator() {
       <div className="between" style={{ marginTop: 18 }}>
         <button className="btn" disabled={step === 0 || busy}
           onClick={() => { setStep((s) => Math.max(0, s - 1)); if (step === 3) setPreview(null); }}>
-          <IconChevronLeft />Back
+          <IconChevronLeft />{t('generatorUi.back')}
         </button>
         <div className="row-tight">
           {step === 3 ? (
             <>
               <button className="btn" onClick={() => { setPreview(null); setStep(3); }} disabled={busy}>
-                <IconEye />Change inputs
+                <IconEye />{t('generatorUi.changeInputs')}
               </button>
               <button className="btn btn-primary btn-lg" onClick={generate} disabled={busy}>
-                {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />Generating…</> : <><IconSparkles />Generate package</>}
+                {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />{t('generatorUi.generating')}</> : <><IconSparkles />{t('generatorUi.generatePackage')}</>}
               </button>
             </>
           ) : step === 2 ? (
             <button className="btn btn-primary" onClick={runPreview} disabled={busy || !canAdvance}>
-              {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />Building preview…</> : <><IconEye />Preview package</>}
+              {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />{t('generatorUi.buildingPreview')}</> : <><IconEye />{t('generatorUi.previewPackage')}</>}
             </button>
           ) : (
             <button className="btn btn-primary" disabled={!canAdvance || busy} onClick={() => setStep((s) => s + 1)}>
-              Continue<IconChevronRight />
+              {t('generatorUi.continue')}<IconChevronRight />
             </button>
           )}
         </div>

@@ -19,7 +19,7 @@ export default function Roles() {
   const [addOpen, setAddOpen] = useState(false);
   const [busy, setBusy] = useState(null);
 
-  if (loading) return <Loading label="Loading roles…" />;
+  if (loading) return <Loading label={t('rolesUi.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
   const missing = data.library.filter((r) => !r.exists);
@@ -28,11 +28,11 @@ export default function Roles() {
     setBusy(code);
     try {
       const res = await api.post('/roles/from-library', { code });
-      toast.success('Role created', `${res.role.name} added with its full responsibility set.`);
+      toast.success(t('rolesUi.roleCreated'), t('rolesUi.roleCreatedBody', { name: res.role.name }));
       setAddOpen(false);
       reload();
     } catch (err) {
-      toast.error('Could not create role', err.message);
+      toast.error(t('rolesUi.couldNotCreate'), err.message);
     } finally {
       setBusy(null);
     }
@@ -47,11 +47,11 @@ export default function Roles() {
         </div>
         <div className="page-actions">
           <button className="btn" onClick={() => api.download('/reports/roles_responsibilities/export.xlsx', 'Roles.xlsx')
-            .then(() => toast.success('Exported')).catch((e) => toast.error('Export failed', e.message))}>
-            <IconDownload />Export
+            .then(() => toast.success(t('common.exported'))).catch((e) => toast.error(t('common.exportFailed'), e.message))}>
+            <IconDownload />{t('common.export')}
           </button>
           {can('role:write') && missing.length > 0 && (
-            <button className="btn btn-primary" onClick={() => setAddOpen(true)}><IconPlus />Add role</button>
+            <button className="btn btn-primary" onClick={() => setAddOpen(true)}><IconPlus />{t('rolesUi.addRole')}</button>
           )}
         </div>
       </div>
@@ -60,35 +60,33 @@ export default function Roles() {
         <DataTable
           columns={[
             {
-              key: 'name', header: 'Role',
+              key: 'name', header: t('rolesUi.colRole'),
               render: (r) => (<><div className="cell-title">{r.name}</div><div className="cell-sub clamp-2">{r.purpose}</div></>)
             },
-            { key: 'category', header: 'Category', nowrap: true, render: (r) => <Badge tone="neutral">{r.category}</Badge> },
-            { key: 'reporting_line', header: 'Reporting line', render: (r) => <span className="small clamp-2">{r.reporting_line || '—'}</span> },
-            { key: 'domain_label', header: 'Primary domain', nowrap: true, render: (r) => r.domain_label || <span className="muted">Cross-domain</span> },
-            { key: 'item_count', header: 'Statements', align: 'right', render: (r) => r.item_count }
+            { key: 'category', header: t('rolesUi.colCategory'), nowrap: true, render: (r) => <Badge tone="neutral">{r.category}</Badge> },
+            { key: 'reporting_line', header: t('rolesUi.colReportingLine'), render: (r) => <span className="small clamp-2">{r.reporting_line || '—'}</span> },
+            { key: 'domain_label', header: t('rolesUi.colPrimaryDomain'), nowrap: true, render: (r) => r.domain_label || <span className="muted">{t('rolesUi.crossDomain')}</span> },
+            { key: 'item_count', header: t('rolesUi.colStatements'), align: 'right', render: (r) => r.item_count }
           ]}
           rows={data.items}
           onRowClick={(r) => navigate(`/roles/${r.id}`)}
           empty={
-            <Empty icon={IconUsers} title="No roles defined"
-              action={can('role:write') ? <button className="btn btn-primary btn-sm" onClick={() => setAddOpen(true)}><IconPlus />Add a role</button> : null}>
-              Roles are created automatically when you generate a governance package, or you can add
-              them individually from the curated library.
+            <Empty icon={IconUsers} title={t('rolesUi.emptyTitle')}
+              action={can('role:write') ? <button className="btn btn-primary btn-sm" onClick={() => setAddOpen(true)}><IconPlus />{t('rolesUi.addARole')}</button> : null}>
+              {t('rolesUi.emptyBody')}
             </Empty>
           }
         />
       </Card>
 
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Add a role from the library" size="modal-lg">
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('rolesUi.libraryTitle')} size="modal-lg">
         <p className="muted small" style={{ marginBottom: 14 }}>
-          Library roles arrive fully populated with purpose, authority, responsibilities, accountabilities,
-          approvals, escalations and competencies. Every statement can be edited afterwards.
+          {t('rolesUi.libraryIntro')}
         </p>
         <div className="grid grid-2">
           {missing.map((r) => (
             <button key={r.code} type="button" className="option-card" disabled={busy === r.code}
-              style={{ textAlign: 'left', font: 'inherit' }} onClick={() => addFromLibrary(r.code)}>
+              style={{ textAlign: 'start', font: 'inherit' }} onClick={() => addFromLibrary(r.code)}>
               <span className="option-card-body">
                 <span className="option-card-title">{r.name}{busy === r.code && <span className="spinner" style={{ width: 12, height: 12 }} />}</span>
                 <span className="option-card-desc">{r.category}</span>
@@ -96,7 +94,7 @@ export default function Roles() {
             </button>
           ))}
         </div>
-        {!missing.length && <Empty title="Every library role already exists" />}
+        {!missing.length && <Empty title={t('rolesUi.libraryAllExist')} />}
       </Modal>
     </>
   );

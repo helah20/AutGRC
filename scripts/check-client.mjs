@@ -109,6 +109,45 @@ for (const file of files) {
   }
 }
 
+// Physical left/right styling. The interface is mirrored for Arabic, and a
+// margin-left or text-align: left stays on the left when everything else moves
+// to the right. Logical properties (marginInlineStart, textAlign: 'start')
+// follow the reading direction. Chart margins are SVG geometry and exempt.
+const PHYSICAL = /\b(?:margin|padding|border)(?:Left|Right)\b|textAlign:\s*'(?:left|right)'/g;
+for (const file of files) {
+  const rel = path.relative(ROOT, file);
+  if (!rel.endsWith('.jsx')) continue;
+  readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(PHYSICAL)) {
+      problems.push(`${rel}:${i + 1}: ${m[0]} does not mirror in Arabic; use the logical property`);
+    }
+  });
+}
+
+// Hardcoded English in the interface. The dictionaries passing their key
+// checks says nothing about text written straight into JSX, which renders in
+// English whatever language is selected. Names that are the same in every
+// language are allowed; anything else goes through t().
+const SAME_IN_EVERY_LANGUAGE = new Set(['AutGRC', 'English', 'Excel', 'PDF', 'Word', 'SHA-256', 'Q3 2026']);
+const HARDCODED = [
+  />\s*([A-Z][A-Za-z][^<>{}]{3,}?)\s*</g,
+  /(?:title|placeholder|label|hint|aria-label|header)="([A-Z][^"]{3,})"/g,
+  /toast\.(?:success|error|info|warn)\(\s*'([A-Z][^']{3,})'/g
+];
+for (const file of files) {
+  const rel = path.relative(ROOT, file);
+  if (!rel.endsWith('.jsx')) continue;
+  const src = readFileSync(file, 'utf8');
+  for (const re of HARDCODED) {
+    for (const m of src.matchAll(re)) {
+      const text = m[1].trim();
+      if (SAME_IN_EVERY_LANGUAGE.has(text)) continue;
+      const line = src.slice(0, m.index).split('\n').length;
+      problems.push(`${rel}:${line}: "${text.slice(0, 60)}" is hardcoded English; use t()`);
+    }
+  }
+}
+
 if (!problems.length) {
   console.log(`Client checks: ${files.length} file(s), ${enKeys.size} translation key(s), no problems.`);
   process.exit(0);

@@ -90,7 +90,7 @@ export default function Risks() {
                   );
                 })}
                 <div className="divider" />
-                <div className="definition">
+                <dl className="definition">
                   <dt>{t('risks.residualAssessed')}</dt><dd>{formatNumber(summary.residualAssessed)} {t('common.of')} {formatNumber(summary.total)}</dd>
                   <dt>{t('risks.formallyAccepted')}</dt><dd>{formatNumber(summary.accepted)}</dd>
                   {summary.acceptancesExpired > 0 && (
@@ -99,7 +99,7 @@ export default function Risks() {
                       <dd><Badge tone="danger">{summary.acceptancesExpired}</Badge></dd>
                     </>
                   )}
-                </div>
+                </dl>
               </div>
             </Card>
           </div>
@@ -140,12 +140,12 @@ export default function Risks() {
               { key: 'domain_label', header: t('common.domain'), nowrap: true, render: (r) => <span className="small">{labels.domain(r.domain_key, r.domain_label)}</span> },
               {
                 key: 'inherent', header: t('risks.inherent'), nowrap: true,
-                render: (r) => <Badge tone={RISK_TONE[r.inherent.rating]} title={`L${r.inherent.likelihood} x I${r.inherent.impact}`}>{r.inherent.score}</Badge>
+                render: (r) => <Badge tone={RISK_TONE[r.inherent.rating]} title={t('risksUi.scoreTitle', { likelihood: r.inherent.likelihood, impact: r.inherent.impact })}>{r.inherent.score}</Badge>
               },
               {
                 key: 'residual', header: t('risks.residual'), nowrap: true,
                 render: (r) => (r.residual_assessed
-                  ? <Badge tone={RISK_TONE[r.residual.rating]} title={`L${r.residual.likelihood} x I${r.residual.impact}`}>{r.residual.score}</Badge>
+                  ? <Badge tone={RISK_TONE[r.residual.rating]} title={t('risksUi.scoreTitle', { likelihood: r.residual.likelihood, impact: r.residual.impact })}>{r.residual.score}</Badge>
                   : <span className="small muted" title={t('risks.notAssessedTitle')}>{t('risks.notAssessed')}</span>)
               },
               { key: 'treatment', header: t('risks.treatment'), nowrap: true, render: (r) => <Badge tone="neutral">{labels.treatment(r.treatment)}</Badge> },
@@ -179,13 +179,13 @@ function RiskMatrix({ cells, onPick }) {
   const labels = useLabels();
   const { t, formatNumber } = useI18n();
   return (
-    <div className="risk-matrix" role="table" aria-label={t('risks.matrix')}>
+    <div className="risk-matrix" role="group" aria-label={t('risks.matrix')}>
       <div className="risk-matrix-grid">
         {cells.map((cell) => (
           <button key={`${cell.likelihood}-${cell.impact}`} type="button"
             className={`risk-cell tone-${cell.rating} ${cell.count ? 'has-risks' : ''}`}
             disabled={!cell.count}
-            title={`Likelihood ${cell.likelihood}, impact ${cell.impact} — ${labels.rating(cell.rating)}${cell.count ? `: ${cell.risks.map((r) => r.risk_id).join(', ')}` : ''}`}
+            title={`${t('risksUi.cellTitle', { likelihood: cell.likelihood, impact: cell.impact, rating: labels.rating(cell.rating) })}${cell.count ? `: ${cell.risks.map((r) => r.risk_id).join(', ')}` : ''}`}
             onClick={() => cell.risks[0] && onPick(cell.risks[0].id)}>
             {cell.count || ''}
           </button>
@@ -220,7 +220,7 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
         treatment: res.risk.treatment,
         treatment_summary: res.risk.treatment_summary || ''
       });
-    } catch (err) { toast.error('Could not load the risk', err.message); }
+    } catch (err) { toast.error(t('risksUi.couldNotLoad'), err.message); }
   }, [toast]);
 
   // Fetch in an effect, not during render: calling load() inline would set
@@ -244,7 +244,7 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
       toast.success(t('risks.assessmentRecorded'));
       await load(risk.id);
       onChanged();
-    } catch (err) { toast.error('Could not save', err.message); }
+    } catch (err) { toast.error(t('common.couldNotSave'), err.message); }
   }
 
   async function accept() {
@@ -256,7 +256,7 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
       setExpires('');
       await load(risk.id);
       onChanged();
-    } catch (err) { toast.error('Could not accept', err.message); }
+    } catch (err) { toast.error(t('risksUi.couldNotAccept'), err.message); }
   }
 
   async function withdraw() {
@@ -265,7 +265,7 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
       toast.success(t('risks.withdrawnToast'));
       await load(risk.id);
       onChanged();
-    } catch (err) { toast.error('Could not withdraw', err.message); }
+    } catch (err) { toast.error(t('risksUi.couldNotWithdraw'), err.message); }
   }
 
   const r = detail?.risk;
@@ -359,7 +359,7 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
                 </div>
                 <Field label={t('risks.treatment')}>
                   <Select value={draft.treatment} onChange={(v) => setDraft((d) => ({ ...d, treatment: v }))}
-                    options={Object.entries(detail.scales.treatments).map(([value, label]) => ({ value, label: `${labels.humanise(value)} — ${label}` }))} />
+                    options={Object.entries(detail.scales.treatments).map(([value, label]) => ({ value, label: `${labels.treatment(value)} — ${label}` }))} />
                 </Field>
                 <Field label={t('risks.treatmentSummary')}>
                   <textarea className="textarea" value={draft.treatment_summary}
@@ -389,7 +389,7 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
                   <li key={a.id} className="attachment">
                     <div className="attachment-main">
                       <div className="attachment-name"><span className="ref-tag">{a.action_id}</span> {a.title}</div>
-                      <div className="attachment-meta">{labels.actionStatus(a.status)} · due {formatDate(a.due_date)} · {a.owner_name || 'unassigned'}</div>
+                      <div className="attachment-meta">{labels.actionStatus(a.status)} · {t('risksUi.dueOn', { date: formatDate(a.due_date) })} · {a.owner_name || t('risksUi.unassigned')}</div>
                     </div>
                   </li>
                 ))}

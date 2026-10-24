@@ -3,6 +3,8 @@ import { api } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import { Card, Field, ErrorNote, useToast } from '../components/ui.jsx';
 import { IconLock, IconShield, IconCheck, IconAlert, IconCopy } from '../components/Icons.jsx';
+import { useT } from '../i18n/index.jsx';
+import { useLabels } from '../i18n/labels.js';
 
 /**
  * The screen a blocked account lands on, and the only one it can use.
@@ -12,6 +14,8 @@ import { IconLock, IconShield, IconCheck, IconAlert, IconCopy } from '../compone
  * chosen their own password, or enrolled the second factor their role requires.
  */
 export default function AccountAction({ block }) {
+  const t = useT();
+  const labels = useLabels();
   const { user, logout } = useAuth();
 
   return (
@@ -25,9 +29,9 @@ export default function AccountAction({ block }) {
           </svg>
           <div>
             <div className="strong">AutGRC</div>
-            <div className="tiny muted">{user?.name} · {user?.roleLabel}</div>
+            <div className="tiny muted">{user?.name} · {user?.role ? labels.role(user.role, user.roleLabel) : user?.roleLabel}</div>
           </div>
-          <button className="btn btn-ghost btn-sm" style={{ marginInlineStart: 'auto' }} onClick={logout}>Sign out</button>
+          <button className="btn btn-ghost btn-sm" style={{ marginInlineStart: 'auto' }} onClick={logout}>{t('accountActionUi.signOut')}</button>
         </div>
 
         {block === 'password_change_required' ? <ChangePassword /> : <EnrolMfa />}
@@ -39,6 +43,7 @@ export default function AccountAction({ block }) {
 /* ------------------------------------------------------ password reset --- */
 
 function ChangePassword() {
+  const t = useT();
   const { logout } = useAuth();
   const toast = useToast();
   const [current, setCurrent] = useState('');
@@ -57,7 +62,7 @@ function ChangePassword() {
     try {
       await api.post('/auth/change-password', { currentPassword: current, newPassword: next });
       setDone(true);
-      toast.success('Password changed', 'Sign in again with your new password.');
+      toast.success(t('accountActionUi.passwordChanged'), t('accountActionUi.passwordChangedBody'));
       // Every session was revoked server-side, including this one.
       setTimeout(logout, 1600);
     } catch (err) { setError(err); } finally { setBusy(false); }
@@ -65,35 +70,35 @@ function ChangePassword() {
 
   if (done) {
     return (
-      <Card title="Password changed">
+      <Card title={t('accountActionUi.passwordChanged')}>
         <p className="small">
-          All sessions were signed out, including this one. You will be returned to the sign-in screen.
+          {t('accountActionUi.allSessionsSignedOut')}
         </p>
       </Card>
     );
   }
 
   return (
-    <Card title="Choose a new password"
-      subtitle="An administrator reset this account. Until you set your own password, the platform will not let you do anything else.">
+    <Card title={t('accountActionUi.newPasswordTitle')}
+      subtitle={t('accountActionUi.newPasswordSubtitle')}>
       <form onSubmit={submit} className="stack">
         {error && <ErrorNote error={error} />}
-        <Field label="Temporary password" hint="The one the administrator gave you.">
+        <Field label={t('accountActionUi.temporaryPassword')} hint={t('accountActionUi.temporaryPasswordHint')}>
           <input className="input" type="password" autoComplete="current-password" required
             value={current} onChange={(e) => setCurrent(e.target.value)} />
         </Field>
-        <Field label="New password"
-          hint="At least 12 characters, with an upper-case letter, a lower-case letter and a digit.">
+        <Field label={t('accountActionUi.newPassword')}
+          hint={t('accountActionUi.newPasswordHint')}>
           <input className="input" type="password" autoComplete="new-password" required
             value={next} onChange={(e) => setNext(e.target.value)} />
         </Field>
-        <Field label="Confirm new password" error={mismatch ? 'The two entries do not match.' : null}>
+        <Field label={t('accountActionUi.confirmPassword')} error={mismatch ? t('accountActionUi.mismatch') : null}>
           <input className="input" type="password" autoComplete="new-password" required
             value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         </Field>
         <button className="btn btn-primary btn-block" type="submit"
           disabled={busy || mismatch || next.length < 12}>
-          {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />Saving…</> : <><IconLock width={14} height={14} />Set my password</>}
+          {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />{t('accountActionUi.saving')}</> : <><IconLock width={14} height={14} />{t('accountActionUi.setPassword')}</>}
         </button>
       </form>
     </Card>
@@ -103,6 +108,7 @@ function ChangePassword() {
 /* ---------------------------------------------------------- enrol MFA --- */
 
 export function EnrolMfa({ onDone, embedded = false }) {
+  const t = useT();
   const { applySession } = useAuth();
   const toast = useToast();
   const [setup, setSetup] = useState(null);
@@ -128,19 +134,18 @@ export function EnrolMfa({ onDone, embedded = false }) {
       const res = await api.post('/auth/mfa/enable', { code: code.trim() });
       setRecoveryCodes(res.recoveryCodes);
       applySession(res);
-      toast.success('Two-step verification is on');
+      toast.success(t('accountActionUi.mfaOn'));
     } catch (err) { setError(err); } finally { setBusy(false); }
   }
 
   if (recoveryCodes) {
     return (
-      <Card title="Save your recovery codes"
-        subtitle="Shown once. Only their hashes are stored, so they cannot be shown again.">
+      <Card title={t('accountActionUi.recoveryTitle')}
+        subtitle={t('accountActionUi.recoverySubtitle')}>
         <div className="callout" data-callout="warn" style={{ marginBottom: 14 }}>
-          <div className="row-tight"><IconAlert width={14} height={14} /><strong style={{ margin: 0 }}>Keep these somewhere safe and offline</strong></div>
+          <div className="row-tight"><IconAlert width={14} height={14} /><strong style={{ margin: 0 }}>{t('accountActionUi.recoveryWarning')}</strong></div>
           <p style={{ marginTop: 4, marginBottom: 0 }}>
-            Each code signs you in once if you lose your authenticator, and is then spent. Without them
-            and without your device, only an administrator can restore access.
+            {t('accountActionUi.recoveryBody')}
           </p>
         </div>
         <ul className="recovery-codes">
@@ -149,11 +154,11 @@ export function EnrolMfa({ onDone, embedded = false }) {
         <div className="row-tight" style={{ marginTop: 12 }}>
           <button className="btn btn-sm" onClick={() => {
             navigator.clipboard?.writeText(recoveryCodes.join('\n'))
-              .then(() => toast.success('Copied'))
-              .catch(() => toast.error('Could not copy', 'Select the codes and copy them manually.'));
-          }}><IconCopy width={13} height={13} />Copy all</button>
+              .then(() => toast.success(t('accountActionUi.copied')))
+              .catch(() => toast.error(t('accountActionUi.couldNotCopy'), t('accountActionUi.copyManually')));
+          }}><IconCopy width={13} height={13} />{t('accountActionUi.copyAll')}</button>
           <button className="btn btn-primary btn-sm" onClick={() => onDone?.()}>
-            <IconCheck width={13} height={13} />I have saved them
+            <IconCheck width={13} height={13} />{t('accountActionUi.savedThem')}
           </button>
         </div>
       </Card>
@@ -161,34 +166,34 @@ export function EnrolMfa({ onDone, embedded = false }) {
   }
 
   return (
-    <Card title={embedded ? 'Set up two-step verification' : 'Two-step verification is required'}
+    <Card title={embedded ? t('accountActionUi.mfaSetupTitle') : t('accountActionUi.mfaRequiredTitle')}
       subtitle={embedded
-        ? 'Adds a six-digit code from your phone to your password.'
-        : 'Your role can approve or administer governance records, so the platform requires a second factor — the same control its own IAM Standard mandates for privileged access.'}>
+        ? t('accountActionUi.mfaSetupBody')
+        : t('accountActionUi.mfaRequiredBody')}>
       {error && <ErrorNote error={error} />}
-      {!setup && !error && <p className="small muted">Preparing your enrolment…</p>}
+      {!setup && !error && <p className="small muted">{t('accountActionUi.mfaPreparing')}</p>}
 
       {setup && (
         <form onSubmit={enable} className="stack">
           <ol className="enrol-steps">
             <li>
-              <strong>Scan this with an authenticator app</strong>
-              <p className="small muted">Microsoft Authenticator, Google Authenticator, 1Password, Aegis — any TOTP app.</p>
-              <img src={setup.qrDataUri} alt="Enrolment QR code" className="enrol-qr" width={200} height={200} />
+              <strong>{t('accountActionUi.mfaScan')}</strong>
+              <p className="small muted">{t('accountActionUi.mfaScanBody')}</p>
+              <img src={setup.qrDataUri} alt={t('accountActionUi.mfaQrAlt')} className="enrol-qr" width={200} height={200} />
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowSecret((v) => !v)}>
-                {showSecret ? 'Hide' : 'Cannot scan it?'}
+                {showSecret ? t('accountActionUi.mfaHide') : t('accountActionUi.mfaCannotScan')}
               </button>
               {showSecret && (
                 <div className="enrol-secret">
-                  <div className="tiny muted">Enter this key manually:</div>
+                  <div className="tiny muted">{t('accountActionUi.mfaManualKey')}</div>
                   <code>{setup.secret}</code>
-                  <div className="tiny muted">Account {setup.account} · issuer {setup.issuer} · 6 digits · 30 seconds</div>
+                  <div className="tiny muted">{t('accountActionUi.mfaKeyDetails', { account: setup.account, issuer: setup.issuer })}</div>
                 </div>
               )}
             </li>
             <li>
-              <strong>Enter the code it shows</strong>
-              <Field label="" hint="Six digits. It changes every 30 seconds.">
+              <strong>{t('accountActionUi.mfaEnterCode')}</strong>
+              <Field label="" hint={t('accountActionUi.mfaCodeHint')}>
                 <input className="input" required inputMode="numeric" autoComplete="one-time-code"
                   placeholder="000000" value={code} onChange={(e) => setCode(e.target.value)}
                   style={{ fontFamily: 'var(--mono)', fontSize: 17, letterSpacing: '.12em', maxWidth: 190 }} />
@@ -196,7 +201,7 @@ export function EnrolMfa({ onDone, embedded = false }) {
             </li>
           </ol>
           <button className="btn btn-primary btn-block" type="submit" disabled={busy || code.trim().length < 6}>
-            {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />Verifying…</> : <><IconShield width={14} height={14} />Turn on two-step verification</>}
+            {busy ? <><span className="spinner" style={{ width: 14, height: 14 }} />{t('accountActionUi.verifying')}</> : <><IconShield width={14} height={14} />{t('accountActionUi.mfaTurnOn')}</>}
           </button>
         </form>
       )}

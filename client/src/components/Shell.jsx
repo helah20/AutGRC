@@ -149,8 +149,8 @@ export default function Shell({ children }) {
         </div>
 
         <div className="sidebar-footer">
-          <div className="truncate" title={org?.org_name}>{org?.org_name || 'Organisation'}</div>
-          <div style={{ opacity: .75 }}>{t('app.version')}</div>
+          <div className="truncate" title={org?.org_name}>{org?.org_name || t('shellUi.organisation')}</div>
+          <div>{t('app.version')}</div>
         </div>
       </nav>
 
@@ -163,7 +163,9 @@ export default function Shell({ children }) {
           <button className="topbar-search" onClick={() => setPaletteOpen(true)} type="button"
             style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer' }} aria-label={t('search.openSearch')}>
             <IconSearch width={14} height={14} />
-            <input readOnly value="" placeholder={t('search.placeholder')} style={{ cursor: 'pointer' }} />
+            {/* A span, not an input: an input inside a button is two controls in one, and
+                screen readers announce neither correctly. The button opens the palette. */}
+            <span className="topbar-search-field">{t('search.placeholder')}</span>
             <kbd>⌘K</kbd>
           </button>
 
@@ -174,7 +176,7 @@ export default function Shell({ children }) {
               aria-label={theme === 'dark' ? t('common.lightTheme') : t('common.darkTheme')} title={t('common.toggleTheme')}>
               {theme === 'dark' ? <IconSun /> : <IconMoon />}
             </button>
-            <div className="row-tight" style={{ paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
+            <div className="row-tight" style={{ paddingInlineStart: 6, borderInlineStart: '1px solid var(--border)' }}>
               <span className="avatar" title={user?.email}>{initials(user?.name)}</span>
               <div style={{ lineHeight: 1.25 }} className="hide-sm">
                 <div className="small strong truncate" style={{ maxWidth: 150 }}>{user?.name}</div>
@@ -228,6 +230,7 @@ const SEVERITY_TONE = { danger: 'danger', warn: 'warn', info: 'info' };
  * review that falls due in 30 days.
  */
 function NotificationBell() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -291,8 +294,8 @@ function NotificationBell() {
   return (
     <div className="notif-wrap">
       <button className="btn btn-ghost btn-icon" onClick={() => setOpen((o) => !o)}
-        aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
-        aria-expanded={open} title="Notifications">
+        aria-label={unread ? t('notifications.ariaUnread', { count: unread }) : t('notifications.aria')}
+        aria-expanded={open} title={t('notifications.title')}>
         <IconBell />
         {unread > 0 && <span className="notif-dot">{unread > 99 ? '99+' : unread}</span>}
       </button>
@@ -300,21 +303,21 @@ function NotificationBell() {
       {open && (
         <>
           <div className="notif-backdrop" onMouseDown={() => setOpen(false)} />
-          <div className="notif-panel" role="dialog" aria-label="Notifications">
+          <div className="notif-panel" role="dialog" aria-label={t('notifications.aria')}>
             <div className="notif-head">
-              <strong>Notifications</strong>
+              <strong>{t('notifications.title')}</strong>
               {unread > 0 && (
                 <button className="btn btn-ghost btn-sm" onClick={markAll}>
-                  <IconCheck width={12} height={12} />Mark all read
+                  <IconCheck width={12} height={12} />{t('notifications.markAllRead')}
                 </button>
               )}
             </div>
 
             <div className="notif-list">
-              {items === null && <div className="loading-block" style={{ padding: 20 }}><span className="spinner" />Loading…</div>}
+              {items === null && <div className="loading-block" style={{ padding: 20 }}><span className="spinner" />{t('common.loading')}</div>}
               {items?.length === 0 && (
                 <div className="empty" style={{ padding: 24 }}>
-                  <p>Nothing to report. Approvals, review dates and evidence checks appear here.</p>
+                  <p>{t('notifications.empty')}</p>
                 </div>
               )}
               {items?.map((item) => (
@@ -329,7 +332,7 @@ function NotificationBell() {
                   <div className="notif-item-side">
                     {item.severity !== 'info' && <span className={`notif-flag ${SEVERITY_TONE[item.severity]}`} aria-hidden="true" />}
                     <button className="btn btn-ghost btn-sm btn-icon" onClick={() => dismiss(item)}
-                      aria-label="Dismiss" title="Dismiss"><IconTrash width={12} height={12} /></button>
+                      aria-label={t('notifications.dismiss')} title={t('notifications.dismiss')}><IconTrash width={12} height={12} /></button>
                   </div>
                 </div>
               ))}
@@ -337,7 +340,7 @@ function NotificationBell() {
 
             <div className="notif-foot">
               <button className="btn btn-sm" onClick={() => { setOpen(false); navigate('/my-work'); }}>
-                Open My Work<IconChevronRight width={12} height={12} />
+                {t('notifications.openMyWork')}<IconChevronRight width={12} height={12} />
               </button>
             </div>
           </div>
@@ -360,6 +363,7 @@ const ENTITY_ROUTE = {
 };
 
 function CommandPalette({ onClose }) {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [term, setTerm] = useState('');
   const [groups, setGroups] = useState([]);
@@ -404,15 +408,15 @@ function CommandPalette({ onClose }) {
     <div className="cmdk" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="cmdk-panel">
         <input className="cmdk-input" autoFocus value={term} onChange={(e) => setTerm(e.target.value)}
-          onKeyDown={onKeyDown} placeholder="Search policies, standards, procedures, controls, requirements, roles, evidence…" />
+          onKeyDown={onKeyDown} placeholder={t('search.full')} />
         <div className="cmdk-results">
-          {busy && <div className="loading-block" style={{ padding: 24 }}><span className="spinner" />Searching…</div>}
+          {busy && <div className="loading-block" style={{ padding: 24 }}><span className="spinner" />{t('common.searching')}</div>}
           {!busy && term.trim().length >= 2 && !flat.length && (
-            <div className="empty" style={{ padding: 28 }}><p>No matches for “{term}”.</p></div>
+            <div className="empty" style={{ padding: 28 }}><p>{t('common.nothingMatches', { term })}</p></div>
           )}
           {!busy && term.trim().length < 2 && (
             <div style={{ padding: '10px 12px' }} className="small muted">
-              Type at least two characters. Search covers documents, controls, framework requirements, roles, evidence, RACI activities and gap items.
+              {t('search.hint')}
             </div>
           )}
           {groups.map((group) => (
@@ -424,7 +428,7 @@ function CommandPalette({ onClose }) {
                 return (
                   <button key={`${group.type}-${item.id}`} type="button"
                     className={`cmdk-item ${active ? 'active' : ''}`}
-                    style={{ width: '100%', border: 'none', background: active ? 'var(--bg-active)' : 'none', font: 'inherit', textAlign: 'left' }}
+                    style={{ width: '100%', border: 'none', background: active ? 'var(--bg-active)' : 'none', font: 'inherit', textAlign: 'start' }}
                     onClick={() => go({ ...item, type: group.type })}>
                     <span className="cmdk-item-title">{item.title}</span>
                     {item.badge && <span className="pill">{item.badge}</span>}

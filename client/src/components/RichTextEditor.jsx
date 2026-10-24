@@ -11,22 +11,17 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   IconSave, IconX, IconSparkles, IconRefresh, IconAlert
 } from './Icons.jsx';
-
-const BLOCKS = [
-  { label: 'Paragraph', tag: 'p' },
-  { label: 'Heading 2', tag: 'h2' },
-  { label: 'Heading 3', tag: 'h3' },
-  { label: 'Heading 4', tag: 'h4' }
-];
+import { useI18n } from '../i18n/index.jsx';
 
 function exec(command, value) {
   document.execCommand(command, false, value);
 }
 
 export default function RichTextEditor({
-  value, onSave, onCancel, placeholder = 'Write the section content…',
+  value, onSave, onCancel, placeholder,
   aiActions, busy
 }) {
+  const { t } = useI18n();
   const ref = useRef(null);
   const [dirty, setDirty] = useState(false);
   const [empty, setEmpty] = useState(!value);
@@ -57,24 +52,24 @@ export default function RichTextEditor({
   const insertHtml = (html) => apply(() => exec('insertHTML', html));
 
   const insertTable = () => {
-    const cols = Math.max(2, Math.min(8, Number(window.prompt('Number of columns?', '3')) || 3));
-    const rows = Math.max(1, Math.min(30, Number(window.prompt('Number of data rows?', '3')) || 3));
-    const head = `<thead><tr>${Array.from({ length: cols }, (_, i) => `<th>Column ${i + 1}</th>`).join('')}</tr></thead>`;
+    const cols = Math.max(2, Math.min(8, Number(window.prompt(t('editorUi.promptColumns'), '3')) || 3));
+    const rows = Math.max(1, Math.min(30, Number(window.prompt(t('editorUi.promptRows'), '3')) || 3));
+    const head = `<thead><tr>${Array.from({ length: cols }, (_, i) => `<th>${t('editorUi.columnHeading', { n: i + 1 })}</th>`).join('')}</tr></thead>`;
     const body = `<tbody>${Array.from({ length: rows }, () => `<tr>${Array.from({ length: cols }, () => '<td>&nbsp;</td>').join('')}</tr>`).join('')}</tbody>`;
     insertHtml(`<table>${head}${body}</table><p><br></p>`);
   };
 
   const insertCallout = (kind) => {
-    const title = window.prompt('Callout title', kind === 'warning' ? 'Important' : 'Note');
+    const title = window.prompt(t('editorUi.promptCalloutTitle'), kind === 'warning' ? t('editorUi.calloutImportant') : t('editorUi.calloutNote'));
     if (title === null) return;
-    insertHtml(`<div class="callout" data-callout="${kind}"><strong>${title}</strong><p>Write the callout text here.</p></div><p><br></p>`);
+    insertHtml(`<div class="callout" data-callout="${kind}"><strong>${title}</strong><p>${t('editorUi.calloutBody')}</p></div><p><br></p>`);
   };
 
   const insertLink = () => {
-    const url = window.prompt('Link address (https://…)');
+    const url = window.prompt(t('editorUi.promptLink'));
     if (!url) return;
     if (!/^(https?:\/\/|mailto:|\/|#)/i.test(url)) {
-      window.alert('Only http, https, mailto and internal links are permitted.');
+      window.alert(t('editorUi.linkNotPermitted'));
       return;
     }
     apply(() => exec('createLink', url));
@@ -108,32 +103,39 @@ export default function RichTextEditor({
     return () => node?.removeEventListener('keydown', onKey);
   });
 
+  const blocks = [
+    { label: t('editorUi.paragraph'), tag: 'p' },
+    { label: t('editorUi.heading', { level: 2 }), tag: 'h2' },
+    { label: t('editorUi.heading', { level: 3 }), tag: 'h3' },
+    { label: t('editorUi.heading', { level: 4 }), tag: 'h4' }
+  ];
+
   return (
     <div>
       <div className="editor-toolbar">
         <select className="select" style={{ width: 118, height: 26, fontSize: 12, padding: '0 22px 0 7px' }}
           onChange={(e) => { setBlock(e.target.value); e.target.selectedIndex = 0; }} defaultValue="">
-          <option value="" disabled>Style</option>
-          {BLOCKS.map((b) => <option key={b.tag} value={b.tag}>{b.label}</option>)}
+          <option value="" disabled>{t('editorUi.style')}</option>
+          {blocks.map((b) => <option key={b.tag} value={b.tag}>{b.label}</option>)}
         </select>
         <span className="sep" />
-        <button type="button" className="tool-btn" title="Bold (Ctrl+B)" onClick={() => apply(() => exec('bold'))}><strong>B</strong></button>
-        <button type="button" className="tool-btn" title="Italic (Ctrl+I)" onClick={() => apply(() => exec('italic'))}><em>I</em></button>
-        <button type="button" className="tool-btn" title="Underline" onClick={() => apply(() => exec('underline'))}><span style={{ textDecoration: 'underline' }}>U</span></button>
-        <button type="button" className="tool-btn" title="Inline code" onClick={() => insertHtml('<code>code</code>')}>{'</>'}</button>
+        <button type="button" className="tool-btn" title={t('editorUi.bold', { shortcut: 'Ctrl+B' })} onClick={() => apply(() => exec('bold'))}><strong>B</strong></button>
+        <button type="button" className="tool-btn" title={t('editorUi.italic', { shortcut: 'Ctrl+I' })} onClick={() => apply(() => exec('italic'))}><em>I</em></button>
+        <button type="button" className="tool-btn" title={t('editorUi.underline')} onClick={() => apply(() => exec('underline'))}><span style={{ textDecoration: 'underline' }}>U</span></button>
+        <button type="button" className="tool-btn" title={t('editorUi.inlineCode')} onClick={() => insertHtml('<code>code</code>')}>{'</>'}</button>
         <span className="sep" />
-        <button type="button" className="tool-btn" title="Bullet list" onClick={() => apply(() => exec('insertUnorderedList'))}>• List</button>
-        <button type="button" className="tool-btn" title="Numbered list" onClick={() => apply(() => exec('insertOrderedList'))}>1. List</button>
-        <button type="button" className="tool-btn" title="Indent" onClick={() => apply(() => exec('indent'))}>→</button>
-        <button type="button" className="tool-btn" title="Outdent" onClick={() => apply(() => exec('outdent'))}>←</button>
+        <button type="button" className="tool-btn" title={t('editorUi.bulletList')} onClick={() => apply(() => exec('insertUnorderedList'))}>• {t('editorUi.list')}</button>
+        <button type="button" className="tool-btn" title={t('editorUi.numberedList')} onClick={() => apply(() => exec('insertOrderedList'))}>1. {t('editorUi.list')}</button>
+        <button type="button" className="tool-btn" title={t('editorUi.indent')} onClick={() => apply(() => exec('indent'))}>→</button>
+        <button type="button" className="tool-btn" title={t('editorUi.outdent')} onClick={() => apply(() => exec('outdent'))}>←</button>
         <span className="sep" />
-        <button type="button" className="tool-btn" title="Insert table" onClick={insertTable}>Table</button>
-        <button type="button" className="tool-btn" title="Insert note callout" onClick={() => insertCallout('note')}>Note</button>
-        <button type="button" className="tool-btn" title="Insert warning callout" onClick={() => insertCallout('warning')}>Warning</button>
-        <button type="button" className="tool-btn" title="Insert link" onClick={insertLink}>Link</button>
-        <button type="button" className="tool-btn" title="Horizontal rule" onClick={() => insertHtml('<hr><p><br></p>')}>Rule</button>
+        <button type="button" className="tool-btn" title={t('editorUi.insertTable')} onClick={insertTable}>{t('editorUi.table')}</button>
+        <button type="button" className="tool-btn" title={t('editorUi.insertNote')} onClick={() => insertCallout('note')}>{t('editorUi.note')}</button>
+        <button type="button" className="tool-btn" title={t('editorUi.insertWarning')} onClick={() => insertCallout('warning')}>{t('editorUi.warning')}</button>
+        <button type="button" className="tool-btn" title={t('editorUi.insertLink')} onClick={insertLink}>{t('editorUi.link')}</button>
+        <button type="button" className="tool-btn" title={t('editorUi.horizontalRule')} onClick={() => insertHtml('<hr><p><br></p>')}>{t('editorUi.rule')}</button>
         <span className="sep" />
-        <button type="button" className="tool-btn" title="Remove formatting" onClick={() => apply(() => exec('removeFormat'))}>Clear</button>
+        <button type="button" className="tool-btn" title={t('editorUi.removeFormatting')} onClick={() => apply(() => exec('removeFormat'))}>{t('editorUi.clear')}</button>
 
         {aiActions && (
           <>
@@ -160,19 +162,19 @@ export default function RichTextEditor({
         role="textbox"
         aria-multiline="true"
         data-empty={empty}
-        data-placeholder={placeholder}
+        data-placeholder={placeholder === undefined ? t('editorUi.placeholder') : placeholder}
         onInput={sync}
         onBlur={sync}
       />
 
       <div className="editor-status">
-        {dirty ? <><span className="dirty-dot" />Unsaved changes</> : <span className="muted">No unsaved changes</span>}
+        {dirty ? <><span className="dirty-dot" />{t('editorUi.unsavedChanges')}</> : <span className="muted">{t('editorUi.noUnsavedChanges')}</span>}
         <span className="spacer" />
-        <span className="faint tiny">Ctrl+S to save</span>
-        <button className="btn btn-sm" onClick={onCancel} disabled={saving}><IconX width={13} height={13} />Cancel</button>
+        <span className="faint tiny">{t('editorUi.saveShortcut', { shortcut: 'Ctrl+S' })}</span>
+        <button className="btn btn-sm" onClick={onCancel} disabled={saving}><IconX width={13} height={13} />{t('editorUi.cancel')}</button>
         <button className="btn btn-primary btn-sm" onClick={save} disabled={saving || !dirty}>
           {saving ? <span className="spinner" style={{ width: 12, height: 12 }} /> : <IconSave width={13} height={13} />}
-          Save section
+          {t('editorUi.saveSection')}
         </button>
       </div>
     </div>

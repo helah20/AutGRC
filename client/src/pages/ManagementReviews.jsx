@@ -119,12 +119,12 @@ function ReviewDrawer({ id, onClose, onChanged, toast, canWrite, categories }) {
       {loading && <Loading />}
       {review && (
         <div className="stack">
-          <div className="definition">
+          <dl className="definition">
             <dt>{t('reviews.forum')}</dt><dd>{review.forum || '—'}</dd>
             <dt>{t('reviews.chair')}</dt><dd>{review.chair || '—'}</dd>
             <dt>{t('reviews.attendees')}</dt><dd>{review.attendees || '—'}</dd>
             {review.summary && <><dt>{t('reviews.summary')}</dt><dd>{review.summary}</dd></>}
-          </div>
+          </dl>
           {review.status === 'closed' && (
             <div className="callout" data-callout="ok"><p style={{ margin: 0 }}>{t('reviews.closedNote')}</p></div>
           )}

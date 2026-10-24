@@ -25,9 +25,9 @@ export default function MyWork() {
   async function verify(file) {
     try {
       await api.post(`/evidence/${file.evidence_row}/files/${file.file_id}/verify`);
-      toast.success('Artefact verified');
+      toast.success(t('evidence.verifiedToast'));
       reload();
-    } catch (err) { toast.error('Verification failed', err.message); }
+    } catch (err) { toast.error(t('myWorkUi.verificationFailed'), err.message); }
   }
 
   return (
@@ -68,13 +68,13 @@ export default function MyWork() {
                       <span className="ref-tag">{doc.reference}</span>{doc.title}
                     </Link>
                     <div className="worklist-meta">
-                      {doc.doc_type_label} · {doc.domain_label} · {doc.status_label}
-                      {doc.review_date && ` · review ${formatDate(doc.review_date)}`}
-                      {doc.owner_name && ` · owner ${doc.owner_name}`}
+                      {labels.docType(doc.doc_type, doc.doc_type_label)} · {labels.domain(doc.domain_key, doc.domain_label)} · {labels.status(doc.status, doc.status_label)}
+                      {doc.review_date && ` · ${t('myWorkUi.reviewOn', { date: formatDate(doc.review_date) })}`}
+                      {doc.owner_name && ` · ${t('myWorkUi.ownerName', { name: doc.owner_name })}`}
                     </div>
                   </div>
                   <div className="worklist-actions">
-                    {doc.overdue && <Badge tone="danger">Overdue</Badge>}
+                    {doc.overdue && <Badge tone="danger">{t('common.overdue')}</Badge>}
                     <Link to={`/documents/${doc.id}`} className="btn btn-sm">
                       {t(`myWorkGroup.${group.key}Action`).endsWith('Action') ? group.action : t(`myWorkGroup.${group.key}Action`)}<IconArrowRight width={13} height={13} />
                     </Link>
@@ -98,9 +98,9 @@ export default function MyWork() {
                       <span className="ref-tag">{file.evidence_id}</span>{file.name}
                     </div>
                     <div className="worklist-meta">
-                      {file.filename} · collected {formatDate(file.collected_at)}
+                      {file.filename} · {t('myWorkUi.collectedOn', { date: formatDate(file.collected_at) })}
                       {file.period ? ` · ${file.period}` : ''}
-                      {file.collected_by ? ` · by ${file.collected_by}` : ''}
+                      {file.collected_by ? ` · ${t('myWorkUi.byName', { name: file.collected_by })}` : ''}
                     </div>
                   </div>
                   <div className="worklist-actions">
@@ -136,7 +136,7 @@ export default function MyWork() {
                   <div className="worklist-actions">
                     <SeverityBadge severity={finding.severity} />
                     <Link to={`/documents/${finding.document_id}`} className="btn btn-sm">
-                      Open<IconArrowRight width={13} height={13} />
+                      {t('common.open')}<IconArrowRight width={13} height={13} />
                     </Link>
                   </div>
                 </li>
@@ -164,7 +164,7 @@ export default function MyWork() {
                   </div>
                   <div className="worklist-actions">
                     <Link to={`/documents/${comment.document_id}`} className="btn btn-sm">
-                      Open<IconArrowRight width={13} height={13} />
+                      {t('common.open')}<IconArrowRight width={13} height={13} />
                     </Link>
                   </div>
                 </li>

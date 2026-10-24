@@ -42,18 +42,16 @@ export default function SearchPage() {
       </div>
 
       <div style={{ marginBottom: 14 }}>
-        <SearchInput value={term} onChange={setTerm} placeholder="Search everything — try “MFA”, “access review” or “backup”…" />
+        <SearchInput value={term} onChange={setTerm} placeholder={t('searchUi.placeholder')} />
       </div>
 
       {debounced.trim().length < 2 && (
-        <Empty icon={IconSearch} title="Start typing">
-          Enter at least two characters. Searching for “MFA” returns the policies that mandate it, the
-          standard that specifies it, the controls that implement it, the framework requirements it
-          satisfies and the evidence that proves it.
+        <Empty icon={IconSearch} title={t('searchUi.startTyping')}>
+          {t('searchUi.startTypingBody')}
         </Empty>
       )}
 
-      {loading && <Loading label="Searching…" />}
+      {loading && <Loading label={t('common.searching')} />}
       {error && <ErrorNote error={error} onRetry={reload} />}
 
       {data && (
@@ -61,7 +59,7 @@ export default function SearchPage() {
           <div className="row" style={{ marginBottom: 14 }}>
             <div className="btn-group">
               <button className={`btn btn-sm ${!type ? 'active' : ''}`} onClick={() => setType('')}>
-                All ({data.total})
+                {t('searchUi.all', { count: data.total })}
               </button>
               {data.groups.map((g) => (
                 <button key={g.type} className={`btn btn-sm ${type === g.type ? 'active' : ''}`} onClick={() => setType(g.type)}>
@@ -90,8 +88,8 @@ export default function SearchPage() {
               ))}
             </section>
           )) : (
-            <Empty icon={IconSearch} title={`No matches for “${debounced}”`}>
-              Try a broader term, or check the spelling.
+            <Empty icon={IconSearch} title={t('searchUi.noMatchesTitle', { term: debounced })}>
+              {t('searchUi.noMatchesBody')}
             </Empty>
           )}
         </>
