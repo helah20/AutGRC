@@ -22,6 +22,8 @@ import { useT } from '../i18n/index.jsx';
 
 const LANE_W = 196;
 const ROW_H = 60;
+// A decision is drawn as a diamond, which needs more height to hold its text.
+const DECISION_H = 96;
 const HEAD_H = 52;
 const GAP = 30;
 const PAD = 12;
@@ -57,7 +59,9 @@ export default function FlowDiagram({ steps, lanes, rows, params = {}, rtl = fal
 
   const { lanes: laneNames, rows: laneRows } = layout;
   const width = PAD * 2 + laneNames.length * LANE_W;
-  const height = PAD * 2 + HEAD_H + laneRows.length * (ROW_H + GAP) - GAP + 8;
+  const rowH = (i) => (laneRows[i].decision ? DECISION_H : ROW_H);
+  const offsets = laneRows.reduce((acc, _, i) => [...acc, acc[i] + rowH(i) + GAP], [0]);
+  const height = PAD * 2 + HEAD_H + offsets[laneRows.length] - GAP + 8;
   const yesWord = t('documentDetail.branchYes');
   const noWord = t('documentDetail.branchNo');
 
@@ -69,7 +73,7 @@ export default function FlowDiagram({ steps, lanes, rows, params = {}, rtl = fal
   const boxX = (lane) => laneX(lane) + BOX_INSET;
   const boxW = LANE_W - BOX_INSET * 2;
   const centreX = (lane) => laneX(lane) + LANE_W / 2;
-  const rowY = (i) => PAD + HEAD_H + i * (ROW_H + GAP);
+  const rowY = (i) => PAD + HEAD_H + offsets[i];
   // The edge a line of text starts from, and a step inward from it.
   const startEdge = (lane) => (rtl ? boxX(lane) + boxW : boxX(lane));
   const inward = (lane, by) => startEdge(lane) + (rtl ? -by : by);
@@ -122,7 +126,7 @@ export default function FlowDiagram({ steps, lanes, rows, params = {}, rtl = fal
             continuing answer labels its connector. */}
         {laneRows.slice(1).map((row, k) => {
           const from = laneRows[k];
-          const y1 = rowY(k) + ROW_H;
+          const y1 = rowY(k) + rowH(k);
           const y2 = rowY(k + 1);
           const mid = y1 + GAP / 2;
           const sameLane = from.lane === row.lane;
@@ -148,38 +152,52 @@ export default function FlowDiagram({ steps, lanes, rows, params = {}, rtl = fal
         {laneRows.map((row, i) => {
           const x = boxX(row.lane);
           const y = rowY(i);
+          const h = rowH(i);
+          const cx = x + boxW / 2;
           const kind = row.decision ? 'decision' : i === 0 || i === laneRows.length - 1 ? 'terminal' : '';
           const { exits } = branches(row);
-          // Side exits go into the free part of the same row: towards the
-          // reading end when there is a lane there, otherwise back the other way.
+          // Side exits leave from the diamond's side vertex into the free part
+          // of the same row: towards the reading end when there is a lane there.
           const side = rtl ? column(row.lane) === 0 : column(row.lane) < laneNames.length - 1; // true: physical right
           const exitW = LANE_W - 14;
           const exitX = side ? x + boxW + 26 : x - 26 - exitW;
           const fits = laneNames.length > 1;
           return (
             <g key={`step-${i}`}>
-              <rect x={x} y={y} width={boxW} height={ROW_H} rx="8" className={`flow-node-box ${kind}`} />
-              <circle cx={inward(row.lane, 14)} cy={y + 15} r="9" className="flow-node-badge" />
-              <text x={inward(row.lane, 14)} y={y + 18.5} textAnchor="middle" className="flow-node-num">{row.no}</text>
-              <text x={inward(row.lane, 30)} y={row.decision ? y + 20 : y + 34} className="flow-node-title" textAnchor="start">
-                {truncate(row.name, 22)}
-              </text>
-              {row.decision && lines(`◆ ${resolve(row.decision.question)}`, 30).map((line, k) => (
-                <text key={k} x={inward(row.lane, 12)} y={y + 37 + k * 13} className="flow-node-actor" textAnchor="start">{line}</text>
-              ))}
+              {row.decision ? (
+                <>
+                  <polygon points={`${cx},${y} ${x + boxW},${y + h / 2} ${cx},${y + h} ${x},${y + h / 2}`}
+                    className={`flow-node-box ${kind}`} />
+                  <circle cx={inward(row.lane, 12)} cy={y + 12} r="9" className="flow-node-badge" />
+                  <text x={inward(row.lane, 12)} y={y + 15.5} textAnchor="middle" className="flow-node-num">{row.no}</text>
+                  <text x={cx} y={y + h / 2 - 9} textAnchor="middle" className="flow-node-title">{truncate(row.name, 16)}</text>
+                  {lines(resolve(row.decision.question), 22).map((line, k) => (
+                    <text key={k} x={cx} y={y + h / 2 + 7 + k * 12} textAnchor="middle" className="flow-node-actor">{line}</text>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <rect x={x} y={y} width={boxW} height={h} rx="8" className={`flow-node-box ${kind}`} />
+                  <circle cx={inward(row.lane, 14)} cy={y + 15} r="9" className="flow-node-badge" />
+                  <text x={inward(row.lane, 14)} y={y + 18.5} textAnchor="middle" className="flow-node-num">{row.no}</text>
+                  <text x={inward(row.lane, 30)} y={y + 34} className="flow-node-title" textAnchor="start">
+                    {truncate(row.name, 22)}
+                  </text>
+                </>
+              )}
               {fits && exits.map((exit, k) => {
-                const h = exits.length > 1 ? (ROW_H - 6) / 2 : ROW_H - 12;
-                const ey = y + (exits.length > 1 ? k * (h + 6) : 6);
+                const eh = exits.length > 1 ? 26 : 38;
+                const ey = exits.length > 1 ? y + h / 2 - eh - 3 + k * (eh + 6) : y + h / 2 - eh / 2;
                 const fromX = side ? x + boxW : x;
                 const toX = side ? exitX : exitX + exitW;
                 const textStart = rtl ? exitX + exitW - 9 : exitX + 9;
                 return (
                   <g key={`exit-${k}`}>
-                    <path d={`M ${fromX} ${ey + h / 2} L ${toX + (side ? -2 : 2)} ${ey + h / 2}`}
+                    <path d={`M ${fromX} ${y + h / 2} L ${fromX + (side ? 12 : -12)} ${y + h / 2} L ${fromX + (side ? 12 : -12)} ${ey + eh / 2} L ${toX + (side ? -2 : 2)} ${ey + eh / 2}`}
                       className="flow-link exit" markerEnd="url(#flow-arrow-exit)" />
-                    <rect x={exitX} y={ey} width={exitW} height={h} rx="7" className="flow-exit-box" />
+                    <rect x={exitX} y={ey} width={exitW} height={eh} rx="7" className="flow-exit-box" />
                     {(exits.length > 1 ? [truncate(`${exit.word}: ${exit.text}`, 34)] : lines(`${exit.word}: ${exit.text}`, 30)).map((line, n, all) => (
-                      <text key={n} x={textStart} y={ey + (all.length > 1 ? h / 2 - 3 : h / 2 + 4) + n * 13}
+                      <text key={n} x={textStart} y={ey + (all.length > 1 ? eh / 2 - 3 : eh / 2 + 4) + n * 13}
                         className="flow-exit-text" textAnchor="start">{line}</text>
                     ))}
                   </g>
