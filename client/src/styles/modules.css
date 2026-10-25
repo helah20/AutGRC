@@ -140,25 +140,42 @@
 /* =========================================================== flow diagram == */
 
 .flow-canvas { overflow-x: auto; padding: 6px 2px 14px; }
-/* Render at natural size and anchor left; stretching to the container width
-   scales the diagram up and centres it behind a large empty gutter. */
-.flow-svg { display: block; max-width: 100%; height: auto; }
+/* Render at natural size and scroll sideways: a flow is as long as its
+   process, and shrinking it to the page width makes its text unreadable. The
+   scroll starts at the reading start, where the process begins. */
+.flow-svg { display: block; max-width: none; height: auto; }
 .flow-lane { fill: transparent; }
 .flow-lane.alt { fill: var(--bg-sunken, rgba(127, 127, 127, 0.05)); }
 .flow-lane-edge { stroke: var(--border); stroke-width: 1; }
-.flow-lane-label { fill: var(--text-muted); font-size: 11px; font-weight: 600; }
+.flow-lane-label { fill: var(--text); font-size: 11.5px; font-weight: 700; }
+.flow-lane-head { fill: var(--bg-sunken, rgba(127, 127, 127, 0.08)); stroke: var(--border-strong); stroke-width: 1; }
+.flow-frame { fill: none; stroke: var(--border-strong); stroke-width: 1.2; }
+.flow-event { stroke: var(--accent); stroke-width: 1.6; fill: var(--accent-soft); }
+.flow-event.end { stroke-width: 3.5; }
+.flow-event-label { fill: var(--text); font-size: 10.5px; font-weight: 700; }
+.flow-node-question { fill: var(--text); font-size: 10.5px; font-weight: 600; }
+.flow-branch-word.exit { fill: var(--warn); }
 /* A hand-off is the event the chart exists to show, so the crossing line is
    the one that is drawn to be noticed. */
 .flow-link.handoff { stroke: var(--accent); stroke-width: 1.6; }
 .flow-node-box { fill: var(--bg-raised); stroke: var(--border-strong); stroke-width: 1.2; }
 .flow-node-box.decision { fill: var(--warn-soft); stroke: var(--warn); }
 .flow-node-box.terminal { fill: var(--accent-soft); stroke: var(--accent); }
-.flow-node-num { fill: var(--accent); font-family: var(--mono); font-size: 10px; font-weight: 700; }
+.flow-node-num { fill: #fff; font-family: var(--mono); font-size: 10px; font-weight: 700; }
+.flow-node-badge { fill: var(--accent); }
 .flow-node-title { fill: var(--text); font-size: 12px; font-weight: 600; }
+.flow-node-box { filter: none; }
 .flow-node-actor { fill: var(--text-muted); font-size: 10.5px; }
-.flow-link { stroke: var(--border-strong); stroke-width: 1.4; fill: none; }
+.flow-link { stroke: var(--text-muted); stroke-width: 1.4; fill: none; }
 .flow-link-label { fill: var(--text-faint); font-size: 10px; font-family: var(--mono); }
-.flow-arrow { fill: var(--border-strong); }
+.flow-arrow { fill: var(--text-muted); }
+.flow-arrow.handoff { fill: var(--accent); }
+.flow-arrow.exit, .flow-link.exit { fill: var(--warn); }
+.flow-link.exit { fill: none; stroke: var(--warn); stroke-width: 1.3; stroke-dasharray: 4 3; }
+.flow-exit-box { fill: var(--bg-raised); stroke: var(--warn); stroke-width: 1; stroke-dasharray: 4 3; }
+.flow-exit-text { fill: var(--text); font-size: 10.5px; }
+.flow-branch-pill.main { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+.flow-branch-word { fill: var(--accent); font-size: 10px; font-weight: 700; }
 
 .flow-decision-list { display: grid; gap: 8px; }
 .flow-decision {
