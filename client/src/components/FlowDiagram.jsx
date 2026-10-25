@@ -20,7 +20,7 @@ import { useT } from '../i18n/index.jsx';
 const PAD = 12;
 const HEAD_W = 128;          // lane name column, at the reading start
 const MAIN_H = 104;          // the band of a lane that holds its steps
-const EXIT_H = 92;           // the band below it, for decision outcomes that leave the path
+const EXIT_H = 100;           // the band below it, for decision outcomes that leave the path
 const COL = { start: 74, end: 74, step: 184, decision: 176 };
 const STEP_W = 150, STEP_H = 62;
 const DIAMOND_W = 148, DIAMOND_H = 86;
@@ -75,7 +75,7 @@ export default function FlowDiagram({ steps, lanes, rows, params = {}, rtl = fal
   const laneH = (l) => MAIN_H + (hasExit[l] ? EXIT_H : 0);
   const laneTop = laneNames.map((_, l) => PAD + laneNames.slice(0, l).reduce((sum, __, k) => sum + laneH(k), 0));
   const mainY = (l) => laneTop[l] + MAIN_H / 2;
-  const exitY = (l) => laneTop[l] + MAIN_H + EXIT_H / 2 - 4;
+  const exitY = (l) => laneTop[l] + MAIN_H + EXIT_H / 2 + 4;
 
   const colW = nodes.map((n) => COL[n.kind]);
   const flowW = colW.reduce((a, b) => a + b, 0);
@@ -115,8 +115,9 @@ export default function FlowDiagram({ steps, lanes, rows, params = {}, rtl = fal
       const top = mainY(node.lane) + DIAMOND_H / 2;
       const d = k === 0
         ? `M ${cxOf(i)} ${top} L ${ex} ${ey - EXIT_H_BOX / 2 - 2}`
-        : `M ${cxOf(i)} ${top} L ${cxOf(i)} ${top + 10} L ${ex} ${top + 10} L ${ex} ${ey - EXIT_H_BOX / 2 - 2}`;
-      exits.push({ key: `${i}-${k}`, d, x: ex, y: ey, word: exit.word, text: exit.text, lx: cxOf(i) + forward * 8 + (k ? forward * 40 : 0), ly: top + (k ? 22 : 14) });
+        : `M ${cxOf(i)} ${top} L ${cxOf(i)} ${top + 5} L ${ex} ${top + 5} L ${ex} ${ey - EXIT_H_BOX / 2 - 2}`;
+      // Each answer sits beside the end of its own line, just above its box.
+      exits.push({ key: `${i}-${k}`, d, x: ex, y: ey, word: exit.word, text: exit.text, lx: ex + forward * 7, ly: ey - EXIT_H_BOX / 2 - 5 });
     });
   });
 
