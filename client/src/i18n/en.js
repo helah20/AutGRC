@@ -1738,6 +1738,8 @@ export default {
   },
 
   documentDetailUi: {
+    flowStart: 'Start',
+    flowEnd: 'End',
     inOtherLanguageTitle: 'This document is in Arabic',
     inOtherLanguageBody: 'The {language} version is {reference}.',
     openVersion: 'Open the {language} version',

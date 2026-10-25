@@ -1734,6 +1734,8 @@ export default {
   },
 
   documentDetailUi: {
+    flowStart: 'بداية الإجراء',
+    flowEnd: 'نهاية الإجراء',
     inOtherLanguageTitle: 'هذه الوثيقة بالإنجليزية',
     inOtherLanguageBody: 'النسخة {language} هي {reference}.',
     openVersion: 'افتح النسخة {language}',
