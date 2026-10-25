@@ -20,101 +20,174 @@
 
 import { useT } from '../i18n/index.jsx';
 
-const LANE_W = 176;
-const ROW_H = 58;
-const HEAD_H = 46;
-const GAP = 14;
+const LANE_W = 196;
+const ROW_H = 60;
+const HEAD_H = 52;
+const GAP = 30;
 const PAD = 12;
-const NUM_W = 34;
+const BOX_INSET = 8;
+
+/**
+ * A decision outcome that carries on to the next step ("Continue to
+ * Approval"), as against one that leaves the main path ("Close the request").
+ * The first labels the arrow to the next step; the second is drawn as a side
+ * exit, so the diagram shows where the process goes when the answer is the
+ * other one.
+ */
+const CONTINUES = /^(continue|proceed)\b|^(يُ?نتقل|ينتقل|يُمضى|يمضي)/i;
+
+/** Up to two lines of about `max` characters, broken at spaces. */
+function lines(text, max) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const out = [''];
+  for (const word of words) {
+    const current = out[out.length - 1];
+    if (!current || (current + ' ' + word).length <= max) out[out.length - 1] = current ? `${current} ${word}` : word;
+    else if (out.length < 2) out.push(word);
+    else { out[1] = truncate(`${out[1]} ${word}`, max); break; }
+  }
+  return out;
+}
 
 export default function FlowDiagram({ steps, lanes, rows, params = {}, rtl = false }) {
+  const t = useT();
   const resolve = (text) => String(text || '').replace(/\{\{(\w+)\}\}/g, (m, k) => params[k] ?? m);
   const layout = laneLayout({ steps, lanes, rows, resolve });
   if (!layout) return null;
 
   const { lanes: laneNames, rows: laneRows } = layout;
-  const width = PAD * 2 + NUM_W + laneNames.length * LANE_W;
-  const height = PAD * 2 + HEAD_H + laneRows.length * (ROW_H + GAP);
+  const width = PAD * 2 + laneNames.length * LANE_W;
+  const height = PAD * 2 + HEAD_H + laneRows.length * (ROW_H + GAP) - GAP + 8;
+  const yesWord = t('documentDetail.branchYes');
+  const noWord = t('documentDetail.branchNo');
 
-  // Right-to-left is handled by reversing the lane order, not by mirroring the
-  // canvas. Flipping the drawing means flipping every label back again, and the
-  // counter-transform has to be recomputed from each element's own x — which is
-  // arithmetic that goes wrong quietly, and did: labels landed outside their
-  // boxes. Reversing the column index instead leaves one coordinate system, and
-  // text is laid out by the browser in the direction it belongs to.
+  // Right-to-left reverses the lane order rather than mirroring the canvas, and
+  // the SVG takes the reader's direction, so "start" is the reading start in
+  // both languages and text is laid out by the browser the way it belongs.
   const column = (lane) => (rtl ? laneNames.length - 1 - lane : lane);
-  const numX = rtl ? PAD + laneNames.length * LANE_W + 6 : PAD + 6;
-  const laneX = (lane) => PAD + (rtl ? 0 : NUM_W) + column(lane) * LANE_W;
-  const boxX = (lane) => laneX(lane) + 8;
+  const laneX = (lane) => PAD + column(lane) * LANE_W;
+  const boxX = (lane) => laneX(lane) + BOX_INSET;
+  const boxW = LANE_W - BOX_INSET * 2;
   const centreX = (lane) => laneX(lane) + LANE_W / 2;
   const rowY = (i) => PAD + HEAD_H + i * (ROW_H + GAP);
-  const textX = (lane) => (rtl ? boxX(lane) + LANE_W - 27 : boxX(lane) + 11);
-  const anchor = rtl ? 'end' : 'start';
+  // The edge a line of text starts from, and a step inward from it.
+  const startEdge = (lane) => (rtl ? boxX(lane) + boxW : boxX(lane));
+  const inward = (lane, by) => startEdge(lane) + (rtl ? -by : by);
+
+  // The two outcomes of each decision: which one continues, which ones leave.
+  const branches = (row) => {
+    const d = row.decision;
+    if (!d) return { main: null, exits: [] };
+    const options = [
+      { word: yesWord, text: resolve(d.yes) },
+      { word: noWord, text: resolve(d.no) }
+    ];
+    const main = options.find((o) => CONTINUES.test(o.text)) || null;
+    return { main, exits: options.filter((o) => o !== main) };
+  };
 
   return (
     <div className="flow-canvas">
       <svg className="flow-svg" viewBox={`0 0 ${width} ${height}`} width={width} height={height}
-        preserveAspectRatio="xMinYMin meet" role="img"
+        preserveAspectRatio="xMinYMin meet" role="img" style={{ direction: rtl ? 'rtl' : 'ltr' }}
         aria-label={`Swimlane process flow across ${laneNames.length} actors and ${laneRows.length} steps`}>
         <defs>
-          <marker id="flow-arrow" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
-            <polygon points="0 0, 9 3.5, 0 7" className="flow-arrow" />
+          <marker id="flow-arrow" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto">
+            <polygon points="0 0, 9 4, 0 8" className="flow-arrow" />
+          </marker>
+          <marker id="flow-arrow-handoff" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto">
+            <polygon points="0 0, 9 4, 0 8" className="flow-arrow handoff" />
+          </marker>
+          <marker id="flow-arrow-exit" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto">
+            <polygon points="0 0, 9 4, 0 8" className="flow-arrow exit" />
           </marker>
         </defs>
 
-        <g>
-          {/* Lane bands first, so every connector and box sits above them. */}
-          {laneNames.map((name, i) => (
-            <g key={`lane-${i}`}>
-              <rect x={laneX(i)} y={PAD} width={LANE_W} height={height - PAD * 2}
-                className={`flow-lane ${i % 2 ? 'alt' : ''}`} />
-              <line x1={laneX(i)} y1={PAD} x2={laneX(i)} y2={height - PAD} className="flow-lane-edge" />
-              <text x={centreX(i)} y={PAD + 27} className="flow-lane-label" textAnchor="middle">
-                {truncate(name, 24)}
-              </text>
+        {/* Lane bands first, so every connector and box sits above them. */}
+        {laneNames.map((name, i) => (
+          <g key={`lane-${i}`}>
+            <rect x={laneX(i)} y={PAD} width={LANE_W} height={height - PAD * 2}
+              className={`flow-lane ${i % 2 ? 'alt' : ''}`} />
+            <line x1={laneX(i)} y1={PAD} x2={laneX(i)} y2={height - PAD} className="flow-lane-edge" />
+            {lines(name, 26).map((line, k, all) => (
+              <text key={k} x={centreX(i)} y={PAD + (all.length > 1 ? 20 : 27) + k * 14}
+                className="flow-lane-label" textAnchor="middle">{line}</text>
+            ))}
+          </g>
+        ))}
+        <line x1={PAD} y1={PAD + HEAD_H - 8} x2={width - PAD} y2={PAD + HEAD_H - 8} className="flow-lane-edge" />
+
+        {/* Connectors: straight down inside a lane, an elbow when the work
+            changes hands, so a crossing line is the visible event. A decision's
+            continuing answer labels its connector. */}
+        {laneRows.slice(1).map((row, k) => {
+          const from = laneRows[k];
+          const y1 = rowY(k) + ROW_H;
+          const y2 = rowY(k + 1);
+          const mid = y1 + GAP / 2;
+          const sameLane = from.lane === row.lane;
+          const path = sameLane
+            ? `M ${centreX(row.lane)} ${y1} L ${centreX(row.lane)} ${y2 - 2}`
+            : `M ${centreX(from.lane)} ${y1} L ${centreX(from.lane)} ${mid} `
+              + `L ${centreX(row.lane)} ${mid} L ${centreX(row.lane)} ${y2 - 2}`;
+          const { main } = branches(from);
+          return (
+            <g key={`link-${k}`}>
+              <path d={path} className={`flow-link ${sameLane ? '' : 'handoff'}`}
+                markerEnd={`url(#flow-arrow${sameLane ? '' : '-handoff'})`} />
+              {main && (
+                <g>
+                  <rect x={centreX(from.lane) + (rtl ? -38 : 6)} y={y1 + 2} width={32} height={15} rx="7" className="flow-branch-pill main" />
+                  <text x={centreX(from.lane) + (rtl ? -22 : 22)} y={y1 + 13} textAnchor="middle" className="flow-branch-word">{main.word}</text>
+                </g>
+              )}
             </g>
-          ))}
-          <line x1={PAD} y1={PAD + HEAD_H - 8} x2={width - PAD} y2={PAD + HEAD_H - 8} className="flow-lane-edge" />
+          );
+        })}
 
-          {/* Connectors: straight down inside a lane, an elbow when the work
-              changes hands, so a crossing line is the visible event. */}
-          {laneRows.slice(1).map((row, k) => {
-            const from = laneRows[k];
-            const y1 = rowY(k) + ROW_H;
-            const y2 = rowY(k + 1);
-            const sameLane = from.lane === row.lane;
-            const path = sameLane
-              ? `M ${centreX(row.lane)} ${y1} L ${centreX(row.lane)} ${y2 - 4}`
-              : `M ${centreX(from.lane)} ${y1} L ${centreX(from.lane)} ${y1 + GAP / 2} `
-                + `L ${centreX(row.lane)} ${y1 + GAP / 2} L ${centreX(row.lane)} ${y2 - 4}`;
-            return (
-              <path key={`link-${k}`} d={path}
-                className={`flow-link ${sameLane ? '' : 'handoff'}`} markerEnd="url(#flow-arrow)" />
-            );
-          })}
-
-          {laneRows.map((row, i) => {
-            const x = boxX(row.lane);
-            const y = rowY(i);
-            const kind = row.decision ? 'decision' : i === 0 || i === laneRows.length - 1 ? 'terminal' : '';
-            return (
-              <g key={`step-${i}`}>
-                <text x={numX} y={y + ROW_H / 2 + 4} className="flow-node-num">
-                  {String(row.no).padStart(2, '0')}
-                </text>
-                <rect x={x} y={y} width={LANE_W - 16} height={ROW_H} rx="7" className={`flow-node-box ${kind}`} />
-                <text x={textX(row.lane)} y={y + 23} className="flow-node-title" textAnchor={anchor}>
-                  {truncate(row.name, 21)}
-                </text>
-                {row.decision && (
-                  <text x={textX(row.lane)} y={y + 41} className="flow-node-actor" textAnchor={anchor}>
-                    ◆ {truncate(resolve(row.decision.question), 22)}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </g>
+        {laneRows.map((row, i) => {
+          const x = boxX(row.lane);
+          const y = rowY(i);
+          const kind = row.decision ? 'decision' : i === 0 || i === laneRows.length - 1 ? 'terminal' : '';
+          const { exits } = branches(row);
+          // Side exits go into the free part of the same row: towards the
+          // reading end when there is a lane there, otherwise back the other way.
+          const side = rtl ? column(row.lane) === 0 : column(row.lane) < laneNames.length - 1; // true: physical right
+          const exitW = LANE_W - 14;
+          const exitX = side ? x + boxW + 26 : x - 26 - exitW;
+          const fits = laneNames.length > 1;
+          return (
+            <g key={`step-${i}`}>
+              <rect x={x} y={y} width={boxW} height={ROW_H} rx="8" className={`flow-node-box ${kind}`} />
+              <circle cx={inward(row.lane, 14)} cy={y + 15} r="9" className="flow-node-badge" />
+              <text x={inward(row.lane, 14)} y={y + 18.5} textAnchor="middle" className="flow-node-num">{row.no}</text>
+              <text x={inward(row.lane, 30)} y={row.decision ? y + 20 : y + 34} className="flow-node-title" textAnchor="start">
+                {truncate(row.name, 22)}
+              </text>
+              {row.decision && lines(`◆ ${resolve(row.decision.question)}`, 30).map((line, k) => (
+                <text key={k} x={inward(row.lane, 12)} y={y + 37 + k * 13} className="flow-node-actor" textAnchor="start">{line}</text>
+              ))}
+              {fits && exits.map((exit, k) => {
+                const h = exits.length > 1 ? (ROW_H - 6) / 2 : ROW_H - 12;
+                const ey = y + (exits.length > 1 ? k * (h + 6) : 6);
+                const fromX = side ? x + boxW : x;
+                const toX = side ? exitX : exitX + exitW;
+                const textStart = rtl ? exitX + exitW - 9 : exitX + 9;
+                return (
+                  <g key={`exit-${k}`}>
+                    <path d={`M ${fromX} ${ey + h / 2} L ${toX + (side ? -2 : 2)} ${ey + h / 2}`}
+                      className="flow-link exit" markerEnd="url(#flow-arrow-exit)" />
+                    <rect x={exitX} y={ey} width={exitW} height={h} rx="7" className="flow-exit-box" />
+                    {(exits.length > 1 ? [truncate(`${exit.word}: ${exit.text}`, 34)] : lines(`${exit.word}: ${exit.text}`, 30)).map((line, n, all) => (
+                      <text key={n} x={textStart} y={ey + (all.length > 1 ? h / 2 - 3 : h / 2 + 4) + n * 13}
+                        className="flow-exit-text" textAnchor="start">{line}</text>
+                    ))}
+                  </g>
+                );
+              })}
+            </g>
+          );
+        })}
       </svg>
     </div>
   );

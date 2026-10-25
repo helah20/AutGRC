@@ -153,12 +153,20 @@
 .flow-node-box { fill: var(--bg-raised); stroke: var(--border-strong); stroke-width: 1.2; }
 .flow-node-box.decision { fill: var(--warn-soft); stroke: var(--warn); }
 .flow-node-box.terminal { fill: var(--accent-soft); stroke: var(--accent); }
-.flow-node-num { fill: var(--accent); font-family: var(--mono); font-size: 10px; font-weight: 700; }
+.flow-node-num { fill: #fff; font-family: var(--mono); font-size: 10px; font-weight: 700; }
+.flow-node-badge { fill: var(--accent); }
 .flow-node-title { fill: var(--text); font-size: 12px; font-weight: 600; }
 .flow-node-actor { fill: var(--text-muted); font-size: 10.5px; }
 .flow-link { stroke: var(--border-strong); stroke-width: 1.4; fill: none; }
 .flow-link-label { fill: var(--text-faint); font-size: 10px; font-family: var(--mono); }
 .flow-arrow { fill: var(--border-strong); }
+.flow-arrow.handoff { fill: var(--accent); }
+.flow-arrow.exit, .flow-link.exit { fill: var(--warn); }
+.flow-link.exit { fill: none; stroke: var(--warn); stroke-width: 1.3; stroke-dasharray: 4 3; }
+.flow-exit-box { fill: var(--bg-raised); stroke: var(--warn); stroke-width: 1; stroke-dasharray: 4 3; }
+.flow-exit-text { fill: var(--text); font-size: 10.5px; }
+.flow-branch-pill.main { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+.flow-branch-word { fill: var(--accent); font-size: 10px; font-weight: 700; }
 
 .flow-decision-list { display: grid; gap: 8px; }
 .flow-decision {
