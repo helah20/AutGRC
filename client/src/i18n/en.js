@@ -595,6 +595,7 @@ export default {
   },
 
   auth: {
+    demoRole: { grc_manager: 'GRC Manager — generate, edit, publish', approver: 'Approver (CISO) — approve documents', cyber_user: 'Cybersecurity User — author, collect evidence, carry out actions', reviewer: 'Reviewer — review and comment', auditor: 'Auditor — verify actions, read the audit log', admin: 'Administrator — full access, users', read_only: 'Read Only — view and export' },
     codeFailed: 'Unable to verify that code',
     signIn: 'Sign in',
     signInSubtitle: 'Use your organisational account to access the governance library.',

@@ -5,13 +5,15 @@ import { Field } from '../components/ui.jsx';
 import { IconShield, IconLayers, IconTarget, IconLock, IconAlert, IconGlobe } from '../components/Icons.jsx';
 import { useI18n } from '../i18n/index.jsx';
 
+// One account per role; what each may do is described in the dictionaries.
 const DEMO_ACCOUNTS = [
-  { email: 'grc@autgrc.demo', name: 'Noura Al-Harbi', role: 'GRC Manager — generate, edit, publish' },
-  { email: 'ciso@autgrc.demo', name: 'Faisal Al-Otaibi', role: 'Approver (CISO) — approve documents' },
-  { email: 'analyst@autgrc.demo', name: 'Omar Al-Zahrani', role: 'Cybersecurity User — author and review' },
-  { email: 'auditor@autgrc.demo', name: 'Yousef Al-Shammari', role: 'Auditor — assess and read the audit log' },
-  { email: 'admin@autgrc.demo', name: 'Layla Al-Rashid', role: 'Administrator — full access' },
-  { email: 'viewer@autgrc.demo', name: 'Sara Al-Dosari', role: 'Read Only — view and export' }
+  { email: 'grc@autgrc.demo', name: 'Noura Al-Harbi', role: 'grc_manager' },
+  { email: 'ciso@autgrc.demo', name: 'Faisal Al-Otaibi', role: 'approver' },
+  { email: 'analyst@autgrc.demo', name: 'Omar Al-Zahrani', role: 'cyber_user' },
+  { email: 'reviewer@autgrc.demo', name: 'Hana Al-Qahtani', role: 'reviewer' },
+  { email: 'auditor@autgrc.demo', name: 'Yousef Al-Shammari', role: 'auditor' },
+  { email: 'admin@autgrc.demo', name: 'Layla Al-Rashid', role: 'admin' },
+  { email: 'viewer@autgrc.demo', name: 'Sara Al-Dosari', role: 'read_only' }
 ];
 
 export default function Login() {
@@ -191,7 +193,7 @@ export default function Login() {
                   </span>
                   <span style={{ minWidth: 0, flex: 1 }}>
                     <span className="demo-account-name">{acc.name}</span>
-                    <span className="demo-account-role" style={{ display: 'block' }}>{acc.role}</span>
+                    <span className="demo-account-role" style={{ display: 'block' }}>{t(`auth.demoRole.${acc.role}`)}</span>
                   </span>
                 </button>
               ))}
