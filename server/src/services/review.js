@@ -281,10 +281,18 @@ const AR_PARAMETER_TOPICS = {
   // Without 'وصول' this also matched the training step, which mentions the
   // induction while stating the training cycle rather than the induction deadline.
   onboardingDeadline: ['تعريف', 'تمهيدي', 'وصول'],
-  leaverReturnSla: ['غادر', 'اصول'],
   // The agreed value names its own audience, so the subject reaches the
   // sentence through the parameter rather than being restated around it.
   executiveBriefingFrequency: ['رفع', 'تنفيذي'],
+  // human resources security. The return of assets is stated beside its
+  // credentials in every document, while the leaver is often only implied.
+  leaverReturnSla: ['اصول', 'اعتماد'],
+  rescreeningFrequency: ['عاد', 'فحص'],
+  hrNotificationSla: ['بلغ', 'موارد'],
+  moverAccessReviewSla: ['ازال', 'وصول'],
+  postEmploymentObligationPeriod: ['التزام', 'مستمر'],
+  hrReconciliationFrequency: ['طابق', 'حساب'],
+  hrReviewFrequency: ['راجع', 'تطبيق'],
   // security operations
   serviceReviewFrequency: ['راجع', 'خدم'],
   runbookReviewFrequency: ['راجع', 'دلة', 'تشغيل'],

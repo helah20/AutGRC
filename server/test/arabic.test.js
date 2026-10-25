@@ -396,6 +396,7 @@ const PLANTED = {
   // which the frequency vocabulary read as annual until it learned the pattern.
   risk_management: { docType: 'standard', agreed: 'ربع سنوي', wrong: 'سنوي', parameter: 'riskRegisterReviewFrequency' },
   security_awareness: { docType: 'standard', agreed: '٣٠ يوماً', wrong: '٦٠ يوماً', parameter: 'trainingCompletionTarget' },
+  hr_security: { docType: 'standard', agreed: '٥ أيام عمل', wrong: '١٥ يوم عمل', parameter: 'moverAccessReviewSla' },
   security_operations: { docType: 'procedure', agreed: 'بتكرار شهري', wrong: 'بتكرار ربع سنوي', parameter: 'opsReportFrequency' },
   security_monitoring: { docType: 'standard', agreed: '١٥ دقيقة', wrong: '٦٠ دقيقة', parameter: 'p1AlertTriageSla' },
   logging_monitoring: { docType: 'procedure', agreed: '١٢ شهراً متصلة', wrong: '٦ أشهر متصلة', parameter: 'logRetention' },
