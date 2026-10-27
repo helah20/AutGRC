@@ -9,12 +9,14 @@
 import PDFDocument from 'pdfkit';
 import { htmlToBlocks, runsToText } from './html-to-blocks.js';
 import { lastReviewed } from './export-docx.js';
+import { currentBrand, fitWithin } from './brand.js';
 
-const BRAND = '#1F3A5F';
-const ACCENT = '#2E6F9E';
+// The organisation's colours (services/brand.js), set at the start of each build.
+let BRAND = '#1F3A5F';
+let ACCENT = '#2E6F9E';
 const MUTED = '#6B7C8F';
-const LINE = '#C9D4E0';
-const LIGHT = '#F2F5F9';
+let LINE = '#C9D4E0';
+let LIGHT = '#F2F5F9';
 
 const MARGIN = 56;
 const CLASSIFICATION_LABEL = {
@@ -27,7 +29,12 @@ const STATUS_LABEL = {
 };
 
 export function buildPdf(data) {
-  const { document: doc, sections, org, owner, approver, versions = [], approvals = [], frameworks = [] } = data;
+  const { document: doc, sections, org, owner, approver, versions = [], approvals = [] } = data;
+  const brand = data.brand || currentBrand();
+  BRAND = `#${brand.primary}`;
+  ACCENT = `#${brand.accent}`;
+  LINE = `#${brand.border}`;
+  LIGHT = `#${brand.light}`;
   const classification = CLASSIFICATION_LABEL[doc.classification] || 'INTERNAL';
 
   const pdf = new PDFDocument({
@@ -49,13 +56,24 @@ export function buildPdf(data) {
   };
 
   // ------------------------------------------------------------- cover ----
-  pdf.moveDown(6);
+  if (brand.logo) {
+    const box = { w: 170, h: 85 };
+    const size = fitWithin(brand.logo, box.w, box.h);
+    pdf.image(brand.logo.buffer, (pdf.page.width - size.width) / 2, pdf.y + 20, { width: size.width, height: size.height });
+    pdf.y += 20 + size.height;
+    pdf.moveDown(2);
+  } else {
+    pdf.moveDown(6);
+  }
   pdf.font('Helvetica-Bold').fontSize(13).fillColor(ACCENT)
     .text((org?.org_name || 'Organisation').toUpperCase(), { align: 'center', characterSpacing: 2 });
   pdf.moveDown(0.3);
   pdf.font('Helvetica').fontSize(9).fillColor(MUTED)
     .text('CYBERSECURITY GOVERNANCE', { align: 'center', characterSpacing: 3 });
-  pdf.moveDown(3);
+  pdf.moveDown(1.2);
+  // A short rule in the primary colour between the issuer and the title.
+  pdf.moveTo(pdf.page.width / 2 - 40, pdf.y).lineTo(pdf.page.width / 2 + 40, pdf.y).strokeColor(BRAND).lineWidth(2).stroke();
+  pdf.moveDown(2);
   pdf.font('Helvetica-Bold').fontSize(26).fillColor(BRAND).text(doc.title, { align: 'center' });
   pdf.moveDown(0.8);
   pdf.font('Helvetica').fontSize(11).fillColor(MUTED)
@@ -93,7 +111,7 @@ export function buildPdf(data) {
   sectionTitle('Approval');
   dataTable(['Action', 'Name', 'Role', 'Date'],
     approvals.length
-      ? approvals.map((a) => [a.action, a.actor_name || '—', a.actor_role || '—', (a.created_at || '').slice(0, 10)])
+      ? approvals.map((a) => [String(a.action || '').replace(/^\w/, (c) => c.toUpperCase()), a.actor_name || '—', a.actor_role || '—', (a.created_at || '').slice(0, 10)])
       : [['Prepared', owner?.name || '—', owner?.job_title || 'Document Owner', (doc.created_at || '').slice(0, 10)],
          ['Reviewed', '', '', ''],
          ['Approved', approver?.name || '', approver?.job_title || 'Approver', '']],
@@ -103,8 +121,9 @@ export function buildPdf(data) {
   sectionTitle('Version History');
   dataTable(['Version', 'Date', 'Author', 'Change'],
     versions.length
-      ? versions.map((v) => [v.version, (v.created_at || '').slice(0, 10), v.author_name || '—', v.change_note || '—'])
-      : [[doc.version, (doc.created_at || '').slice(0, 10), 'Generation engine', 'Initial issue']],
+      ? versions.map((v) => [v.version, (v.created_at || '').slice(0, 10), v.author_name || '—',
+          ({ generated: 'First draft', published: 'Approved and published' })[v.change_type] || v.change_note || '—'])
+      : [[doc.version, (doc.created_at || '').slice(0, 10), owner?.name || 'Document owner', 'Initial issue']],
     [0.12, 0.16, 0.24, 0.48]);
 
   // ------------------------------------------------------------ contents --
@@ -126,18 +145,6 @@ export function buildPdf(data) {
     renderBlocks(htmlToBlocks(s.body));
   });
 
-  if (frameworks.length) {
-    pdf.addPage();
-    sectionTitle('Authoritative Sources');
-    dataTable(['Source', 'Publisher', 'Version', 'Type'],
-      frameworks.map((f) => [f.name, f.publisher || '—', f.version || '—', f.kind === 'regulation' ? 'Regulatory' : 'Framework']),
-      [0.38, 0.28, 0.16, 0.18]);
-    pdf.moveDown(0.8);
-    pdf.font('Helvetica-Oblique').fontSize(8).fillColor(MUTED).text(
-      'Framework references identify the authoritative requirements this document is designed to address. They are reproduced as reference metadata and must be verified against the official publication before being relied upon for regulatory attestation.',
-      { width: contentWidth, align: 'justify' }
-    );
-  }
 
   // ------------------------------------------------- headers and footers --
   const range = pdf.bufferedPageRange();

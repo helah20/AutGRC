@@ -88,6 +88,12 @@ CREATE TABLE IF NOT EXISTS org_profile (
   ot_facility_level     TEXT CHECK (ot_facility_level IN ('L1','L2','L3')),
   cloud_roles           TEXT,      -- JSON array of 'CSP' and/or 'CST'
   logo_data_url         TEXT,
+  -- The identity the exported files carry (services/brand.js): a curated
+  -- palette key or 'custom' with its two colours, and a font pairing key.
+  brand_palette         TEXT,
+  brand_primary         TEXT,
+  brand_accent          TEXT,
+  brand_font            TEXT,
   updated_at            TEXT NOT NULL
 );
 

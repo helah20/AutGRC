@@ -557,10 +557,18 @@ a.worklist-title:hover { color: var(--accent); }
 }
 .risk-cell.has-risks { cursor: pointer; }
 .risk-cell.has-risks:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* The zones are a faint backdrop; colour builds where risks actually sit.
+   A solid red corner with nothing in it drew the eye to the one place there
+   was nothing to see. */
 .risk-cell.tone-low      { background: var(--ok-soft); }
 .risk-cell.tone-medium   { background: var(--warn-soft); }
-.risk-cell.tone-high     { background: var(--danger-soft); }
-.risk-cell.tone-critical { background: var(--danger); color: #fff; border-color: var(--danger); }
+.risk-cell.tone-high,
+.risk-cell.tone-critical { background: var(--danger-soft); }
+.risk-cell:not(.has-risks) { opacity: .5; }
+.risk-cell.has-risks.tone-low      { background: color-mix(in srgb, var(--ok) 32%, var(--bg-raised)); border-color: var(--ok); }
+.risk-cell.has-risks.tone-medium   { background: color-mix(in srgb, var(--warn) 32%, var(--bg-raised)); border-color: var(--warn); }
+.risk-cell.has-risks.tone-high     { background: color-mix(in srgb, var(--danger) 30%, var(--bg-raised)); border-color: var(--danger); }
+.risk-cell.has-risks.tone-critical { background: var(--danger); color: #fff; border-color: var(--danger); }
 .risk-matrix-axes { display: flex; justify-content: space-between; }
 
 .risk-band { display: flex; align-items: center; gap: 9px; }
@@ -626,3 +634,53 @@ a.worklist-title:hover { color: var(--accent); }
 
 /* A reference tag with its source status underneath, in a table cell. */
 .stack-tiny { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+
+/* ------------------------------------------------------- document identity */
+.brand-settings { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; }
+@media (max-width: 1100px) { .brand-settings { grid-template-columns: 1fr; } }
+.brand-logo-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.brand-logo-box {
+  width: 180px; height: 84px; border: 1px dashed var(--border-strong); border-radius: 10px;
+  display: grid; place-items: center; background: var(--bg-sunken); overflow: hidden;
+}
+.brand-logo-box img { max-width: 160px; max-height: 70px; object-fit: contain; }
+.brand-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.brand-swatch {
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg-raised); color: var(--text); font: inherit; font-size: 13px; cursor: pointer;
+}
+.brand-swatch.on { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+.brand-swatch:disabled { cursor: default; opacity: .7; }
+.brand-chips { display: inline-flex; }
+.brand-chips i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--bg-raised); }
+.brand-chips i + i { margin-inline-start: -6px; }
+.brand-colour { width: 64px; height: 36px; padding: 2px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); }
+.brand-fonts { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.brand-font {
+  display: grid; gap: 3px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; background: var(--bg-raised);
+}
+.brand-font.on { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+.brand-font input { position: absolute; opacity: 0; pointer-events: none; }
+.brand-font-sample { font-size: 16px; color: var(--text); }
+.brand-font-name { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.brand-font-note { font-size: 12px; }
+.brand-preview { position: sticky; top: 16px; }
+.brand-preview-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+/* The preview is a sheet of paper in either theme. */
+.brand-page {
+  background: #fff; color: #1C2733; border-radius: 6px; padding: 26px 24px 22px; text-align: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px rgba(15,32,56,.12); border: 1px solid #E3E8EF;
+}
+.brand-page-logo { max-width: 130px; max-height: 56px; object-fit: contain; margin-bottom: 12px; }
+.brand-page-org { font-weight: 700; font-size: 14px; }
+.brand-page-kicker { font-size: 11px; color: #6B7C8F; margin-top: 2px; }
+.brand-page-rule { width: 64px; height: 3px; margin: 14px auto; border-radius: 2px; }
+.brand-page-title { font-weight: 700; font-size: 19px; line-height: 1.35; }
+.brand-page-meta { font-size: 11px; color: #6B7C8F; margin: 6px 0 16px; }
+.brand-page-table { width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: start; }
+.brand-page-table th, .brand-page-table td { border: 1px solid; padding: 6px 8px; text-align: start; }
+.brand-page-lane { display: flex; align-items: center; gap: 8px; margin-top: 16px; border: 1.5px solid #222; border-radius: 3px; padding: 8px; }
+.brand-lane-name { color: #fff; font-size: 11px; font-weight: 700; padding: 10px 6px; border-radius: 2px; writing-mode: vertical-rl; }
+.brand-lane-box { min-width: 46px; padding: 8px 6px; border: 1px solid; border-radius: 6px; font-weight: 700; font-size: 12px; color: #0F1A3D; }
+.brand-lane-arrow { color: #333; font-size: 16px; }
+[dir="rtl"] .brand-lane-arrow { transform: scaleX(-1); }

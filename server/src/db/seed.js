@@ -15,7 +15,7 @@ import config from '../config.js';
 import { hashPassword } from '../middleware/auth.js';
 import {
   FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE,
-  DOMAIN_MODELS, domainShort, validateKnowledgeBase, buildParameterSet, resolveText
+  DOMAIN_MODELS, DOMAIN_META, domainShort, validateKnowledgeBase, buildParameterSet, resolveText
 } from '../knowledge/index.js';
 import { startingPosition } from '../services/risk.js';
 import { generatePackage } from '../services/generator.js';
@@ -137,27 +137,27 @@ export function seedOrg() {
 // ------------------------------------------------------------ demo data ---
 
 /**
- * The five domains the brief calls out, plus governance for the framework tier.
+ * Every domain, so the demonstration shows an organisation whose documented
+ * framework is largely in place: a policy, standard and procedure in each
+ * domain with its roles, RACI and control matrix. Identity and access carries
+ * the guideline and the framework document as well.
  *
  * No per-package framework list. Which authoritative sources apply is recorded
  * once on the organisation profile, so every package cites the same adopted
  * set and a domain shows only the ones it actually maps to.
  */
-const DEMO_PACKAGES = [
-  { domain: 'iam',
-    docTypes: ['policy', 'standard', 'procedure', 'guideline', 'roles', 'raci', 'control_matrix', 'framework'],
-    classification: 'confidential' },
-  { domain: 'asset_management',
-    docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'], classification: 'internal' },
-  { domain: 'incident_management',
-    docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'], classification: 'confidential' },
-  { domain: 'vulnerability_management',
-    docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'], classification: 'internal' },
-  { domain: 'third_party',
-    docTypes: ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'], classification: 'confidential' },
-  { domain: 'governance',
-    docTypes: ['policy', 'standard', 'roles', 'raci'], classification: 'internal' }
-];
+const STANDARD_SET = ['policy', 'standard', 'procedure', 'roles', 'raci', 'control_matrix'];
+const CONFIDENTIAL_DOMAINS = new Set([
+  'iam', 'pam', 'incident_management', 'third_party', 'data_protection', 'cryptography',
+  'network_security', 'database_security', 'ot_security', 'security_monitoring', 'logging_monitoring', 'hr_security'
+]);
+const DEMO_PACKAGES = DOMAIN_META.map((d) => ({
+  domain: d.key,
+  docTypes: d.key === 'iam'
+    ? ['policy', 'standard', 'procedure', 'guideline', 'roles', 'raci', 'control_matrix', 'framework']
+    : STANDARD_SET,
+  classification: CONFIDENTIAL_DOMAINS.has(d.key) ? 'confidential' : 'internal'
+}));
 
 export function seedDemoPackages(users, org) {
   const results = [];
@@ -225,69 +225,51 @@ export function seedTranslations(users, org, packages) {
 }
 
 /**
- * Give the demo data a believable lifecycle history rather than leaving every
- * document at Draft: IAM and Incident Management are published, Asset
- * Management is under review, and one document is deliberately overdue.
+ * A mature programme: almost every document is published, with effective
+ * dates spread over the past months and reviews falling due across the coming
+ * year. A few documents are still moving, so the review and approval queues
+ * have something in them: one procedure is with its reviewers, one is still a
+ * draft, and one published policy comes up for its annual review within the
+ * month.
  */
+const IN_REVIEW = [['asset_management', 'procedure']];
+const IN_DRAFT = [['change_management', 'procedure']];
+const REVIEW_SOON = [['third_party', 'policy']];
+
 export function seedLifecycle(users) {
   const at = nowIso();
   const approver = users.approver;
   const grc = users.grc_manager;
   if (!approver || !grc) return;
+  const day = (offset) => new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
+  const stamp = (offset) => new Date(Date.now() + offset * 86400000).toISOString();
+  const is = (list, doc) => list.some(([domain, type]) => doc.domain_key === domain && doc.doc_type === type);
 
-  const transition = (doc, to, action, comment, effectiveOffsetDays, reviewOffsetDays, version) => {
-    const effective = new Date(Date.now() + effectiveOffsetDays * 86400000).toISOString().slice(0, 10);
-    const review = new Date(Date.now() + reviewOffsetDays * 86400000).toISOString().slice(0, 10);
-    q.run(
-      'UPDATE documents SET status = ?, version = ?, effective_date = ?, review_date = ?, updated_at = ? WHERE id = ?',
-      to, version || doc.version, effective, review, at, doc.id
-    );
-    q.run(
-      `INSERT INTO document_approvals (id, document_id, action, from_status, to_status, actor_id, actor_name, actor_role, comment, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      id('apr'), doc.id, action, doc.status, to,
-      action === 'approved' || action === 'published' ? approver.id : grc.id,
-      action === 'approved' || action === 'published' ? approver.name : grc.name,
-      action === 'approved' || action === 'published' ? approver.role : grc.role,
-      comment, at
-    );
-  };
+  const record = (doc, action, from, to, actor, comment, when) => q.run(
+    `INSERT INTO document_approvals (id, document_id, action, from_status, to_status, actor_id, actor_name, actor_role, comment, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    id('apr'), doc.id, action, from, to, actor.id, actor.name, actor.role, comment, when
+  );
 
-  for (const domain of ['iam', 'incident_management']) {
-    for (const doc of q.all("SELECT * FROM documents WHERE domain_key = ? AND status = 'draft'", domain)) {
-      transition(doc, 'under_review', 'submitted', 'Submitted for technical and governance review.', 0, 365);
-      const reloaded = q.get('SELECT * FROM documents WHERE id = ?', doc.id);
-      transition(reloaded, 'approved', 'approved', 'Reviewed against the applicable NCA ECC and ISO/IEC 27001 requirements. Approved.', 0, 365);
-      const approved = q.get('SELECT * FROM documents WHERE id = ?', doc.id);
-      transition(approved, 'published', 'published', 'Published and communicated to all affected personnel.', -45, 320, '1.0');
+  const drafts = q.all("SELECT * FROM documents WHERE status = 'draft' ORDER BY domain_key, doc_type");
+  drafts.forEach((doc, i) => {
+    if (is(IN_DRAFT, doc)) return;
+    if (is(IN_REVIEW, doc)) {
+      q.run("UPDATE documents SET status = 'under_review', updated_at = ? WHERE id = ?", at, doc.id);
+      record(doc, 'submitted', 'draft', 'under_review', grc, 'Submitted for review by the Asset Owner community.', at);
+      return;
     }
-  }
-
-  for (const doc of q.all("SELECT * FROM documents WHERE domain_key = 'asset_management' AND status = 'draft'")) {
-    transition(doc, 'under_review', 'submitted', 'Submitted for review by the Asset Owner community.', 0, 365);
-  }
-
-  for (const doc of q.all("SELECT * FROM documents WHERE domain_key = 'vulnerability_management' AND doc_type IN ('policy','standard') AND status = 'draft'")) {
-    transition(doc, 'under_review', 'submitted', 'Submitted for review ahead of the annual regulatory submission.', 0, 365);
-  }
-
-  // One published policy deliberately left overdue, so the review-due
-  // dashboards and the "overdue for review" finding have something real to show.
-  const overdue = q.get("SELECT * FROM documents WHERE domain_key = 'third_party' AND doc_type = 'policy'");
-  if (overdue) {
-    q.run(
-      "UPDATE documents SET status = 'published', version = '1.0', effective_date = ?, review_date = ?, updated_at = ? WHERE id = ?",
-      new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10),
-      new Date(Date.now() - 35 * 86400000).toISOString().slice(0, 10),
-      at, overdue.id
-    );
-    q.run(
-      `INSERT INTO document_approvals (id, document_id, action, from_status, to_status, actor_id, actor_name, actor_role, comment, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      id('apr'), overdue.id, 'published', 'approved', 'published', approver.id, approver.name, approver.role,
-      'Published following Cybersecurity Steering Committee approval.', at
-    );
-  }
+    // Spread across the year so the review calendar is not one crowded week.
+    const published = -(30 + ((i * 17) % 240));
+    const review = is(REVIEW_SOON, doc) ? 21 : published + 365;
+    q.run("UPDATE documents SET status = 'published', version = '1.0', effective_date = ?, review_date = ?, updated_at = ? WHERE id = ?",
+      day(published), day(review), at, doc.id);
+    record(doc, 'submitted', 'draft', 'under_review', grc, 'Submitted for technical and governance review.', stamp(published - 12));
+    record(doc, 'approved', 'under_review', 'approved', approver,
+      'Reviewed against the applicable NCA ECC and ISO/IEC 27001 requirements. Approved.', stamp(published - 3));
+    record(doc, 'published', 'approved', 'published', approver,
+      'Published and communicated to all affected personnel.', stamp(published));
+  });
 }
 
 /**
@@ -382,11 +364,21 @@ export function seedAssessment(users) {
  * generated from the same requirement linked as its treatment. One model, one
  * set of facts, projected into another view.
  *
- * The likelihood and impact figures are a starting position derived from the
- * model's qualitative rating, not an assessment of this organisation. Every row
- * is marked ai_recommendation with residual_assessed = 0, so the register says
- * as much rather than letting a default read as somebody's considered judgement.
+ * The inherent figures are a starting position derived from the model's
+ * qualitative rating. The demonstration organisation has implemented and
+ * published the treating controls, so where a control exists the residual
+ * position is recorded as assessed after treatment and the risk as treated —
+ * the register of a programme that is working, which is what the demo shows.
+ * A risk with no treating control stays at its inherent position, unassessed,
+ * and so do the risks of a domain whose procedure is still being drafted: the
+ * treatment is not yet in operation, so nobody can yet say what it achieved.
  */
+const RESIDUAL_AFTER_TREATMENT = {
+  critical: { likelihood: 2, impact: 4 },
+  high: { likelihood: 2, impact: 3 },
+  medium: { likelihood: 2, impact: 2 },
+  low: { likelihood: 1, impact: 2 }
+};
 export function seedRisks(users) {
   const at = nowIso();
   const owner = users.grc_manager || users.admin || null;
@@ -412,6 +404,8 @@ export function seedRisks(users) {
         domainKey, requirement.key
       );
       const position = startingPosition(requirement.riskRating);
+      const treated = Boolean(control) && !IN_DRAFT.some(([domain]) => domain === domainKey);
+      const residual = treated ? RESIDUAL_AFTER_TREATMENT[requirement.riskRating] || RESIDUAL_AFTER_TREATMENT.medium : position;
       const reference = `RSK-${domainShort(domainKey)}-${padNumber(sequence, 3)}`;
       if (q.get('SELECT id FROM risks WHERE risk_id = ?', reference)) continue;
 
@@ -429,16 +423,14 @@ export function seedRisks(users) {
         requirement.key,
         riskCategoryFor(domainKey, requirement),
         position.likelihood, position.impact,
-        // Residual starts at inherent and is flagged unassessed: a reduction
-        // nobody has worked out must not read as one somebody achieved.
-        position.likelihood, position.impact, 0,
+        residual.likelihood, residual.impact, treated ? 1 : 0,
         'mitigate',
         control
           ? `Treated by control ${control.control_id} (${control.name}).`
           : 'No control is yet recorded against this risk.',
         owner?.id || null,
         control?.accountable_role || null,
-        'identified',
+        treated ? 'treated' : 'identified',
         new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10),
         'ai_recommendation', at, at
       );
@@ -474,45 +466,104 @@ function riskCategoryFor(domainKey, requirement) {
 }
 
 /**
- * Raise corrective actions against the most severe findings, so the demo shows
- * the loop closing rather than a list of findings nobody owns.
+ * Raise corrective actions against the most severe findings, most of them
+ * already completed and independently verified, so the demo shows the loop
+ * closing. The first stays in progress with the cybersecurity user, for the
+ * walkthrough in which it is completed and then verified by internal audit.
  */
+const ACTION_PLAN = [
+  { status: 'in_progress', progress: 60, due: 14 },
+  { status: 'open', progress: 0, due: 45 },
+  { status: 'completed', progress: 100, due: -20, rootCause: 'The review cycle had no named owner, so it lapsed when the previous owner changed role.' },
+  { status: 'completed', progress: 100, due: -35, rootCause: 'The requirement was stated without a measurable value, so it could not be tested.' },
+  { status: 'completed', progress: 100, due: -50, rootCause: 'The procedure and the standard were revised separately and fell out of step.' },
+  { status: 'completed', progress: 100, due: -65, rootCause: 'Evidence was collected but not linked to the control it demonstrates.' }
+];
+
 export function seedCorrectiveActions(users) {
   const at = nowIso();
   const owners = [users.cyber_user, users.grc_manager, users.reviewer].filter(Boolean);
   if (!owners.length) return 0;
+  const verifier = users.auditor || users.approver || null;
 
   const findings = q.all(
-    "SELECT * FROM findings WHERE severity IN ('critical','high') AND status = 'open' ORDER BY created_at LIMIT 6"
+    // The deliberate IAM inconsistency first, so it is the action still in
+    // progress: its finding stays open while the documents still disagree.
+    `SELECT * FROM findings WHERE severity IN ('critical','high') AND status = 'open'
+      ORDER BY (category = 'consistency') DESC, created_at LIMIT 6`
   );
   let created = 0;
 
   findings.forEach((finding, index) => {
     const owner = owners[index % owners.length];
-    // One of these lands in the past, so the overdue filter has something real.
-    const due = new Date(Date.now() + (index - 1) * 21 * 86400000).toISOString().slice(0, 10);
+    const plan = ACTION_PLAN[index] || ACTION_PLAN[1];
+    const day = (offset) => new Date(Date.now() + offset * 86400000).toISOString();
     const reference = `CA-${padNumber(q.get('SELECT COUNT(*) AS n FROM corrective_actions').n + 1, 4)}`;
-    const rowId = id('act');
+    const done = plan.status === 'completed';
     q.run(
       `INSERT INTO corrective_actions (id, action_id, title, description, source_type, source_id,
-         domain_key, owner_id, priority, due_date, status, progress, blocked_reason, created_by, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      rowId, reference,
+         domain_key, owner_id, priority, due_date, status, progress, root_cause, completed_at,
+         verified_by, verified_at, created_by, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      id('act'), reference,
       (finding.recommendation || `Resolve: ${finding.title}`).slice(0, 280),
       `Raised against the finding "${finding.title}".`,
       'finding', finding.id,
       finding.scope_type === 'domain' ? finding.scope_id : null,
       owner.id,
       finding.severity === 'critical' ? 'critical' : 'high',
-      due,
-      index === 0 ? 'in_progress' : index === 1 ? 'blocked' : 'open',
-      index === 0 ? 40 : 0,
-      index === 1 ? 'Waiting on the identity platform upgrade scheduled for next quarter.' : null,
+      day(plan.due).slice(0, 10),
+      plan.status, plan.progress,
+      plan.rootCause || null,
+      done ? day(plan.due - 4) : null,
+      // Verified by someone other than the owner, as the route requires.
+      done && verifier && verifier.id !== owner.id ? verifier.id : null,
+      done && verifier && verifier.id !== owner.id ? day(plan.due - 2) : null,
       users.grc_manager?.id || null, at, at
     );
+    if (done) q.run("UPDATE findings SET status = 'resolved', updated_at = ? WHERE id = ?", at, finding.id);
     created += 1;
   });
   return created;
+}
+
+/**
+ * Close out the rest of the engine's findings as a working programme would
+ * have: severe ones resolved, most of the medium ones too, leaving a short
+ * list of minor wording points open. The deliberate IAM inconsistency stays
+ * acknowledged, so the review walkthrough still has a real finding to show.
+ */
+export function settleFindings() {
+  const at = nowIso();
+  const findings = q.all("SELECT * FROM findings WHERE status = 'open' ORDER BY created_at");
+  let open = 0;
+  findings.forEach((f, i) => {
+    let status = 'resolved';
+    if (f.category === 'consistency') status = 'acknowledged';
+    else if (f.severity === 'low' || f.severity === 'info') status = i % 2 ? 'resolved' : 'open';
+    else if (f.severity === 'medium') status = i % 4 === 0 ? 'open' : 'resolved';
+    if (status === 'open') { open += 1; return; }
+    q.run('UPDATE findings SET status = ?, updated_at = ? WHERE id = ?', status, at, f.id);
+  });
+  return open;
+}
+
+/**
+ * Evidence collected on its cycle for the published domains, with the
+ * longer-established half already verified by the GRC function.
+ */
+export function seedEvidence() {
+  const rows = q.all(
+    `SELECT e.id FROM evidence e JOIN controls c ON c.id = e.control_id
+      WHERE c.domain_key IN (SELECT DISTINCT domain_key FROM documents WHERE status = 'published')
+      ORDER BY e.evidence_id`
+  );
+  rows.forEach((row, i) => {
+    const collected = new Date(Date.now() - (5 + (i * 11) % 80) * 86400000).toISOString().slice(0, 10);
+    q.run('UPDATE evidence SET status = ?, last_collected = ?, updated_at = ? WHERE id = ?',
+      i % 2 ? 'verified' : 'collected', collected, nowIso(), row.id);
+  });
+  return rows.length;
 }
 
 export function runSeed({ quiet = false } = {}) {
@@ -574,6 +625,10 @@ export function runSeed({ quiet = false } = {}) {
   log('Raising corrective actions against the most severe findings…');
   const actions = seedCorrectiveActions(users);
   log(`  ${actions} corrective actions`);
+  log(`  ${settleFindings()} findings left open`);
+
+  log('Recording collected evidence…');
+  log(`  ${seedEvidence()} evidence items collected or verified`);
 
   // After the findings, which demonstrate the review engine on the English
   // originals; the Arabic versions mirror those originals.

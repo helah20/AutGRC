@@ -25,7 +25,7 @@ export const ROLE_LIBRARY = [
     responsibilities: [
       'Define and maintain the cybersecurity strategy, and secure executive approval for it.',
       'Own the cybersecurity policy framework and ensure it remains current and enforceable.',
-      'Establish the cybersecurity organisational structure with clear roles and adequate independence.',
+      'Establish the cybersecurity organisational structure with clear roles, independent of the functions it assures.',
       'Direct the cybersecurity risk management programme and maintain visibility of risk above appetite.',
       'Act as incident commander for Severity 1 cybersecurity incidents.',
       'Ensure regulatory notification obligations are met within the required timeframes.',

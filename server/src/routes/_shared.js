@@ -67,8 +67,12 @@ export function enrichControl(row) {
 export function getOrgProfile() {
   const row = q.get('SELECT * FROM org_profile WHERE id = 1');
   if (!row) return { org_name: 'Your Organisation', applicable_frameworks: null };
+  const { logo_data_url: logo, ...rest } = row;
   return {
-    ...row,
+    ...rest,
+    // The logo is read and written through /admin/org/brand; the profile only
+    // says whether there is one.
+    has_logo: Boolean(logo),
     regulators: fromJson(row.regulators, []),
     technology_env: fromJson(row.technology_env, []),
     data_classifications: fromJson(row.data_classifications, []),

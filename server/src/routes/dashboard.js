@@ -5,7 +5,7 @@ import { q } from '../db/index.js';
 import { authenticate } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errors.js';
 import { domainName, DOMAIN_META, DOMAIN_CATEGORIES } from '../knowledge/index.js';
-import { buildMyWork, enrichDocuments, STATUS_LABEL } from './_shared.js';
+import { buildMyWork, enrichDocuments, STATUS_LABEL, getOrgProfile } from './_shared.js';
 import { DOC_TYPE_LABEL } from '../services/generator.js';
 
 const router = express.Router();
@@ -26,8 +26,14 @@ router.get('/', asyncHandler(async (req, res) => {
   );
   const overdue = reviewDue.filter((d) => d.review_date < new Date().toISOString().slice(0, 10));
 
-  // Coverage across every adopted framework, weighting partial mappings at half.
-  const frameworks = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code');
+  // Coverage across the frameworks the organisation is subject to, weighting
+  // partial mappings at half. The catalogue holds sources an organisation has
+  // not adopted — operational technology controls for a bank with no plant —
+  // and averaging them in reported a gap in obligations it does not have.
+  // Before the applicable set is chosen, every framework counts.
+  const applicable = getOrgProfile().applicable_frameworks;
+  const frameworks = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code')
+    .filter((f) => !applicable || applicable.includes(f.code));
   const coverage = frameworks.map((f) => {
     const total = count('SELECT COUNT(*) AS n FROM framework_requirements WHERE framework_id = ?', f.id);
     const mapped = q.all(
@@ -87,7 +93,10 @@ router.get('/', asyncHandler(async (req, res) => {
       reviewDue: reviewDue.length,
       overdue: overdue.length,
       openFindings: count("SELECT COUNT(*) AS n FROM findings WHERE status IN ('open','acknowledged')"),
-      criticalFindings: count("SELECT COUNT(*) AS n FROM findings WHERE status IN ('open','acknowledged') AND severity IN ('critical','high')"),
+      // Severe findings nobody has yet taken on: one with a corrective action
+      // raised against it is being dealt with, and is followed on the actions page.
+      criticalFindings: count(`SELECT COUNT(*) AS n FROM findings f WHERE f.status IN ('open','acknowledged') AND f.severity IN ('critical','high')
+        AND NOT EXISTS (SELECT 1 FROM corrective_actions a WHERE a.source_type = 'finding' AND a.source_id = f.id AND a.status != 'cancelled')`),
       // Personal to the requesting user, so the sidebar badge reflects their
       // own queue rather than the organisation's backlog.
       myWork: buildMyWork(req.user).total,

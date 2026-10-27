@@ -127,7 +127,7 @@ export default function Dashboard() {
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div className="row-tight">
                       <span className="strong small">{f.code}</span>
-                      {f.is_mandatory ? <Badge tone="critical">{t('dashboard.mandatory')}</Badge> : <Badge tone="neutral">{t('dashboard.adopted')}</Badge>}
+                      {f.is_mandatory ? <Badge tone="info">{t('dashboard.mandatory')}</Badge> : <Badge tone="neutral">{t('dashboard.adopted')}</Badge>}
                     </div>
                     <div className="tiny muted truncate">{t('dashboard.coverageDetail', {
                       covered: formatNumber(f.covered), total: formatNumber(f.total),

@@ -87,7 +87,9 @@ export function pluralise(count, singular, plural) {
 }
 
 /** Deterministic chart palette, aligned to the application tokens. */
-export const CHART_COLORS = ['#2E6F9E', '#1F7A4D', '#A66A00', '#7A4A8F', '#B3261E', '#2B7C8A', '#5A6B7D', '#8C5A2B'];
+// Categorical colours carry no meaning of their own, so red is left out: in a
+// governance dashboard it reads as a problem whatever the chart is counting.
+export const CHART_COLORS = ['#2E6F9E', '#1F7A4D', '#A66A00', '#7A4A8F', '#3F5BA9', '#2B7C8A', '#5A6B7D', '#8C5A2B'];
 
 export const TONE_COLORS = {
   ok: '#1F7A4D', warn: '#A66A00', danger: '#B3261E',

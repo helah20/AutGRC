@@ -37,6 +37,36 @@ const MIME = {
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 };
 
+function approvalSource(doc) {
+  if (!doc.translation_of) return doc.id;
+  const own = q.get('SELECT COUNT(*) AS n FROM document_approvals WHERE document_id = ?', doc.id).n;
+  return own ? doc.id : doc.translation_of;
+}
+
+/**
+ * The version history as a reader of the issued document needs it: the
+ * platform's own record of the generated draft becomes the first draft under
+ * its owner's name, and a published document shows the version it was issued
+ * as, which the record only gains when someone edits it afterwards.
+ */
+function exportVersions(doc) {
+  const rows = q.all(
+    `SELECT v.version, v.change_note, v.change_type, COALESCE(u.name, v.author_name) AS author_name, v.created_at
+       FROM document_versions v LEFT JOIN users u ON u.id = v.author_id
+      WHERE v.document_id = ? ORDER BY v.created_at`, doc.id);
+  if (doc.status === 'published' && !rows.some((v) => v.version === doc.version)) {
+    const published = q.get(
+      "SELECT actor_name, created_at FROM document_approvals WHERE document_id = ? AND action = 'published' ORDER BY created_at DESC LIMIT 1",
+      approvalSource(doc));
+    rows.push({
+      version: doc.version, change_type: 'published', change_note: null,
+      author_name: published?.actor_name || null,
+      created_at: published?.created_at || doc.effective_date || doc.updated_at
+    });
+  }
+  return rows;
+}
+
 function documentPayload(documentId) {
   const doc = q.get('SELECT * FROM documents WHERE id = ?', documentId);
   if (!doc) throw notFound('Document');
@@ -53,8 +83,14 @@ function documentPayload(documentId) {
     org: getOrgProfile(),
     owner: doc.owner_id ? q.get('SELECT name, job_title FROM users WHERE id = ?', doc.owner_id) : null,
     approver: doc.approver_id ? q.get('SELECT name, job_title FROM users WHERE id = ?', doc.approver_id) : null,
-    versions: q.all('SELECT version, change_note, author_name, created_at FROM document_versions WHERE document_id = ? ORDER BY created_at', doc.id),
-    approvals: q.all('SELECT action, actor_name, actor_role, created_at FROM document_approvals WHERE document_id = ? ORDER BY created_at', doc.id),
+    versions: exportVersions(doc),
+    // A version in another language is the same approved document, so it
+    // carries its original's approval record rather than an empty one. The
+    // role is the person's job title; the stored value is a platform role code.
+    approvals: q.all(
+      `SELECT a.action, a.actor_name, COALESCE(u.job_title, a.actor_role) AS actor_role, a.created_at
+         FROM document_approvals a LEFT JOIN users u ON u.id = a.actor_id
+        WHERE a.document_id = ? ORDER BY a.created_at`, approvalSource(doc)),
     frameworks,
     domainName: domainName(doc.domain_key)
   };

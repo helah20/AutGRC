@@ -12,6 +12,7 @@ import {
 import { asyncHandler, validate, notFound, HttpError } from '../middleware/errors.js';
 import { getOrgProfile, listParam, paginate } from './_shared.js';
 import { providerInfo } from '../services/ai.js';
+import { PALETTES, FONTS, DEFAULT_BRAND, colourProblem, parseLogo, brandFrom } from '../services/brand.js';
 import { validateKnowledgeBase, DOMAIN_META, FRAMEWORKS } from '../knowledge/index.js';
 
 const router = express.Router();
@@ -239,6 +240,63 @@ router.put('/org', requirePermission('settings:write'), validate(z.object({
   );
   audit(req, { action: 'settings:org', entityType: 'org_profile', summary: `Updated the organisation profile for ${b.org_name}` });
   res.json(getOrgProfile());
+}));
+
+// ----------------------------------------------------------- brand ------
+// The identity the exported files carry. Kept apart from the profile PUT so
+// the logo, which can run to hundreds of kilobytes, travels only to the screen
+// that edits it and is not sent with every profile read.
+
+function brandSettings() {
+  const row = q.get('SELECT logo_data_url, brand_palette, brand_primary, brand_accent, brand_font FROM org_profile WHERE id = 1') || {};
+  const brand = brandFrom(row);
+  return {
+    palette: brand.palette,
+    primary: brand.primary,
+    accent: brand.accent,
+    font: brand.font,
+    logo: row.logo_data_url || null,
+    palettes: PALETTES,
+    fonts: FONTS,
+    defaults: DEFAULT_BRAND
+  };
+}
+
+router.get('/org/brand', asyncHandler(async (req, res) => res.json(brandSettings())));
+
+router.put('/org/brand', requirePermission('settings:write'), validate(z.object({
+  palette: z.string().max(40),
+  primary: z.string().max(7).optional(),
+  accent: z.string().max(7).optional(),
+  font: z.string().max(40),
+  // A data URL replaces the logo, null removes it, and leaving it out keeps it.
+  logo: z.string().max(800000).nullable().optional()
+})), asyncHandler(async (req, res) => {
+  const b = req.body;
+  if (!q.get('SELECT id FROM org_profile WHERE id = 1')) {
+    throw new HttpError(409, 'Set the organisation profile before its identity.');
+  }
+  if (b.palette !== 'custom' && !PALETTES[b.palette]) throw new HttpError(400, 'Unknown colour palette.');
+  if (!FONTS[b.font]) throw new HttpError(400, 'Unknown font pairing.');
+  const primary = b.palette === 'custom' ? String(b.primary || '').replace('#', '').toUpperCase() : null;
+  const accent = b.palette === 'custom' ? String(b.accent || '').replace('#', '').toUpperCase() : null;
+  if (b.palette === 'custom') {
+    const problem = colourProblem(primary, accent);
+    if (problem) throw new HttpError(400, problem);
+  }
+  if (b.logo) {
+    const logo = parseLogo(b.logo);
+    if (logo.error) throw new HttpError(400, logo.error);
+  }
+  const at = nowIso();
+  q.run('UPDATE org_profile SET brand_palette = ?, brand_primary = ?, brand_accent = ?, brand_font = ?, updated_at = ? WHERE id = 1',
+    b.palette, primary, accent, b.font, at);
+  if (b.logo !== undefined) q.run('UPDATE org_profile SET logo_data_url = ? WHERE id = 1', b.logo || null);
+  audit(req, {
+    action: 'settings:brand', entityType: 'org_profile',
+    summary: `Updated the document identity: ${b.palette} palette, ${b.font} fonts${b.logo === null ? ', logo removed' : b.logo ? ', new logo' : ''}`
+  });
+  res.json(brandSettings());
 }));
 
 /**

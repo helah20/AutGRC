@@ -13,7 +13,7 @@
 
 import { resolveText, domainShort, roleName, roleShort, arParameterLabel } from '../knowledge/index.js';
 import { h, joinBlocks, escapeHtml } from './html.js';
-import { swimlanes, handoffs } from './swimlane.js';
+import { swimlanes } from './swimlane.js';
 import { translator, arabicTitle } from './doc-strings.js';
 import { AR_FRAMEWORKS } from '../knowledge/ar/ar-frameworks.js';
 
@@ -59,7 +59,8 @@ export function applicableRefs(req, frameworkCodes) {
 
 function refLabel(list) {
   if (!list.length) return '—';
-  return list.map((x) => `${x.framework} ${x.ref}`).join('; ');
+  // Several requirements cite the same source control; the reader needs it once.
+  return [...new Set(list.map((x) => `${x.framework} ${x.ref}`))].join('; ');
 }
 
 /**
@@ -252,9 +253,7 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks }) 
               fwName(f),
               f.kind === 'regulation' ? TP('provenance.regulatory', 'Regulatory requirement') : TP('provenance.framework', 'Framework guidance'),
               refLabel(reqs.flatMap((r) => applicableRefs(r, [f.code])))
-            ])),
-          h.callout('note', TP('compliance.tracebilityTitle', 'Source traceability'),
-            TP('compliance.traceability', 'Framework references identify the authoritative requirements this Policy is designed to address. They are reproduced as reference metadata and must be verified against the official publication before being relied upon for regulatory attestation.'))
+            ]))
         ), P.FRAMEWORK, frameworkCodes.map((c) => ({ type: 'framework', framework: c }))),
 
       section('exceptions', 'Exceptions',
@@ -268,12 +267,14 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks }) 
           ])
         ), P.POLICY, []),
 
+      // A Policy states what must be achieved; the indicator table, with its
+      // targets and frequencies, is the Standard's. Repeating it here gave the
+      // reader the same table three times across the package.
       section('monitoring', 'Monitoring and Measurement',
-        joinBlocks(
-          h.p(TP('monitoring.lead', 'The effectiveness of this Policy is measured through the following indicators:')),
-          h.table([T('Control'), T('Indicator'), TP('monitoring.colFrequency', 'Measurement frequency')],
-            reqs.filter((r) => r.kpi).map((r) => [r.controlName, resolveText(r.kpi, params), resolveText(r.frequency, params)]))
-        ), P.POLICY, reqs.map((r) => ref.requirement(model.key, r.key))),
+        h.p(TP('monitoring.byStandard',
+          `The effectiveness of this Policy is measured through the indicators defined in the ${docTitle(model, 'Standard')}, and the results are reported to the Cybersecurity Steering Committee on the agreed reporting cycle.`,
+          { standard: docTitle(model, 'Standard') })),
+        P.POLICY, reqs.map((r) => ref.requirement(model.key, r.key))),
 
       section('review', 'Review',
         joinBlocks(
@@ -281,8 +282,8 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks }) 
           h.ul([
             TP('review.lawChange', 'A change to applicable laws, regulations or adopted frameworks.'),
             TP('review.orgChange', 'A material change to the organisational structure, technology environment or operating model.'),
-            TP('review.incident', 'A significant cybersecurity incident within this domain.'),
-            TP('review.auditFinding', 'An audit or assessment finding indicating that the Policy is inadequate.')
+            TP('review.incident', 'A cybersecurity incident of high or critical severity within this domain.'),
+            TP('review.auditFinding', 'An audit or assessment finding showing that the Policy does not achieve its objectives.')
           ]),
           h.p(TP('review.owner', 'The Document Owner is responsible for initiating the review and the approving authority for reissuing the Policy.'))
         ), P.POLICY, []),
@@ -370,8 +371,7 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
         joinBlocks(
           h.p(TP('standard.purposeLead',
             `This Standard defines the mandatory, measurable requirements that implement the ${model.name} Policy at ${params.orgName}.`,
-            { org: params.orgName, policy: docTitle(model, 'Policy') })),
-          h.p(TP('standard.purposeTrace', 'Each requirement in this Standard traces to a clause of the Policy and to the authoritative source requirements the Policy addresses. Where this Standard specifies a value — a frequency, a threshold or a period — that value is the single agreed figure and is used unchanged in the corresponding Procedure and control records.'))
+            { org: params.orgName, policy: docTitle(model, 'Policy') }))
         ), P.STANDARD, []),
 
       section('scope', 'Scope',
@@ -382,10 +382,7 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
         ), P.STANDARD, []),
 
       section('mandatory', 'Mandatory Requirements',
-        joinBlocks(
-          h.p(TP('mandatory.lead', 'Each requirement below is stated as separately numbered clauses. A clause is one obligation, testable on its own, and names the single role accountable for it. Where a clause cites a defined value, that value is the agreed figure recorded under Defined Values.')),
-          mandatoryBody
-        ), P.STANDARD,
+        mandatoryBody, P.STANDARD,
         reqs.flatMap((r) => refsForRequirement(model.key, r, frameworkCodes))),
 
       section('parameters', 'Defined Values',
@@ -412,18 +409,6 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
             )
           : h.p(TP('technical.administrativeOnly', 'This domain is implemented primarily through administrative controls. Technical enforcement requirements are specified in the related domain Standards.')),
         P.STANDARD, technical.map((r) => ref.requirement(model.key, r.key))),
-
-      section('security', 'Security Requirements',
-        joinBlocks(
-          h.p(TP('security.lead', 'The following security properties shall be preserved by every implementation of this Standard:')),
-          h.ul([
-            TP('security.attribution', 'Individual attribution: every action taken under this Standard shall be attributable to a uniquely identified person, service or device.'),
-            TP('security.leastPrivilege', 'Least privilege: access and capability granted shall be the minimum sufficient for the task.'),
-            TP('security.sod', 'Segregation of duties: the party performing an activity shall not be the sole party assuring it.'),
-            TP('security.auditability', 'Auditability: each requirement shall produce evidence sufficient to demonstrate operation to an independent reviewer.'),
-            TP('security.failSecure', 'Fail-secure: where a control cannot operate, the system shall default to denying access rather than permitting it.')
-          ])
-        ), P.STANDARD, []),
 
       section('controls', 'Minimum Controls',
         joinBlocks(
@@ -533,7 +518,6 @@ export function buildProcedureDoc({ model, params, frameworkCodes }) {
         `<br><strong>${escapeHtml(TP('procedure.ifNo', 'No'))}:</strong> ${R(s.decision.no)}`
       : '');
   const stepBody = joinBlocks(
-    h.p(TP('procedure.stepsLead', 'Each row states what starts the step, what is done and by whom, and what the step hands on to the next.')),
     '<table class="proc-table">' +
       '<colgroup><col class="w-22"><col class="w-40"><col class="w-16"><col class="w-22"></colgroup>' +
       `<thead><tr>${[TP('procedure.colInput', 'Input'), T('Step'), TP('procedure.colResponsible', 'Responsible'), TP('procedure.colOutput', 'Output')]
@@ -552,7 +536,6 @@ export function buildProcedureDoc({ model, params, frameworkCodes }) {
   // the table direction reverses the columns with it, so the first lane stays
   // where the reader starts.
   const lane = swimlanes(steps, (text) => resolveText(text, params));
-  const crossings = handoffs(lane);
   const swimlaneGrid = h.table(
     [T('Step'), ...lane.lanes],
     lane.rows.map((row) => [
@@ -572,8 +555,8 @@ export function buildProcedureDoc({ model, params, frameworkCodes }) {
       section('purpose', 'Purpose',
         joinBlocks(
           h.p(resolveText(proc.purpose, params)),
-          h.p(TP('procedure.implements',
-            `This Procedure implements the ${model.name} Policy and ${model.name} Standard. Values stated here are taken from the Standard and are not independently set.`,
+          h.p(TP('procedure.implementsShort',
+            `This Procedure implements the ${model.name} Policy and ${model.name} Standard.`,
             { policy: docTitle(model, 'Policy'), standard: docTitle(model, 'Standard') }))
         ), P.PROCEDURE, []),
 
@@ -594,27 +577,10 @@ export function buildProcedureDoc({ model, params, frameworkCodes }) {
       section('process', 'Process Overview',
         joinBlocks(
           h.p(TP('procedure.processLead', 'The process proceeds through the following stages:')),
-          h.p(TP('procedure.swimlaneLead', 'Each column is one actor and each row one step, so the point at which the work changes hands is visible rather than inferred. A step marked ◆ carries a decision, set out in full under Decision Points.')),
-          swimlaneGrid,
-          crossings.length
-            ? h.callout('note',
-                TP('procedure.handoffTitle', 'Hand-offs'),
-                TP('procedure.handoffCount',
-                  `This process changes hands ${crossings.length} time${crossings.length === 1 ? '' : 's'}. Each hand-off is a point at which a step can be left unstarted because each side believes the other owns it.`,
-                  { n: crossings.length }))
-            : '',
-          h.table([T('Step'), TP('procedure.colStage', 'Stage'), TP('procedure.colPerformedBy', 'Performed by')],
-            steps.map((s) => [String(s.no), resolveText(s.name, params), resolveText(s.actor, params)]))
+          swimlaneGrid
         ), P.PROCEDURE, []),
 
       section('steps', 'Detailed Steps', stepBody, P.PROCEDURE, [ref.requirement(model.key, 'procedure')]),
-
-      section('decisions', 'Decision Points',
-        decisions.length
-          ? h.table([T('Step'), TP('procedure.colDecision', 'Decision'), TP('procedure.colIfYes', 'If yes'), TP('procedure.colIfNo', 'If no')],
-              decisions.map((s) => [String(s.no), resolveText(s.decision.question, params), resolveText(s.decision.yes, params), resolveText(s.decision.no, params)]))
-          : h.p(TP('procedure.noDecisions', 'This Procedure contains no conditional decision points; all steps are executed in sequence.')),
-        P.PROCEDURE, []),
 
       section('escalation', 'Escalation',
         joinBlocks(h.p(TP('procedure.escalationLead', 'The following conditions require escalation:')), h.ul(proc.escalation.map((p) => resolveText(p, params)))),
@@ -636,16 +602,14 @@ export function buildProcedureDoc({ model, params, frameworkCodes }) {
 
       section('roles', 'Roles',
         joinBlocks(
-          h.p(TP('procedure.rolesLead', 'The roles participating in this Procedure and their assignment are:')),
-          h.table([T('Role'), TP('procedure.colAssignment', 'Assignment in this Procedure')],
-            model.roles.map((code) => {
-              const a = model.raciActivities.filter((x) => x.assign[code] === 'A').length;
-              const r = model.raciActivities.filter((x) => x.assign[code] === 'R').length;
-              const parts = [];
-              if (a) parts.push(TP('procedure.accountableForN', `Accountable for ${a} activit${a === 1 ? 'y' : 'ies'}`, { n: a }));
-              if (r) parts.push(TP('procedure.responsibleForN', `Responsible for ${r} activit${r === 1 ? 'y' : 'ies'}`, { n: r }));
-              return [RN(code), parts.length ? parts.join('; ') : TP('procedure.consultedOnly', 'Consulted or informed only')];
-            }))
+          h.p(TP('procedure.rolesSteps', 'The roles that perform this Procedure, and the steps each performs:')),
+          // A count of RACI activities told the reader nothing they could act
+          // on; the steps a role performs are what it needs to know.
+          h.table([T('Role'), TP('procedure.colSteps', 'Steps')],
+            lane.lanes.map((actor, l) => [
+              actor,
+              lane.rows.filter((row) => row.lane === l).map((row) => String(row.no)).join(activeT.language === 'ar' ? '، ' : ', ')
+            ]))
         ), P.PROCEDURE, []),
 
       section('exceptions', 'Exceptions',

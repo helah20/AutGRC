@@ -20,8 +20,11 @@ import { scorecard } from './scorecard.js';
 
 export const REQUIRED_SECTIONS = {
   policy: ['purpose', 'scope', 'objectives', 'statements', 'roles', 'governance', 'compliance', 'exceptions', 'monitoring', 'review', 'enforcement', 'references'],
-  standard: ['purpose', 'scope', 'mandatory', 'technical', 'security', 'controls', 'exceptions', 'monitoring', 'compliance'],
-  procedure: ['purpose', 'scope', 'preconditions', 'inputs', 'process', 'steps', 'decisions', 'escalation', 'outputs', 'records', 'kpis', 'roles', 'exceptions'],
+  // A Standard's generic security properties and a Procedure's separate
+  // decision table were dropped: the first said the same thing in every
+  // Standard, and the decisions now sit in the step they belong to.
+  standard: ['purpose', 'scope', 'mandatory', 'technical', 'controls', 'exceptions', 'monitoring', 'compliance'],
+  procedure: ['purpose', 'scope', 'preconditions', 'inputs', 'process', 'steps', 'escalation', 'outputs', 'records', 'kpis', 'roles', 'exceptions'],
   guideline: ['purpose', 'scope', 'guidance', 'references'],
   framework: ['purpose', 'structure', 'sources', 'coverage', 'governance'],
   roles: ['purpose', 'structure'],
