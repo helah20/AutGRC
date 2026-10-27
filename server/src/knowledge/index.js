@@ -325,6 +325,25 @@ export function validateKnowledgeBase() {
     problems.push(`Parameter {{${name}}} has different values in different domains: ${stated.join('; ')}`);
   }
 
+  // ------------------------------------------------ catalogue coverage --
+  // A domain's package must answer for every requirement the catalogue
+  // assigns to it. If none of its requirements cites one, the package is
+  // generated with a gap the review then reports back as a missing control —
+  // a finding about the platform's own model, raised against the
+  // organisation's document. A heading with requirements beneath it is a
+  // grouping, answered through its children.
+  for (const [code, rows] of Object.entries(REQUIREMENTS)) {
+    const parents = new Set(rows.map((row) => row[4]).filter(Boolean));
+    for (const [ref, , domainKey] of rows) {
+      if (parents.has(ref) || !domainKey) continue;
+      const model = DOMAIN_MODELS[domainKey];
+      if (!model) { problems.push(`${code} ${ref}: assigned to unknown domain "${domainKey}"`); continue; }
+      if (!model.requirements.some((r) => (r.refs?.[code] || []).includes(ref))) {
+        problems.push(`${code} ${ref} is assigned to ${domainKey}, but no ${domainKey} requirement cites it`);
+      }
+    }
+  }
+
   for (const [srcCode, srcRef, tgtCode, tgtRef] of CROSSWALKS) {
     if (!frameworkRequirementExists(srcCode, srcRef)) problems.push(`Crosswalk source ${srcCode} ${srcRef} not in catalogue`);
     if (!frameworkRequirementExists(tgtCode, tgtRef)) problems.push(`Crosswalk target ${tgtCode} ${tgtRef} not in catalogue`);

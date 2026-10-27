@@ -38,7 +38,7 @@ export const DATA_DOMAINS = {
         risk: 'Security weaknesses are inherited from the supplier with no leverage to correct them after signature.',
         riskRating: 'high',
         evidence: ['Completed due diligence assessments', 'Supplier certificates and audit reports with scope statements', 'Risk acceptance records for unremediated gaps'],
-        refs: { 'NCA-ECC': ['4-1-1', '4-1-3'], 'ISO-27001': ['A.5.19'], 'NIST-CSF': ['GV.SC'], 'SAMA-CSF': ['4.1', '4.2'], 'NCA-OTCC': ['4-1'] } },
+        refs: { 'NCA-ECC': ['4-1-1', '4-1-3'], 'ISO-27001': ['A.5.19'], 'NIST-CSF': ['GV.SC'], 'SAMA-CSF': ['4.1', '4.2'], 'NCA-OTCC': ['4-1'] , 'NIST-800-53': ['SR']} },
       { key: 'contract_clauses', title: 'Contractual security requirements',
         policy: 'Agreements with suppliers shall include cybersecurity requirements proportionate to the assessed risk, and shall be enforceable.',
         standard: 'Agreements shall address confidentiality and non-disclosure, permitted use and sub-processing, data location and residency, security control obligations, incident notification within {{supplierIncidentNotificationSla}}, the right to audit or receive independent assurance, personnel screening, and secure return or destruction of data at termination. Where cybersecurity monitoring or operations are provided as a managed service using remote access, the service centre shall be located {{managedSecurityLocation}}.',

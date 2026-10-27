@@ -26,6 +26,30 @@ const force = process.argv.includes('--force');
 
 // --------------------------------------------------------------- sources ---
 
+/**
+ * Bring an existing installation's reference catalogue into line with the
+ * domain each requirement is now assigned to. A domain is which policy
+ * answers for a requirement — the platform's own mapping, not the
+ * publisher's text — so it moves when the model learns a requirement belongs
+ * elsewhere. Rows the organisation imported from its licensed copy keep
+ * whatever domain it gave them.
+ */
+export function syncCatalogueDomains() {
+  let changed = 0;
+  for (const f of FRAMEWORKS) {
+    const fw = q.get('SELECT id FROM frameworks WHERE code = ?', f.code);
+    if (!fw) continue;
+    for (const [ref, , domainKey] of REQUIREMENTS[f.code] || []) {
+      changed += q.run(
+        `UPDATE framework_requirements SET domain_key = ?
+          WHERE framework_id = ? AND ref = ? AND source_status = 'reference' AND COALESCE(domain_key, '') != ?`,
+        domainKey || null, fw.id, ref, domainKey || ''
+      ).changes;
+    }
+  }
+  return changed;
+}
+
 export function seedFrameworks() {
   const at = nowIso();
   const byCode = {};
@@ -489,8 +513,10 @@ export function seedCorrectiveActions(users) {
   const findings = q.all(
     // The deliberate IAM inconsistency first, so it is the action still in
     // progress: its finding stays open while the documents still disagree.
-    `SELECT * FROM findings WHERE severity IN ('critical','high') AND status = 'open'
-      ORDER BY (category = 'consistency') DESC, created_at LIMIT 6`
+    `SELECT * FROM findings WHERE severity IN ('critical','high','medium') AND status = 'open'
+      ORDER BY (category = 'consistency') DESC,
+               CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END, created_at
+      LIMIT 6`
   );
   let created = 0;
 
@@ -511,7 +537,7 @@ export function seedCorrectiveActions(users) {
       'finding', finding.id,
       finding.scope_type === 'domain' ? finding.scope_id : null,
       owner.id,
-      finding.severity === 'critical' ? 'critical' : 'high',
+      finding.severity === 'critical' ? 'critical' : finding.severity === 'high' ? 'high' : 'medium',
       day(plan.due).slice(0, 10),
       plan.status, plan.progress,
       plan.rootCause || null,

@@ -35,11 +35,14 @@ router.get('/', asyncHandler(async (req, res) => {
   const frameworks = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code')
     .filter((f) => !applicable || applicable.includes(f.code));
   const coverage = frameworks.map((f) => {
-    const total = count('SELECT COUNT(*) AS n FROM framework_requirements WHERE framework_id = ?', f.id);
+    // Requirements only: a heading is answered through the rows beneath it,
+    // and counting it as uncovered understated every framework.
+    const leaf = `NOT EXISTS (SELECT 1 FROM framework_requirements c WHERE c.framework_id = fr.framework_id AND c.parent_ref = fr.ref)`;
+    const total = count(`SELECT COUNT(*) AS n FROM framework_requirements fr WHERE fr.framework_id = ? AND ${leaf}`, f.id);
     const mapped = q.all(
       `SELECT DISTINCT cm.requirement_id, cm.coverage FROM control_mappings cm
          JOIN framework_requirements fr ON fr.id = cm.requirement_id
-        WHERE fr.framework_id = ?`, f.id
+        WHERE fr.framework_id = ? AND ${leaf}`, f.id
     );
     const covered = mapped.filter((m) => m.coverage === 'covered').length;
     const partial = mapped.filter((m) => m.coverage === 'partial').length;

@@ -15,7 +15,7 @@ export const RESILIENCE_DOMAINS = {
         frequency: 'Continuous', kpi: 'Log source coverage of critical assets (target: {{logCoverageTarget}})',
         risk: 'An intrusion cannot be reconstructed because the systems involved were never sending logs.', riskRating: 'high',
         evidence: ['Log source inventory reconciled to the asset register', 'Logging configuration evidence per platform', 'Report of sources that stopped reporting'],
-        refs: { 'NCA-ECC': ['2-12-1', '2-12-3'], 'ISO-27001': ['A.8.15'], 'CIS-V8': ['8.2'], 'NIST-800-53': ['AU-2'], 'NIST-CSF': ['PR.PS-04'] } },
+        refs: { 'NCA-ECC': ['2-12-1', '2-12-3', '2-12-2'], 'ISO-27001': ['A.8.15'], 'CIS-V8': ['8.2'], 'NIST-800-53': ['AU-2'], 'NIST-CSF': ['PR.PS-04'] } },
       { key: 'log_protection', title: 'Log integrity and protection',
         policy: 'Logs shall be protected against alteration, deletion and unauthorised access.',
         standard: 'Logs shall be forwarded to a central platform in near real time and protected by {{logIntegrityMethod}}. Administrators of a logged system shall not have the ability to modify or delete that system\'s logs on the central platform. Attempted tampering shall generate an alert.',
