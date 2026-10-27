@@ -345,7 +345,7 @@ export const OPERATE_DOMAINS = {
         risk: 'Vulnerability handling is inconsistent and unmeasurable, so exposure cannot be demonstrated to be under control.',
         riskRating: 'high',
         evidence: ['Approved vulnerability management process document', 'Severity model and remediation service levels', 'Scope statement covering asset classes'],
-        refs: { 'NCA-ECC': ['2-10-1', '2-10-3'], 'ISO-27001': ['A.8.8'], 'CIS-V8': ['7.1'], 'NIST-800-53': ['RA-5'], 'SAMA-CSF': ['3.17'] } },
+        refs: { 'NCA-ECC': ['2-10-1', '2-10-3', '2-10-2'], 'ISO-27001': ['A.8.8'], 'CIS-V8': ['7.1'], 'NIST-800-53': ['RA-5'], 'SAMA-CSF': ['3.17'] } },
       { key: 'vuln_scanning', title: 'Vulnerability discovery and scanning',
         policy: 'Technical vulnerabilities shall be identified through regular automated scanning of all in-scope assets.',
         standard: 'Internal scanning shall run {{internalScanFrequency}}, external perimeter scanning {{externalScanFrequency}}, and authenticated scanning {{authenticatedScanFrequency}}. Scan coverage shall reach {{scanCoverageTarget}}, reconciled against the asset inventory. Assets excluded from scanning shall be recorded with justification and a compensating control.',

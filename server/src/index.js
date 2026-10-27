@@ -19,6 +19,7 @@ import config from './config.js';
 import { db } from './db/index.js';
 import { errorHandler } from './middleware/errors.js';
 import { validateKnowledgeBase } from './knowledge/index.js';
+import { syncCatalogueDomains } from './db/seed.js';
 import { startSweepSchedule, stopSweepSchedule } from './services/notify.js';
 
 import authRoutes from './routes/auth.js';
@@ -162,6 +163,8 @@ if (fs.existsSync(config.clientDist)) {
 app.use(errorHandler);
 
 const problems = validateKnowledgeBase();
+const moved = syncCatalogueDomains();
+if (moved) console.log(`[AutGRC] Updated the domain of ${moved} reference catalogue requirement(s).`);
 if (problems.length) {
   console.warn(`[AutGRC] Knowledge base integrity problems (${problems.length}):`);
   problems.slice(0, 10).forEach((p) => console.warn(`  - ${p}`));

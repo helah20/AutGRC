@@ -766,8 +766,13 @@ export function checkCompliance({ doc }) {
   for (const code of codes) {
     const fw = q.get('SELECT * FROM frameworks WHERE code = ?', code);
     if (!fw) continue;
+    // A heading with requirements beneath it is a grouping, not something a
+    // control answers; its children are checked instead. Reporting it made
+    // every package look short of controls it had in full.
     const reqs = q.all(
-      'SELECT * FROM framework_requirements WHERE framework_id = ? AND domain_key = ?',
+      `SELECT fr.* FROM framework_requirements fr
+        WHERE fr.framework_id = ? AND fr.domain_key = ?
+          AND NOT EXISTS (SELECT 1 FROM framework_requirements c WHERE c.framework_id = fr.framework_id AND c.parent_ref = fr.ref)`,
       fw.id, doc.domain_key
     );
     if (!reqs.length) continue;

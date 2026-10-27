@@ -943,7 +943,7 @@ export const TECH_DOMAINS = {
         frequency: 'Continuous', kpi: '% of mobile devices accessing corporate data that are enrolled and compliant (target: 100%)',
         risk: 'Corporate data on lost or personally owned devices is accessible with no ability to remove it.', riskRating: 'high',
         evidence: ['Mobile device management enrolment report', 'Compliance policy configuration', 'Remote wipe records'],
-        refs: { 'NCA-ECC': ['2-6'], 'ISO-27001': ['A.8.1', 'A.6.7'], 'SAMA-CSF': ['3.10'], 'NCA-TCC': ['2-5'], 'NCA-CCC': ['2-5'], 'NCA-OTCC': ['2-5'], 'NCA-OSMACC': ['2-4'] } },
+        refs: { 'NCA-ECC': ['2-6'], 'ISO-27001': ['A.8.1', 'A.6.7'], 'SAMA-CSF': ['3.10'], 'NCA-TCC': ['2-5'], 'NCA-CCC': ['2-5'], 'NCA-OTCC': ['2-5'], 'NCA-OSMACC': ['2-4'] , 'NCA-DCC': ['2-3']} },
       { key: 'endpoint_patching', title: 'Endpoint patch currency',
         policy: 'Operating systems and installed software on endpoints shall be maintained at a supported, patched version.',
         standard: 'Security patches shall be deployed within {{patchDeploymentSla}} of vendor release, measured from release rather than from testing completion. Deployment shall be reported by severity with a named owner for the remainder. An operating system that has left vendor support shall be replaced within {{unsupportedOsGrace}} or carry an approved exception with compensating controls. Endpoints that miss consecutive patch cycles shall be investigated rather than counted as non-compliant.',
