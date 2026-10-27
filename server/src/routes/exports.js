@@ -6,6 +6,7 @@ import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, notFound, HttpError } from '../middleware/errors.js';
 import { buildDocx } from '../services/export-docx.js';
 import { buildPdf } from '../services/export-pdf.js';
+import { buildSwimlanePptx } from '../services/export-pptx.js';
 import {
   buildControlWorkbook, buildRaciWorkbook, buildMappingWorkbook,
   buildGapWorkbook, buildRegisterWorkbook, buildSoaWorkbook, buildRiskTreatmentWorkbook
@@ -32,7 +33,8 @@ function send(res, buffer, filename, mime) {
 const MIME = {
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   pdf: 'application/pdf',
-  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 };
 
 function documentPayload(documentId) {
@@ -69,6 +71,26 @@ router.get('/documents/:id.docx', asyncHandler(async (req, res) => {
     summary: `Exported ${payload.document.reference} to Word${lang === 'ar' ? ' (Arabic layout)' : ''}`
   });
   send(res, buffer, `${payload.document.reference} ${payload.document.title}.docx`, MIME.docx);
+}));
+
+// A procedure's process flow as an editable PowerPoint swimlane chart. Only a
+// document with a flow has one to export.
+router.get('/documents/:id.pptx', asyncHandler(async (req, res) => {
+  const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
+  if (!doc) throw notFound('Document');
+  const stored = q.get("SELECT body FROM document_sections WHERE document_id = ? AND section_key = '_flow'", doc.id);
+  const flow = stored ? fromJson(stored.body, null) : null;
+  if (!flow?.steps?.length) throw new HttpError(400, 'This document has no process flow to export.');
+  const lang = (req.query.lang || doc.language) === 'ar' ? 'ar' : 'en';
+  const params = fromJson(doc.generation_meta, {}).parameters || {};
+  const buffer = await buildSwimlanePptx({
+    flow, params, lang, title: doc.title, subtitle: `${doc.reference} · ${lang === 'ar' ? 'الإصدار' : 'Version'} ${doc.version}`
+  });
+  audit(req, {
+    action: 'export:pptx', entityType: 'document', entityId: doc.id,
+    summary: `Exported the ${doc.reference} process flow to PowerPoint`
+  });
+  send(res, buffer, `${doc.reference} swimlane.pptx`, MIME.pptx);
 }));
 
 router.get('/documents/:id.pdf', asyncHandler(async (req, res) => {

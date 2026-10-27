@@ -234,6 +234,8 @@ export default {
     properties: 'Properties',
     reviewWithAi: 'Review with AI',
     word: 'Word',
+    powerpoint: 'PowerPoint',
+    powerpointHint: 'Process flow as an editable swimlane chart',
     saveChanges: 'Save changes',
     readOnly: 'Published documents are read-only',
     overdue: 'Overdue for review',

@@ -197,6 +197,14 @@ export default function DocumentDetail() {
         <div className="page-actions">
           <div className="btn-group">
             <button className="btn" onClick={() => exportAs('docx')}><IconDownload />{t('documentDetail.word')}</button>
+            {/* The swimlane chart follows the document's language, not the
+                interface's: it is the document's own flow. */}
+            {data.flow && (
+              <button className="btn" onClick={() => exportAs('pptx', doc.language)}
+                title={t('documentDetail.powerpointHint')}>
+                <IconDownload />{t('documentDetail.powerpoint')}
+              </button>
+            )}
             {/* Arabic PDF would come out with its letters unjoined, so the
                 button says so rather than producing it. */}
             <button className="btn" onClick={() => exportAs('pdf', 'en')}

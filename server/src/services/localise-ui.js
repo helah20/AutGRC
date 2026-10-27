@@ -16,6 +16,8 @@ const DECISION_CATEGORY_AR = {
 };
 
 export const UI_PHRASES_AR = {
+  'This document has no process flow to export.': 'لا يتضمن هذا المستند مخطط سير لتصديره.',
+
   // Gap check for uploaded procedures (procedure-check.js).
   'Procedure steps state no inputs': 'خطوات الإجراء لا تحدد مدخلاتها',
   'The procedure does not state what starts each step, so a step can wait for something no earlier step produces without anyone noticing.': 'لا يحدد الإجراء ما يبدأ كل خطوة، فقد تنتظر خطوةٌ شيئاً لا تنتجه أي خطوة سابقة دون أن يلاحظ أحد.',
