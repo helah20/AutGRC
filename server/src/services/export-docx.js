@@ -9,14 +9,19 @@
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
   Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType,
-  Header, Footer, PageNumber, TableOfContents, PageBreak, convertInchesToTwip
+  Header, Footer, PageNumber, PageBreak, convertInchesToTwip, ImageRun
 } from 'docx';
 import { htmlToBlocks, runsToText } from './html-to-blocks.js';
+import { currentBrand, fitWithin } from './brand.js';
+import { arDomainName } from '../knowledge/index.js';
 
-const BRAND = '1F3A5F';
-const ACCENT = '2E6F9E';
-const LIGHT = 'F2F5F9';
-const BORDER = 'C9D4E0';
+// The organisation's colours, set at the start of each build from its brand
+// (services/brand.js) and used for that build only, like the direction flag.
+let BRAND = '1F3A5F';
+let ACCENT = '2E6F9E';
+let LIGHT = 'F2F5F9';
+let BORDER = 'C9D4E0';
+let LOGO = null;
 
 const CLASSIFICATION_LABEL = {
   public: 'PUBLIC', internal: 'INTERNAL', confidential: 'CONFIDENTIAL',
@@ -71,8 +76,8 @@ const FURNITURE = {
     versionHistory: 'Version History',
     author: 'Author',
     change: 'Change',
-    generationEngine: 'Generation engine',
     initialIssue: 'Initial issue',
+    changeLabel: { generated: 'First draft', published: 'Approved and published' },
     contents: 'Contents',
     organisation: 'Organisation',
     statusLabel: STATUS_LABEL
@@ -111,10 +116,18 @@ const FURNITURE = {
     versionHistory: 'سجل الإصدارات',
     author: 'المُعِد',
     change: 'التغيير',
-    generationEngine: 'محرّك التوليد',
     initialIssue: 'الإصدار الأول',
+    changeLabel: { generated: 'المسودة الأولى', published: 'اعتُمدت ونُشرت' },
     contents: 'المحتويات',
     organisation: 'المنظمة',
+    actionLabel: {
+      submitted: 'رُفعت للمراجعة', approved: 'اعتُمدت', published: 'نُشرت', returned: 'أُعيدت للتعديل',
+      rejected: 'رُفضت', retired: 'أُلغيت', revised: 'فُتحت للتنقيح'
+    },
+    docTypeLabel: {
+      policy: 'سياسة', standard: 'معيار', procedure: 'إجراء', guideline: 'دليل إرشادي', framework: 'إطار',
+      roles: 'الأدوار والمسؤوليات', raci: 'مصفوفة RACI', control_matrix: 'مصفوفة الضوابط'
+    },
     statusLabel: {
       draft: 'مسودة', under_review: 'قيد المراجعة', approved: 'معتمدة',
       published: 'منشورة', under_revision: 'قيد التنقيح', retired: 'مُلغاة'
@@ -129,8 +142,29 @@ const CLASSIFICATION_AR = {
   secret: 'سري', top_secret: 'سري للغاية'
 };
 
-const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: BORDER };
-const cellBorders = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+let thinBorder = { style: BorderStyle.SINGLE, size: 4, color: BORDER };
+let cellBorders = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+
+function applyBrand(brand) {
+  BRAND = brand.primary;
+  ACCENT = brand.accent;
+  LIGHT = brand.light;
+  BORDER = brand.border;
+  LOGO = brand.logo;
+  thinBorder = { style: BorderStyle.SINGLE, size: 4, color: BORDER };
+  cellBorders = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+}
+
+/** The logo as a Word image, fitted inside a box given in pixels. */
+function logoRun(maxW, maxH) {
+  if (!LOGO) return null;
+  const size = fitWithin(LOGO, maxW, maxH);
+  return new ImageRun({
+    type: LOGO.type, data: LOGO.buffer,
+    transformation: { width: Math.round(size.width), height: Math.round(size.height) },
+    altText: { name: 'Logo', title: 'Logo', description: 'Organisation logo' }
+  });
+}
 
 /**
  * A non-breaking hyphen between digits (U+2011) is a neutral character to the
@@ -287,11 +321,18 @@ function coverPage({ doc, org, classification, rtl = false, L }) {
     alignment: AlignmentType.CENTER, bidirectional: rtl, spacing, children
   });
 
+  const logo = logoRun(220, 110);
   return [
+    ...(logo ? [centred([logo], { before: 1200, after: 360 })] : []),
     centred([run({ text: caps(org?.org_name || L.organisation), bold: true, size: 28, color: ACCENT, characterSpacing: tracking(40) })],
-      { before: 1800, after: 120 }),
+      { before: logo ? 0 : 1800, after: 120 }),
     centred([run({ text: rtl ? 'حوكمة الأمن السيبراني' : 'CYBERSECURITY GOVERNANCE', size: 20, color: '6B7C8F', characterSpacing: tracking(60) })],
-      { after: 600 }),
+      { after: 240 }),
+    // A short rule in the primary colour between the issuer and the title.
+    new Paragraph({
+      alignment: AlignmentType.CENTER, indent: { left: 3600, right: 3600 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 18, color: BRAND } }, spacing: { after: 480 }, children: []
+    }),
     centred([run({ text: doc.title, bold: true, size: 52, color: BRAND })], { after: 160 }),
     centred([run({
       text: `${doc.reference}  ·  ${L.version} ${doc.version}  ·  ${L.statusLabel[doc.status] || doc.status}`,
@@ -311,6 +352,11 @@ function coverPage({ doc, org, classification, rtl = false, L }) {
  * publication. NCA templates carry this beside the review cycle, so a reader
  * can see the cycle being kept, not only the next date it falls due.
  */
+/** An action key as a word, for the English approval table. */
+function titleWord(value) {
+  return String(value || '').replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+}
+
 export function lastReviewed(approvals = []) {
   const dates = approvals.filter((a) => a.action === 'approved' || a.action === 'published')
     .map((a) => (a.created_at || '').slice(0, 10)).filter(Boolean).sort();
@@ -322,12 +368,14 @@ export function lastReviewed(approvals = []) {
  * @returns {Promise<Buffer>}
  */
 export async function buildDocx(data) {
-  const { document: doc, sections, org, owner, approver, versions = [], approvals = [], frameworks = [] } = data;
+  const { document: doc, sections, org, owner, approver, versions = [], approvals = [] } = data;
   // Arabic is a real RTL document, not a mirrored one: Word joins the letters
   // and reorders the line itself, so the reader can edit what they receive.
   const lang = data.lang === 'ar' ? 'ar' : 'en';
   const rtl = lang === 'ar';
   activeRtl = rtl;
+  const brand = data.brand || currentBrand();
+  applyBrand(brand);
   const L = FURNITURE[lang];
   const classification = rtl
     ? (CLASSIFICATION_AR[doc.classification] || CLASSIFICATION_AR.internal)
@@ -340,8 +388,8 @@ export async function buildDocx(data) {
     infoTable([
       [L.title, doc.title],
       [L.reference, doc.reference],
-      [L.docType, data.docTypeLabel || (doc.doc_type || '').replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())],
-      [L.domain, data.domainName || doc.domain_key],
+      [L.docType, (rtl && L.docTypeLabel[doc.doc_type]) || data.docTypeLabel || (doc.doc_type || '').replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())],
+      [L.domain, (rtl && arDomainName(doc.domain_key)) || data.domainName || doc.domain_key],
       [L.version, doc.version],
       [L.status, L.statusLabel[doc.status] || doc.status],
       [L.classification, classification],
@@ -359,7 +407,7 @@ export async function buildDocx(data) {
     gridTable(
       [[[{ text: L.action }], [{ text: L.name }], [{ text: L.role }], [{ text: L.date }]]],
       approvals.length
-        ? approvals.map((a) => [a.action, a.actor_name || '—', a.actor_role || '—', (a.created_at || '').slice(0, 10)])
+        ? approvals.map((a) => [(L.actionLabel && L.actionLabel[a.action]) || titleWord(a.action), a.actor_name || '—', a.actor_role || '—', (a.created_at || '').slice(0, 10)])
         : [[L.prepared, owner?.name || '—', owner?.job_title || L.documentOwner, (doc.created_at || '').slice(0, 10)],
            [L.reviewed, '', '', ''],
            [L.approved, approver?.name || '', approver?.job_title || L.approverRole, '']]
@@ -370,13 +418,20 @@ export async function buildDocx(data) {
     gridTable(
       [[[{ text: L.version }], [{ text: L.date }], [{ text: L.author }], [{ text: L.change }]]],
       versions.length
-        ? versions.map((v) => [v.version, (v.created_at || '').slice(0, 10), v.author_name || '—', v.change_note || '—'])
-        : [[doc.version, (doc.created_at || '').slice(0, 10), L.generationEngine, L.initialIssue]]
+        ? versions.map((v) => [v.version, (v.created_at || '').slice(0, 10), v.author_name || '—',
+            L.changeLabel[v.change_type] || v.change_note || '—'])
+        : [[doc.version, (doc.created_at || '').slice(0, 10), owner?.name || L.documentOwner, L.initialIssue]]
     ),
-    new Paragraph({ children: [new PageBreak()] }),
+    new Paragraph({ spacing: { after: 300 }, children: [] }),
 
+    // The contents as a numbered list of the sections, written out rather than
+    // as a Word field: a field is empty until the reader updates it, and Word
+    // asks about updating fields every time the file is opened.
     new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.contents, color: BRAND, rightToLeft: rtl })] }),
-    new TableOfContents(L.contents, { hyperlink: true, headingStyleRange: '1-3' }),
+    ...sections.map((s, i) => new Paragraph({
+      spacing: { after: 60 }, bidirectional: rtl,
+      children: [new TextRun({ text: `${i + 1}.  ${s.heading}`, color: '1C2733', rightToLeft: rtl })]
+    })),
     new Paragraph({ children: [new PageBreak()] })
   ];
 
@@ -389,18 +444,8 @@ export async function buildDocx(data) {
     body.push(...blocksToDocx(htmlToBlocks(s.body)));
   });
 
-  if (frameworks.length) {
-    body.push(new Paragraph({ children: [new PageBreak()] }));
-    body.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 160 }, children: [new TextRun({ text: 'Authoritative Sources', color: BRAND })] }));
-    body.push(gridTable(
-      [[[{ text: 'Source' }], [{ text: 'Publisher' }], [{ text: 'Version' }], [{ text: 'Type' }]]],
-      frameworks.map((f) => [f.name, f.publisher || '—', f.version || '—', f.kind === 'regulation' ? 'Regulatory' : 'Framework'])
-    ));
-    body.push(new Paragraph({ spacing: { before: 200 }, children: [new TextRun({
-      text: 'Framework references identify the authoritative requirements this document is designed to address. They are reproduced as reference metadata and must be verified against the official publication before being relied upon for regulatory attestation.',
-      italics: true, size: 18, color: '6B7C8F'
-    })] }));
-  }
+  // No appendix of sources: a Policy lists them under Compliance and
+  // References already, and the appendix was English in an Arabic document.
 
   const document = new Document({
     creator: org?.org_name || 'AutGRC',
@@ -426,9 +471,13 @@ export async function buildDocx(data) {
         document: {
           // Word shapes Arabic and reorders the line from these two flags, so
           // the body inherits direction rather than each paragraph declaring it.
+          // Latin and Arabic faces set separately: Word draws Arabic from the
+          // complex-script slot, so one name would leave one script in a
+          // fallback face.
           run: {
-            font: rtl ? 'Segoe UI' : 'Calibri',
+            font: { ascii: brand.fonts.latin, hAnsi: brand.fonts.latin, cs: brand.fonts.arabic, eastAsia: brand.fonts.latin },
             size: rtl ? 22 : 21,
+            sizeComplexScript: 22 + brand.fonts.arabicBoost,
             color: '1C2733',
             rightToLeft: rtl
           },
@@ -462,6 +511,7 @@ export async function buildDocx(data) {
             border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: BORDER } },
             tabStops: [{ type: 'right', position: 9360 }],
             children: [
+              ...(LOGO ? [logoRun(90, 24), new TextRun({ text: '  ', size: 16 })] : []),
               new TextRun({ text: `${org?.org_name || L.organisation}  |  ${doc.title}`, size: 16, color: '6B7C8F', rightToLeft: rtl }),
               new TextRun({ text: `\t${classification}`, size: 16, bold: true, color: BRAND, rightToLeft: rtl })
             ]
@@ -495,5 +545,6 @@ export async function buildDocx(data) {
   // document object, and leaving it set would give the next English export
   // right-to-left tables.
   activeRtl = false;
+  LOGO = null;
   return Packer.toBuffer(document);
 }

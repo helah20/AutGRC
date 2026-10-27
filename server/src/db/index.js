@@ -54,6 +54,11 @@ const ADDED_COLUMNS = [
   ['framework_requirements', 'applicability', 'TEXT'],
   ['org_profile', 'ot_facility_level', "TEXT CHECK (ot_facility_level IN ('L1','L2','L3'))"],
   ['org_profile', 'cloud_roles', 'TEXT'],
+  ['org_profile', 'logo_data_url', 'TEXT'],
+  ['org_profile', 'brand_palette', 'TEXT'],
+  ['org_profile', 'brand_primary', 'TEXT'],
+  ['org_profile', 'brand_accent', 'TEXT'],
+  ['org_profile', 'brand_font', 'TEXT'],
   // Why the nonconformity happened (ISO/IEC 27001 10.2 b), so the action
   // removes the cause and not only the instance.
   ['corrective_actions', 'root_cause', 'TEXT']

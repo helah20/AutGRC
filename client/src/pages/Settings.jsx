@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, qs } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import FrameworkPicker from '../components/FrameworkPicker.jsx';
+import BrandSettings from '../components/BrandSettings.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import {
   Card, Loading, ErrorNote, Empty, Badge, Tabs, Field, Select, Modal,
@@ -9,7 +10,7 @@ import {
 } from '../components/ui.jsx';
 import {
   IconBuilding, IconUsers, IconShield, IconHistory, IconSparkles, IconPlus,
-  IconLock, IconCheck, IconAlert, IconX, IconRefresh, IconTrash, IconCopy
+  IconLock, IconCheck, IconAlert, IconX, IconRefresh, IconTrash, IconCopy, IconPalette
 } from '../components/Icons.jsx';
 import { formatDate, relativeTime, titleCase } from '../lib/format.js';
 import { EnrolMfa } from './AccountAction.jsx';
@@ -34,11 +35,12 @@ const ROLE_OPTIONS = [
 export default function Settings() {
   const t = useT();
   const labels = useLabels();
-  const { can, user } = useAuth();
+  const { can, user, org } = useAuth();
   const [tab, setTab] = useState('organisation');
 
   const tabs = [
     { key: 'organisation', label: t('settingsUi.tabs.organisation'), icon: <IconBuilding width={14} height={14} /> },
+    { key: 'brand', label: t('settingsUi.tabs.brand'), icon: <IconPalette width={14} height={14} /> },
     ...(can('user:manage') ? [{ key: 'users', label: t('settingsUi.tabs.users'), icon: <IconUsers width={14} height={14} /> }] : []),
     { key: 'account', label: t('settingsUi.tabs.account'), icon: <IconLock width={14} height={14} /> },
     ...(can('audit:read') ? [{ key: 'audit', label: t('settingsUi.tabs.audit'), icon: <IconHistory width={14} height={14} /> }] : []),
@@ -58,6 +60,7 @@ export default function Settings() {
         <Tabs tabs={tabs} active={tab} onChange={setTab} />
         <div style={{ padding: 18 }}>
           {tab === 'organisation' && <OrgSettings canEdit={can('settings:write')} />}
+          {tab === 'brand' && <BrandSettings canEdit={can('settings:write')} orgName={org?.org_name || ''} />}
           {tab === 'users' && <UserSettings />}
           {tab === 'account' && <AccountSettings user={user} />}
           {tab === 'audit' && <AuditLog />}

@@ -7,10 +7,14 @@
  */
 
 import ExcelJS from 'exceljs';
+import { currentBrand, fitWithin } from './brand.js';
 
-const BRAND = 'FF1F3A5F';
-const LIGHT = 'FFF2F5F9';
-const BORDER = 'FFC9D4E0';
+// The organisation's colours and Latin face (services/brand.js), read as each
+// sheet is styled so a workbook always carries the current identity.
+let BRAND = 'FF1F3A5F';
+let LIGHT = 'FFF2F5F9';
+let BORDER = 'FFC9D4E0';
+let FONT = 'Calibri';
 
 const RISK_FILL = {
   critical: 'FFF6D5D5', high: 'FFFBE3D5', medium: 'FFFDF3D3', low: 'FFE0F0DC'
@@ -24,13 +28,18 @@ const STATUS_FILL = {
 };
 
 function styleSheet(sheet, headers, widths) {
+  const brand = currentBrand();
+  BRAND = `FF${brand.primary}`;
+  LIGHT = `FF${brand.light}`;
+  BORDER = `FF${brand.border}`;
+  FONT = brand.fonts.latin;
   sheet.columns = headers.map((hdr, i) => ({
     header: hdr,
     key: `c${i}`,
     width: widths?.[i] || Math.min(Math.max(hdr.length + 6, 14), 60)
   }));
   const head = sheet.getRow(1);
-  head.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+  head.font = { name: FONT, bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
   head.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND } };
   head.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
   head.height = 26;
@@ -109,25 +118,36 @@ function newWorkbook(orgName) {
 }
 
 function coverSheet(wb, { orgName, title, subtitle, note }) {
+  const brand = currentBrand();
+  BRAND = `FF${brand.primary}`;
   const sheet = wb.addWorksheet('Cover');
   sheet.columns = [{ width: 24 }, { width: 90 }];
-  sheet.getCell('A1').value = safeCell((orgName || 'Organisation').toUpperCase());
-  sheet.getCell('A1').font = { bold: true, size: 14, color: { argb: BRAND } };
-  sheet.getCell('A3').value = safeCell(title);
-  sheet.getCell('A3').font = { bold: true, size: 18, color: { argb: BRAND } };
-  sheet.getCell('A4').value = safeCell(subtitle || '');
-  sheet.getCell('A4').font = { size: 11, color: { argb: 'FF6B7C8F' } };
-  sheet.getCell('A6').value = 'Generated';
-  sheet.getCell('B6').value = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  sheet.getCell('A7').value = 'Produced by';
-  sheet.getCell('B7').value = 'AutGRC — Cybersecurity Governance Platform';
-  if (note) {
-    sheet.getCell('A9').value = 'Note';
-    sheet.getCell('B9').value = safeCell(note);
-    sheet.getCell('B9').alignment = { wrapText: true, vertical: 'top' };
-    sheet.getRow(9).height = 60;
+  // The organisation's logo above its name, when it has one; the rows below
+  // start lower so nothing sits under the image.
+  let top = 1;
+  if (brand.logo) {
+    const imageId = wb.addImage({ buffer: brand.logo.buffer, extension: brand.logo.type === 'jpg' ? 'jpeg' : 'png' });
+    const size = fitWithin(brand.logo, 220, 80);
+    sheet.addImage(imageId, { tl: { col: 0, row: 0.3 }, ext: { width: size.width, height: size.height } });
+    sheet.getRow(1).height = 66;
+    top = 3;
   }
-  for (const r of [6, 7, 9]) sheet.getCell(`A${r}`).font = { bold: true, color: { argb: BRAND } };
+  const at = (row) => `A${row + top - 1}`;
+  sheet.getCell(at(1)).value = safeCell((orgName || 'Organisation').toUpperCase());
+  sheet.getCell(at(1)).font = { name: brand.fonts.latin, bold: true, size: 14, color: { argb: `FF${brand.accent}` } };
+  sheet.getCell(at(3)).value = safeCell(title);
+  sheet.getCell(at(3)).font = { name: brand.fonts.latin, bold: true, size: 18, color: { argb: BRAND } };
+  sheet.getCell(at(4)).value = safeCell(subtitle || '');
+  sheet.getCell(at(4)).font = { name: brand.fonts.latin, size: 11, color: { argb: 'FF6B7C8F' } };
+  sheet.getCell(at(6)).value = 'Generated';
+  sheet.getCell(`B${6 + top - 1}`).value = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  if (note) {
+    sheet.getCell(at(8)).value = 'Note';
+    sheet.getCell(`B${8 + top - 1}`).value = safeCell(note);
+    sheet.getCell(`B${8 + top - 1}`).alignment = { wrapText: true, vertical: 'top' };
+    sheet.getRow(8 + top - 1).height = 60;
+  }
+  for (const r of [6, 8]) sheet.getCell(at(r)).font = { name: brand.fonts.latin, bold: true, color: { argb: BRAND } };
   return sheet;
 }
 

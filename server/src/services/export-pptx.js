@@ -17,9 +17,8 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
+import { currentBrand, fitWithin } from './brand.js';
 
-const BLUE = '8FA8F5';
-const BLUE_D = '5B7BE8';
 const INK = '0F1A3D';
 const LINE = '333333';
 const GREY = '8C8C8C';
@@ -52,11 +51,16 @@ const WORDS = {
  * @param {string} [opts.subtitle]  Reference and version, shown in the title bar.
  * @returns {Promise<Buffer>}
  */
-export async function buildSwimlanePptx({ flow, params = {}, lang = 'en', title, subtitle }) {
+export async function buildSwimlanePptx({ flow, params = {}, lang = 'en', title, subtitle, brand = currentBrand() }) {
   const rtl = lang === 'ar';
+  // The organisation's colours: bars in the primary, boxes in a light tint of
+  // the accent so dark text stays readable on them, outlines in the accent.
+  const BAR = brand.primary;
+  const BOX = brand.soft;
+  const EDGE = brand.accent;
   const W = WORDS[rtl ? 'ar' : 'en'];
   const resolve = (text) => String(text ?? '').replace(/\{\{(\w+)\}\}/g, (m, k) => params[k] ?? m);
-  const font = { fontFace: 'Arial', lang: rtl ? 'ar-SA' : 'en-US', rtlMode: rtl, color: INK };
+  const font = { fontFace: rtl ? brand.fonts.arabic : brand.fonts.latin, lang: rtl ? 'ar-SA' : 'en-US', rtlMode: rtl, color: INK };
 
   // ---------------------------------------------------------------- lanes --
   const steps = flow.steps || [];
@@ -135,7 +139,20 @@ export async function buildSwimlanePptx({ flow, params = {}, lang = 'en', title,
   slide.addText([
     { text: title, options: { bold: true, fontSize: 20, color: WHITE } },
     ...(subtitle ? [{ text: `   ${subtitle}`, options: { fontSize: 12, color: WHITE } }] : [])
-  ], { ...font, x: X0, y: 0.15, w: X1 - X0, h: 0.55, align: 'center', valign: 'middle', fill: { color: BLUE_D }, line: { color: BLUE_D }, objectName: rtl ? 'عنوان المخطط' : 'Title' });
+  ], { ...font, x: X0, y: 0.15, w: X1 - X0, h: 0.55, align: 'center', valign: 'middle', fill: { color: BAR }, line: { color: BAR }, objectName: rtl ? 'عنوان المخطط' : 'Title' });
+
+  // The logo at the end of the title bar, on a white plate so any logo
+  // colour reads against the bar.
+  if (brand.logo) {
+    const size = fitWithin(brand.logo, 1.4, 0.43);
+    const plateW = size.width + 0.12;
+    const plateX = rtl ? X0 + 0.06 : X1 - 0.06 - plateW;
+    slide.addShape(pptx.ShapeType.roundRect, { x: plateX, y: 0.21, w: plateW, h: 0.43, rectRadius: 0.05, fill: { color: 'FFFFFF' }, line: { color: 'FFFFFF' }, objectName: 'Logo plate' });
+    slide.addImage({
+      data: `data:image/${brand.logo.type === 'jpg' ? 'jpeg' : 'png'};base64,${brand.logo.buffer.toString('base64')}`,
+      x: plateX + 0.06, y: 0.21 + (0.43 - size.height) / 2, w: size.width, h: size.height, objectName: 'Logo'
+    });
+  }
 
   // Lanes, with their name bar at the reading start.
   laneNames.forEach((name, l) => {
@@ -144,7 +161,7 @@ export async function buildSwimlanePptx({ flow, params = {}, lang = 'en', title,
     slide.addShape(pptx.ShapeType.rect, { x: X0, y, w: X1 - X0, h, fill: { type: 'none' }, line: { color: '000000', width: 2 }, objectName: `${rtl ? 'مسار' : 'Lane'} ${name}` });
     slide.addText(name, {
       ...font, x: rtl ? X1 - LAB_W : X0, y, w: LAB_W, h, fontSize: 10.5, bold: true, color: WHITE,
-      align: 'center', valign: 'middle', vert: 'vert270', fill: { color: BLUE_D }, line: { color: '000000', width: 2 }, margin: 2,
+      align: 'center', valign: 'middle', vert: 'vert270', fill: { color: BAR }, line: { color: '000000', width: 2 }, margin: 2,
       objectName: `${rtl ? 'اسم المسار' : 'Lane name'} ${name}`
     });
   });
@@ -156,8 +173,8 @@ export async function buildSwimlanePptx({ flow, params = {}, lang = 'en', title,
     const { w, h } = size[n.kind];
     if (n.kind === 'start' || n.kind === 'end') {
       slide.addShape(pptx.ShapeType.ellipse, {
-        x: x - w / 2, y: y - h / 2, w, h, fill: { color: BLUE },
-        line: n.kind === 'end' ? { color: '000000', width: 3.5 } : { color: BLUE_D, width: 1 },
+        x: x - w / 2, y: y - h / 2, w, h, fill: { color: BOX },
+        line: n.kind === 'end' ? { color: '000000', width: 3.5 } : { color: EDGE, width: 1 },
         objectName: n.kind === 'start' ? W.start : W.end
       });
       slide.addText(n.kind === 'start' ? W.start : W.end, { ...font, x: x - 0.8, y: y + h / 2 + 0.02, w: 1.6, h: 0.3, fontSize: 10, bold: true, align: 'center', valign: 'top', margin: 0 });
@@ -167,14 +184,14 @@ export async function buildSwimlanePptx({ flow, params = {}, lang = 'en', title,
         { text: resolve(n.step.name), options: { fontSize: 11 } }
       ], {
         ...font, shape: pptx.ShapeType.roundRect, rectRadius: 0.12, x: x - w / 2, y: y - h / 2, w, h,
-        align: 'center', valign: 'middle', fill: { color: BLUE }, line: { color: BLUE_D, width: 1 }, margin: 3,
+        align: 'center', valign: 'middle', fill: { color: BOX }, line: { color: EDGE, width: 1 }, margin: 3,
         objectName: `${rtl ? 'الخطوة' : 'Step'} ${n.no}`
       });
     } else if (n.kind === 'decision') {
       const question = resolve(n.step.decision.question);
       slide.addText(question, {
         ...font, shape: pptx.ShapeType.flowChartDecision, x: x - w / 2, y: y - h / 2, w, h,
-        fontSize: 9, align: 'center', valign: 'middle', fill: { color: BLUE }, line: { color: BLUE_D, width: 1 }, margin: 2,
+        fontSize: 9, align: 'center', valign: 'middle', fill: { color: BOX }, line: { color: EDGE, width: 1 }, margin: 2,
         objectName: `${W.decision}: ${question}`
       });
       // Outcomes that leave the main line, each in a dashed box below. A
