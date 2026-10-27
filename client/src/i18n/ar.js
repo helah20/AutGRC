@@ -759,6 +759,7 @@ export default {
     disaster_recovery: 'التعافي من الكوارث',
     physical_security: 'الأمن المادي',
     security_awareness: 'التوعية الأمنية',
+    hr_security: 'الأمن السيبراني المتعلق بالموارد البشرية',
     change_management: 'إدارة التغيير',
     logging_monitoring: 'السجلات والمراقبة',
     backup_recovery: 'النسخ الاحتياطي والاستعادة'

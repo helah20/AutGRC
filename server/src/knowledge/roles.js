@@ -414,6 +414,35 @@ export const ROLE_LIBRARY = [
     domains: ['business_continuity', 'data_protection', 'third_party', 'iam']
   },
   {
+    code: 'hr_manager', name: 'Human Resources Manager', shortName: 'HR Manager', category: 'Business',
+    purpose: 'To apply the cybersecurity requirements that fall within the employment lifecycle at {{orgName}}, so that screening, terms of employment, changes of role and departures carry the cybersecurity steps they require.',
+    reportingLine: 'Reports to the head of Human Resources.',
+    authority: 'Authorised to withhold a start date or a change of role until screening and signed terms are complete, to issue joining, change of role and departure notifications, and to open the disciplinary process for a cybersecurity violation.',
+    competencies: ['Employment law and contract terms in the applicable jurisdiction', 'Background screening practice', 'Joining, change of role and departure processes', 'Disciplinary process and case handling', 'Handling of personal data in personnel records'],
+    interfaces: [
+      { role: 'Cybersecurity GRC Manager', nature: 'Agrees the cybersecurity requirements that apply at each point of the employment lifecycle.' },
+      { role: 'IAM Specialist', nature: 'Sends joining, change of role and departure notifications that drive access changes.' },
+      { role: 'IT Manager', nature: 'Coordinates the recovery of assets and credentials from leavers.' },
+      { role: 'Business Owner', nature: 'Supports line managers on screening, training follow-up and disciplinary cases.' }
+    ],
+    responsibilities: [
+      'Complete screening before the start date and on moves into privileged or sensitive roles.',
+      'Include cybersecurity and confidentiality obligations in employment terms and obtain confidentiality agreements before access.',
+      'Notify cybersecurity and information technology of joiners, changes of role and leavers within the agreed service level.',
+      'Run the disciplinary process for cybersecurity violations on the factual record provided by cybersecurity.',
+      'Obtain exit acknowledgements of the obligations that continue after employment ends.'
+    ],
+    accountabilities: [
+      'Accountable for screening being complete before access is granted.',
+      'Accountable for the timeliness of joining, change of role and departure notifications.',
+      'Accountable for the consistency and fairness of disciplinary outcomes for cybersecurity violations.'
+    ],
+    activities: ['Maintain the personnel register used for access reconciliation.', 'Issue employment lifecycle notifications through the defined channel.', 'Review contract and confidentiality templates when policy or law changes.'],
+    approvals: ['Screening outcomes for candidates and role changes.', 'Disciplinary action for cybersecurity violations, within human resources authority.'],
+    escalations: ['Escalate screening that cannot be completed by the start date to the CISO.', 'Escalate leavers who have not returned assets or credentials to the line manager and the IT Manager.'],
+    domains: ['hr_security', 'security_awareness']
+  },
+  {
     code: 'it_manager', name: 'IT Manager', shortName: 'IT Manager', category: 'Technology',
     purpose: 'To deliver and operate the technology environment in line with {{orgName}} security requirements, implementing the controls specified by the cybersecurity function.',
     reportingLine: 'Reports to the Chief Information Officer or equivalent technology leadership.',

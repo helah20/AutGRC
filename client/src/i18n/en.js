@@ -757,6 +757,7 @@ export default {
     disaster_recovery: 'Disaster Recovery',
     physical_security: 'Physical Security',
     security_awareness: 'Security Awareness',
+    hr_security: 'Human Resources Security',
     change_management: 'Change Management',
     logging_monitoring: 'Logging & Monitoring',
     backup_recovery: 'Backup & Recovery'
