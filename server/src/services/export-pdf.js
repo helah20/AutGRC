@@ -128,7 +128,8 @@ export function buildPdf(data) {
     for (let word of unit.split(' ')) {
       // Punctuation after a number ("1.", "2026-10-27.") falls where Word puts
       // it in a right-to-left line: on the side the sentence continues.
-      const stop = /[A-Za-z]/.test(word) ? null : word.match(/^(.*\d)([.:،؛,]+)$/);
+      // Only a number standing alone: inside a run of English it stays as written.
+      const stop = /[A-Za-z]/.test(unit) ? null : word.match(/^(.*\d)([.:،؛,]+)$/);
       if (stop) word = stop[2] + stop[1];
       if (/[A-Za-z]/.test(word)) { pdf.text(word, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(word); }
       else for (const ch of word) { pdf.text(ch, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(ch); }
@@ -357,6 +358,16 @@ export function buildPdf(data) {
         pdf.moveDown(0.45);
       } else if (b.type === 'list') {
         b.items.forEach((item, i) => {
+          if (b.plain) {
+            // A clause carries its own number; a subclause sits one step in.
+            const indent = item.level * 22;
+            const text = runsToText(item.runs);
+            const width = contentWidth - indent;
+            ensureSpace(Math.min(measure(text, width), 120) + 6);
+            write(text, rtl ? MARGIN : MARGIN + indent, pdf.y, width, { flow: true });
+            pdf.moveDown(0.35);
+            return;
+          }
           const indent = 14 + item.level * 14;
           const marker = b.ordered ? `${i + 1}.` : '•';
           const text = runsToText(item.runs);

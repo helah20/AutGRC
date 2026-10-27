@@ -107,7 +107,7 @@ export default {
       summary: 'What each document type holds, and how it links to the requirements.',
       blocks: [
         { table: { head: ['Document', 'What it sets out'], rows: [
-          ['Policy', 'The organisation\'s mandatory position: what must be achieved. Each statement cites, in brackets, the regulatory requirements it addresses.'],
+          ['Policy', 'The organisation\'s mandatory position: what must be achieved. Each statement cites, in brackets, the requirements it addresses, and beneath it sets out in full every legislative and regulatory control it cites, down to the subcontrols, as numbered subclauses (4.2.1, 4.2.2).'],
           ['Standard', 'The measurable requirements. Each requirement is split into numbered clauses with the role accountable for each, followed by the table of defined values.'],
           ['Procedure', 'Step-by-step execution in a table of input, step, responsible and output, with decision points and a process flow.'],
           ['Guideline', 'Implementation guidance that creates no obligation.'],
@@ -343,9 +343,9 @@ export default {
         { h: 'I changed a number in a procedure and got a consistency finding. Why?' },
         { p: 'The number disagrees with the defined value in the standard. Either put it back to the defined value, or change the defined value itself so it changes in every document in the domain.' },
         { h: 'Can I export an Arabic document to PDF?' },
-        { p: 'Export it to Word and save it as PDF from Word. Arabic letters join in Word; they do not in the PDFs the platform produces.' },
+        { p: 'Yes. With the interface in Arabic, the PDF is Arabic and laid out right to left.' },
         { h: 'The regulatory text in the catalogue is abbreviated. How do I get the full text?' },
-        { p: 'Import the official copy on the Frameworks page. The platform does not write a regulator\'s text itself, so that nothing is attributed to a regulator that it did not say.' },
+        { p: 'Import the official copy on the Frameworks page, then regenerate the policy: each policy quotes in full the controls it cites. A spreadsheet holding several publications is accepted (a column naming the publication of each row), and an Arabic text column is read beside the English. The platform does not write a regulator\'s text itself, so that nothing is attributed to a regulator that it did not say; until the text is imported, the policy lists the controls it cites without quoting them.' },
         { h: 'I changed the document identity; why doesn\'t an old file show it?' },
         { p: 'The identity is applied when a file is exported. Export it again.' }
       ]

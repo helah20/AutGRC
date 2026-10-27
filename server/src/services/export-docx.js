@@ -280,12 +280,19 @@ function blocksToDocx(blocks) {
       out.push(new Paragraph({ spacing: { after: 120, line: 276 }, alignment: AlignmentType.JUSTIFIED, children: textRuns(b.runs) }));
     } else if (b.type === 'list') {
       for (const item of b.items) {
-        out.push(new Paragraph({
-          numbering: b.ordered ? { reference: 'ordered-list', level: Math.min(item.level, 2) } : undefined,
-          bullet: b.ordered ? undefined : { level: Math.min(item.level, 2) },
-          spacing: { after: 80 },
-          children: textRuns(item.runs)
-        }));
+        out.push(b.plain
+          ? new Paragraph({
+            indent: item.level ? { start: 480 * item.level } : undefined,
+            spacing: { after: 100, line: 276 },
+            alignment: AlignmentType.JUSTIFIED,
+            children: textRuns(item.runs)
+          })
+          : new Paragraph({
+            numbering: b.ordered ? { reference: 'ordered-list', level: Math.min(item.level, 2) } : undefined,
+            bullet: b.ordered ? undefined : { level: Math.min(item.level, 2) },
+            spacing: { after: 80 },
+            children: textRuns(item.runs)
+          }));
       }
     } else if (b.type === 'table') {
       if (b.caption) out.push(new Paragraph({ spacing: { before: 120, after: 60 }, children: [new TextRun({ text: b.caption, italics: true, size: 18 })] }));

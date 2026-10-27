@@ -201,3 +201,45 @@ test('re-importing the same file changes nothing further', async () => {
   assert.equal(after.length, before.length);
   assert.deepEqual(after.map((r) => r.id), before.map((r) => r.id));
 });
+
+test('a file holding several publications imports only the one asked for', async () => {
+  const cscc = q.get("SELECT * FROM frameworks WHERE code = 'NCA-CSCC'");
+  const before = q.all('SELECT id, ref, title FROM framework_requirements WHERE framework_id = ?', cscc.id);
+  const file = await sheet('several.xlsx', [
+    ['Control reference', 'Controls statement', 'Relevent Stander', 'Relevent capapility', 'النص العربي'],
+    ['1.1.1', 'An ECC control that belongs to another framework.', 'ECC', 'Cybersecurity Planning', ''],
+    ['1.1.1', 'The CSCC wording of control 1-1-1.', 'CSCC', 'Cybersecurity Planning', 'النص العربي للضابط 1-1-1.'],
+    ['1.4.1', 'With reference to ECC control 1-8-1, review CSCC annually.', 'CSCC', 'Cybersecurity Review', ''],
+    ['1.4.1.1', 'A subcontrol of 1-4-1.', 'CSCC-1', 'Cybersecurity Review', '']
+  ]);
+  const a = await analyseCatalogue({ filePath: file, originalName: 'several.xlsx', existing: before, frameworkCode: 'NCA-CSCC' });
+  assert.equal(a.otherPublication, 1, 'the ECC row is passed over, not rejected');
+  assert.equal(a.rejected.length, 0, 'the same number under another publication is not a duplicate');
+  assert.deepEqual(a.accepted.map((r) => r.ref), ['1-1-1', '1-4-1', '1-4-1-1'], 'dotted references take the catalogue\'s hyphens');
+  assert.equal(a.accepted[2].parentRef, '1-4-1', 'the parent is read from the reference');
+  assert.equal(a.accepted[0].statementAr, 'النص العربي للضابط 1-1-1.', 'an Arabic header is recognised');
+
+  applyCatalogue({ framework: cscc, accepted: a.accepted });
+  const row = q.get('SELECT * FROM framework_requirements WHERE framework_id = ? AND ref = ?', cscc.id, '1-1-1');
+  assert.equal(row.statement_ar, 'النص العربي للضابط 1-1-1.');
+});
+
+test('a Policy quotes the imported regulatory text under the clause that cites it', async () => {
+  const { previewPackage } = await import('../src/services/generator.js');
+  const build = (language) => previewPackage({
+    domainKey: 'governance', docTypes: ['policy'], frameworkCodes: ['NCA-ECC', 'NCA-CSCC'],
+    org: { org_name: 'Test Org' }, language
+  }).documents[0].sections.find((s) => s.key === 'statements').body;
+
+  const en = build('en');
+  assert.match(en, /clause-ref">4\.1</, 'the clauses are numbered by the section that holds them');
+  assert.match(en, /class="subclause"><span class="clause-ref">4\.\d+\.\d+<\/span> The CSCC wording of control 1-1-1\./);
+  assert.match(en, /NCA-CSCC 1-4-1-1/, 'a subcontrol is quoted beneath its control');
+  assert.equal((en.match(/NCA-CSCC 1-4-1\]/g) || []).length, 1, 'a control cited by two clauses is quoted once');
+  assert.match(en, /data-callout="warn"/, 'controls held only by reference are listed, not paraphrased');
+  assert.doesNotMatch(en, /An ECC control that belongs to another framework/);
+
+  const ar = build('ar');
+  assert.match(ar, /النص العربي للضابط 1-1-1\./, 'an Arabic Policy quotes the Arabic text where it was imported');
+  assert.match(ar, /data-callout="note"/, 'and says which controls it holds in English only');
+});
