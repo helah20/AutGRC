@@ -8,6 +8,7 @@
 
 import ExcelJS from 'exceljs';
 import { currentBrand, fitWithin } from './brand.js';
+import { sheetText, cellText } from './export-i18n.js';
 
 // The organisation's colours and Latin face (services/brand.js), read as each
 // sheet is styled so a workbook always carries the current identity.
@@ -32,7 +33,10 @@ function styleSheet(sheet, headers, widths) {
   BRAND = `FF${brand.primary}`;
   LIGHT = `FF${brand.light}`;
   BORDER = `FF${brand.border}`;
-  FONT = brand.fonts.latin;
+  const lang = sheet.lang;
+  FONT = lang === 'ar' ? brand.fonts.arabic : brand.fonts.latin;
+  // A header is fixed wording, or a name from the data (a RACI role column).
+  headers = headers.map((hdr) => cellText(sheetText(hdr, lang), lang));
   sheet.columns = headers.map((hdr, i) => ({
     header: hdr,
     key: `c${i}`,
@@ -41,15 +45,22 @@ function styleSheet(sheet, headers, widths) {
   const head = sheet.getRow(1);
   head.font = { name: FONT, bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
   head.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND } };
-  head.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+  head.alignment = { vertical: 'middle', horizontal: lang === 'ar' ? 'right' : 'left', wrapText: true };
   head.height = 26;
-  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+  sheet.views = [{ state: 'frozen', ySplit: 1, rightToLeft: lang === 'ar' }];
   sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: headers.length } };
 }
 
 function finishSheet(sheet, headerCount) {
+  const rtl = sheet.lang === 'ar';
   sheet.eachRow({ includeEmpty: false }, (row, n) => {
-    row.alignment = { vertical: 'top', wrapText: true };
+    row.alignment = { vertical: 'top', wrapText: true, ...(rtl ? { readingOrder: 'rtl' } : {}) };
+    if (rtl && n > 1) {
+      for (let c = 1; c <= headerCount; c += 1) {
+        const cell = row.getCell(c);
+        cell.font = { ...(cell.font || {}), name: FONT };
+      }
+    }
     if (n > 1 && n % 2 === 0) {
       for (let c = 1; c <= headerCount; c += 1) {
         const cell = row.getCell(c);
@@ -101,16 +112,24 @@ function safeCell(value) {
  * sheet added later is covered by construction; a call site that has to remember
  * is a call site that eventually forgets.
  */
-function newWorkbook(orgName) {
+function newWorkbook(orgName, lang = 'en') {
   const wb = new ExcelJS.Workbook();
+  wb.lang = lang;
   wb.creator = safeCell(orgName || 'AutGRC');
   wb.created = new Date();
   const addWorksheet = wb.addWorksheet.bind(wb);
-  wb.addWorksheet = (...args) => {
-    const sheet = addWorksheet(...args);
+  // The file's language: sheet names, and every text cell written through
+  // addRow, so a sheet added later follows it without remembering to.
+  wb.addWorksheet = (name, options, ...rest) => {
+    const rtl = lang === 'ar';
+    const sheet = addWorksheet(
+      String(sheetText(name, lang)).replace(/[\\/?*[\]:]/g, ' ').slice(0, 31),
+      rtl ? { ...options, views: [{ rightToLeft: true }] } : options, ...rest
+    );
+    sheet.lang = lang;
     const addRow = sheet.addRow.bind(sheet);
-    sheet.addRow = (values, ...rest) => addRow(
-      Array.isArray(values) ? values.map(safeCell) : values, ...rest
+    sheet.addRow = (values, ...more) => addRow(
+      Array.isArray(values) ? values.map((v) => safeCell(cellText(v, lang))) : values, ...more
     );
     return sheet;
   };
@@ -119,6 +138,9 @@ function newWorkbook(orgName) {
 
 function coverSheet(wb, { orgName, title, subtitle, note }) {
   const brand = currentBrand();
+  const lang = wb.lang;
+  const tr = (text) => cellText(text, lang);
+  const face = lang === 'ar' ? brand.fonts.arabic : brand.fonts.latin;
   BRAND = `FF${brand.primary}`;
   const sheet = wb.addWorksheet('Cover');
   sheet.columns = [{ width: 24 }, { width: 90 }];
@@ -133,21 +155,22 @@ function coverSheet(wb, { orgName, title, subtitle, note }) {
     top = 3;
   }
   const at = (row) => `A${row + top - 1}`;
-  sheet.getCell(at(1)).value = safeCell((orgName || 'Organisation').toUpperCase());
-  sheet.getCell(at(1)).font = { name: brand.fonts.latin, bold: true, size: 14, color: { argb: `FF${brand.accent}` } };
-  sheet.getCell(at(3)).value = safeCell(title);
-  sheet.getCell(at(3)).font = { name: brand.fonts.latin, bold: true, size: 18, color: { argb: BRAND } };
-  sheet.getCell(at(4)).value = safeCell(subtitle || '');
-  sheet.getCell(at(4)).font = { name: brand.fonts.latin, size: 11, color: { argb: 'FF6B7C8F' } };
-  sheet.getCell(at(6)).value = 'Generated';
+  sheet.getCell(at(1)).value = safeCell(lang === 'ar' ? (orgName || tr('Organisation')) : (orgName || 'Organisation').toUpperCase());
+  sheet.getCell(at(1)).font = { name: face, bold: true, size: 14, color: { argb: `FF${brand.accent}` } };
+  sheet.getCell(at(3)).value = safeCell(tr(title));
+  sheet.getCell(at(3)).font = { name: face, bold: true, size: 18, color: { argb: BRAND } };
+  sheet.getCell(at(4)).value = safeCell(tr(subtitle || ''));
+  sheet.getCell(at(4)).font = { name: face, size: 11, color: { argb: 'FF6B7C8F' } };
+  sheet.getCell(at(6)).value = sheetText('Generated', lang);
   sheet.getCell(`B${6 + top - 1}`).value = new Date().toISOString().slice(0, 19).replace('T', ' ');
   if (note) {
-    sheet.getCell(at(8)).value = 'Note';
-    sheet.getCell(`B${8 + top - 1}`).value = safeCell(note);
+    sheet.getCell(at(8)).value = sheetText('Note', lang);
+    sheet.getCell(`B${8 + top - 1}`).value = safeCell(tr(note));
     sheet.getCell(`B${8 + top - 1}`).alignment = { wrapText: true, vertical: 'top' };
     sheet.getRow(8 + top - 1).height = 60;
   }
-  for (const r of [6, 8]) sheet.getCell(at(r)).font = { name: brand.fonts.latin, bold: true, color: { argb: BRAND } };
+  for (const r of [6, 8]) sheet.getCell(at(r)).font = { name: face, bold: true, color: { argb: BRAND } };
+  if (lang === 'ar') sheet.eachRow((row) => { row.alignment = { ...(row.alignment || {}), horizontal: 'right', readingOrder: 'rtl' }; });
   return sheet;
 }
 
@@ -158,12 +181,14 @@ const SOURCE_NOTE =
 
 // -------------------------------------------------------- control matrix ---
 
-export async function buildControlWorkbook({ controls, evidence, mappings, orgName, domainLabel }) {
-  const wb = newWorkbook(orgName);
+export async function buildControlWorkbook({ controls, evidence, mappings, orgName, lang, domainLabel }) {
+  const wb = newWorkbook(orgName, lang);
   coverSheet(wb, {
     orgName,
     title: 'Control Matrix',
-    subtitle: domainLabel ? `Domain: ${domainLabel}` : 'All domains',
+    subtitle: domainLabel
+      ? (lang === 'ar' ? `المجال: ${cellText(domainLabel, lang)}` : `Domain: ${domainLabel}`)
+      : 'All domains',
     note: SOURCE_NOTE
   });
 
@@ -175,7 +200,7 @@ export async function buildControlWorkbook({ controls, evidence, mappings, orgNa
 
   controls.forEach((c) => {
     const map = (mappings || []).filter((m) => m.control_id === c.id)
-      .map((m) => `${m.framework_code} ${m.ref} (${m.coverage})`).join('; ');
+      .map((m) => `${m.framework_code} ${m.ref} (${cellText(m.coverage, lang)})`).join(lang === 'ar' ? '؛ ' : '; ');
     const row = sheet.addRow([
       c.control_id, c.name, c.domain_label || c.domain_key, c.description, c.requirement,
       c.control_type, c.control_nature, c.implementation, c.responsible_role, c.accountable_role,
@@ -199,12 +224,14 @@ export async function buildControlWorkbook({ controls, evidence, mappings, orgNa
 
 // ------------------------------------------------------------------ RACI ---
 
-export async function buildRaciWorkbook({ matrix, columns, activities, assignments, orgName, issues }) {
-  const wb = newWorkbook(orgName);
+export async function buildRaciWorkbook({ matrix, columns, activities, assignments, orgName, lang, issues }) {
+  const wb = newWorkbook(orgName, lang);
   coverSheet(wb, {
     orgName,
     title: matrix.name,
-    subtitle: `${matrix.mode.toUpperCase()} responsibility assignment matrix`,
+    subtitle: lang === 'ar'
+      ? `مصفوفة توزيع المسؤوليات ${matrix.mode.toUpperCase()}`
+      : `${matrix.mode.toUpperCase()} responsibility assignment matrix`,
     note: 'R = Responsible · A = Accountable (exactly one per activity) · S = Support · C = Consulted · I = Informed'
   });
 
@@ -253,8 +280,8 @@ export async function buildRaciWorkbook({ matrix, columns, activities, assignmen
 
 // ------------------------------------------------------ compliance mapping --
 
-export async function buildMappingWorkbook({ rows, frameworks, orgName, summary }) {
-  const wb = newWorkbook(orgName);
+export async function buildMappingWorkbook({ rows, frameworks, orgName, lang, summary }) {
+  const wb = newWorkbook(orgName, lang);
   coverSheet(wb, {
     orgName, title: 'Framework Compliance Mapping',
     subtitle: frameworks.map((f) => f.code).join(', '),
@@ -290,8 +317,8 @@ export async function buildMappingWorkbook({ rows, frameworks, orgName, summary 
 
 // --------------------------------------------------------- gap assessment --
 
-export async function buildGapWorkbook({ assessment, items, orgName }) {
-  const wb = newWorkbook(orgName);
+export async function buildGapWorkbook({ assessment, items, orgName, lang }) {
+  const wb = newWorkbook(orgName, lang);
   coverSheet(wb, {
     orgName, title: assessment.name, subtitle: 'Gap assessment',
     note: SOURCE_NOTE
@@ -316,7 +343,7 @@ export async function buildGapWorkbook({ assessment, items, orgName }) {
   styleSheet(s, ['Status', 'Count', 'Share'], [26, 12, 12]);
   const total = items.length || 1;
   for (const [status, count] of Object.entries(counts)) {
-    const row = s.addRow([status.replace(/_/g, ' '), count, `${Math.round((count / total) * 100)}%`]);
+    const row = s.addRow([lang === 'ar' ? status : status.replace(/_/g, ' '), count, `${Math.round((count / total) * 100)}%`]);
     tint(s, row.number, 1, STATUS_FILL[status]);
   }
   finishSheet(s, 3);
@@ -326,8 +353,8 @@ export async function buildGapWorkbook({ assessment, items, orgName }) {
 
 // -------------------------------------------------------- document register --
 
-export async function buildRegisterWorkbook({ documents, orgName }) {
-  const wb = newWorkbook(orgName);
+export async function buildRegisterWorkbook({ documents, orgName, lang }) {
+  const wb = newWorkbook(orgName, lang);
   coverSheet(wb, { orgName, title: 'Governance Document Register', subtitle: 'All governance documents and their lifecycle state' });
   const headers = ['Reference', 'Title', 'Type', 'Domain', 'Status', 'Version', 'Classification',
     'Owner', 'Approver', 'Effective Date', 'Review Date', 'Last Updated'];
@@ -345,8 +372,8 @@ export async function buildRegisterWorkbook({ documents, orgName }) {
 }
 
 /** Generic single-sheet export used by the reporting module. */
-export async function buildGenericWorkbook({ title, subtitle, headers, rows, orgName, widths }) {
-  const wb = newWorkbook(orgName);
+export async function buildGenericWorkbook({ title, subtitle, headers, rows, orgName, lang, widths }) {
+  const wb = newWorkbook(orgName, lang);
   coverSheet(wb, { orgName, title, subtitle });
   const sheet = wb.addWorksheet(title.slice(0, 28) || 'Report');
   styleSheet(sheet, headers, widths);
@@ -364,19 +391,24 @@ export async function buildGenericWorkbook({ title, subtitle, headers, rows, org
  * what has been built.
  */
 /** One cell's worth of the publication's own scoping, evaluated against the profile. */
-function publicationScope(p) {
+function publicationScope(p, lang) {
   if (!p) return '';
   const levels = Object.keys(p.levels).join(', ');
+  if (lang === 'ar') {
+    if (p.applies === null) return `ينطبق على ${levels}؛ والملف التعريفي لا يحدد`;
+    if (!p.applies) return `لا ينطبق (الإصدار: ${levels})`;
+    return `ينطبق (${p.matched.join('، ')})${p.frequency ? ` — ${p.frequency}` : ''}`;
+  }
   if (p.applies === null) return `Applies to ${levels}; profile does not say`;
   if (!p.applies) return `Does not apply (publication: ${levels})`;
   return `Applies (${p.matched.join(', ')})${p.frequency ? ` — ${p.frequency}` : ''}`;
 }
 
-export async function buildSoaWorkbook({ framework, rows, summary, orgName }) {
-  const wb = newWorkbook(orgName);
+export async function buildSoaWorkbook({ framework, rows, summary, orgName, lang }) {
+  const wb = newWorkbook(orgName, lang);
   coverSheet(wb, {
     orgName,
-    title: `Statement of Applicability — ${framework.code}`,
+    title: `${sheetText('Statement of Applicability', lang)} — ${framework.code}`,
     subtitle: `${framework.name}${framework.version ? ` (${framework.version})` : ''}`,
     note: SOURCE_NOTE
   });
@@ -391,8 +423,8 @@ export async function buildSoaWorkbook({ framework, rows, summary, orgName }) {
       r.title,
       r.applicable ? 'Yes' : 'No',
       r.justification || (r.applicable ? '' : 'NOT JUSTIFIED'),
-      publicationScope(r.publication),
-      r.implementation.replace(/_/g, ' '),
+      publicationScope(r.publication, lang),
+      lang === 'ar' ? r.implementation : r.implementation.replace(/_/g, ' '),
       r.controls.map((c) => c.control_id).join(', '),
       r.decided_by_name || '',
       r.decided_at ? String(r.decided_at).slice(0, 10) : ''
@@ -438,8 +470,8 @@ export async function buildSoaWorkbook({ framework, rows, summary, orgName }) {
  * than printed with a residual figure equal to the inherent one, which would
  * read as a reduction somebody achieved.
  */
-export async function buildRiskTreatmentWorkbook({ risks, orgName }) {
-  const wb = newWorkbook(orgName);
+export async function buildRiskTreatmentWorkbook({ risks, orgName, lang }) {
+  const wb = newWorkbook(orgName, lang);
   coverSheet(wb, {
     orgName, title: 'Risk Treatment Plan', subtitle: 'Risk register, treatment decisions and corrective actions',
     note: SOURCE_NOTE

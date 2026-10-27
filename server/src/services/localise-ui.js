@@ -5,15 +5,7 @@
  */
 
 import { SOURCE_NOTE } from '../knowledge/frameworks.js';
-import { DECISION_CATEGORY } from './assurance-records.js';
-
-const DECISION_CATEGORY_AR = {
-  improvement: 'فرصة للتحسين المستمر',
-  change: 'تغيير في نظام الإدارة',
-  resources: 'الموارد',
-  risk: 'قبول خطر أو معالجته',
-  other: 'أخرى'
-};
+import { DECISION_CATEGORY, DECISION_CATEGORY_AR } from './decision-categories.js';
 
 export const UI_PHRASES_AR = {
   'This document has no process flow to export.': 'لا يتضمن هذا المستند مخطط سير لتصديره.',

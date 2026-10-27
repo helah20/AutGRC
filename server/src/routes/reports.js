@@ -6,6 +6,8 @@ import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, notFound } from '../middleware/errors.js';
 import { buildGenericWorkbook } from '../services/export-xlsx.js';
 import { buildPdf } from '../services/export-pdf.js';
+import { requestLanguage } from '../services/localise.js';
+import { exportLanguage, uiText, localiseRows, sheetText, attachment } from '../services/export-i18n.js';
 import { domainName, DOMAIN_META, ROLE_LIBRARY } from '../knowledge/index.js';
 import { getOrgProfile, enrichDocuments, STATUS_LABEL } from './_shared.js';
 import { h, joinBlocks } from '../services/html.js';
@@ -34,7 +36,7 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json(Object.entries(REPORTS).map(([key, meta]) => ({ key, ...meta })));
 }));
 
-function buildReport(key) {
+function buildReport(key, lang = 'en') {
   switch (key) {
     case 'compliance_coverage': {
       const rows = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code').map((f) => {
@@ -166,9 +168,9 @@ function buildReport(key) {
         widths: [30, 12, 12, 12, 14, 12, 14, 12, 16] };
     }
     case 'internal_audit_plan':
-      return internalAuditPlan();
+      return internalAuditPlan(lang);
     case 'management_review':
-      return managementReviewInputs();
+      return managementReviewInputs(lang);
     default:
       return null;
   }
@@ -177,30 +179,44 @@ function buildReport(key) {
 router.get('/:key', asyncHandler(async (req, res) => {
   const meta = REPORTS[req.params.key];
   if (!meta) throw notFound('Report');
-  const report = buildReport(req.params.key);
+  const report = buildReport(req.params.key, requestLanguage(req));
   res.json({ key: req.params.key, ...meta, ...report, generatedAt: new Date().toISOString() });
 }));
 
-router.get('/:key/export.xlsx', requirePermission('export:run'), asyncHandler(async (req, res) => {
-  const meta = REPORTS[req.params.key];
+/** A report's name, description and table in the language the file is produced in. */
+function reportIn(key, lang) {
+  const meta = REPORTS[key];
   if (!meta) throw notFound('Report');
-  const report = buildReport(req.params.key);
+  const report = buildReport(key, lang);
+  if (lang !== 'ar') return { meta, report, name: meta.name, description: meta.description };
+  return {
+    meta,
+    name: uiText('reportName', key, lang) === key ? meta.name : uiText('reportName', key, lang),
+    description: uiText('reportDescription', key, lang) === key ? meta.description : uiText('reportDescription', key, lang),
+    report: { ...report, headers: report.headers.map((h) => sheetText(h, lang)), rows: localiseRows(report.rows, lang) }
+  };
+}
+
+router.get('/:key/export.xlsx', requirePermission('export:run'), asyncHandler(async (req, res) => {
+  const lang = exportLanguage(req);
+  const { meta, report, name, description } = reportIn(req.params.key, lang);
   const buffer = await buildGenericWorkbook({
-    title: meta.name, subtitle: meta.description,
+    title: name, subtitle: description,
     headers: report.headers, rows: report.rows, widths: report.widths,
-    orgName: getOrgProfile().org_name
+    orgName: getOrgProfile().org_name, lang
   });
   audit(req, { action: 'export:report', entityType: 'report', entityId: req.params.key, summary: `Exported the ${meta.name} report to Excel` });
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', `attachment; filename="${meta.name}.xlsx"`);
+  res.setHeader('Content-Disposition', attachment(`${name}.xlsx`));
   res.send(Buffer.from(buffer));
 }));
 
 router.get('/:key/export.pdf', requirePermission('export:run'), asyncHandler(async (req, res) => {
-  const meta = REPORTS[req.params.key];
-  if (!meta) throw notFound('Report');
-  const report = buildReport(req.params.key);
+  const lang = exportLanguage(req);
+  const ar = lang === 'ar';
+  const { meta, report, name, description } = reportIn(req.params.key, lang);
   const org = getOrgProfile();
+  const today = new Date().toISOString().slice(0, 10);
 
   // Very wide reports are truncated in PDF; Excel keeps every column.
   const maxCols = 7;
@@ -210,23 +226,27 @@ router.get('/:key/export.pdf', requirePermission('export:run'), asyncHandler(asy
   const buffer = await buildPdf({
     document: {
       reference: `RPT-${req.params.key.toUpperCase().replace(/_/g, '-')}`,
-      title: meta.name, doc_type: 'report', domain_key: '', status: 'published',
+      title: name, doc_type: 'report', domain_key: '', status: 'published',
       classification: 'internal', version: '1.0',
       created_at: new Date().toISOString(), review_date: null, effective_date: new Date().toISOString().slice(0, 10)
     },
     sections: [
-      { heading: 'Purpose', body: joinBlocks(h.p(meta.description), h.p(`Generated on ${new Date().toISOString().slice(0, 10)} from the live AutGRC data set.`)) },
-      { heading: meta.name, body: h.table(headers, rows) },
+      { heading: sheetText('Purpose', lang), body: joinBlocks(h.p(description), h.p(ar
+        ? `أُنشئ في ${today} من بيانات AutGRC الحية.`
+        : `Generated on ${today} from the live AutGRC data set.`)) },
+      { heading: name, body: h.table(headers, rows) },
       ...(report.headers.length > maxCols
-        ? [{ heading: 'Note', body: h.callout('note', 'Columns omitted', `This report has ${report.headers.length} columns; the PDF shows the first ${maxCols}. Export to Excel for the complete data set.`) }]
+        ? [{ heading: sheetText('Note', lang), body: h.callout('note', sheetText('Columns omitted', lang), ar
+          ? `في هذا التقرير ${report.headers.length} عموداً، ويعرض ملف PDF أول ${maxCols} منها. صدّره إلى Excel للحصول على البيانات كاملة.`
+          : `This report has ${report.headers.length} columns; the PDF shows the first ${maxCols}. Export to Excel for the complete data set.`) }]
         : [])
     ],
     org, owner: null, approver: null, versions: [], approvals: [], frameworks: [],
-    domainName: 'All domains'
+    domainName: sheetText('All domains', lang), lang
   });
   audit(req, { action: 'export:report', entityType: 'report', entityId: req.params.key, summary: `Exported the ${meta.name} report to PDF` });
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="${meta.name}.pdf"`);
+  res.setHeader('Content-Disposition', attachment(`${name}.pdf`));
   res.send(buffer);
 }));
 

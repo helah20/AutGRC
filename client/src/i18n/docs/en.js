@@ -299,10 +299,13 @@ export default {
       blocks: [
         { table: { head: ['Format', 'What exports'], rows: [
           ['Word', 'Any document, with a cover, the document control, approval and version tables, and contents. Arabic documents are laid out right to left.'],
-          ['PDF', 'English documents. Use Word for Arabic: Arabic letters do not join in the PDFs the platform produces.'],
+          ['PDF', 'Any document, the reports, the internal audit report and management review minutes. Arabic PDFs use IBM Plex Sans Arabic, which ships with the platform.'],
           ['Excel', 'Control matrices, RACI matrices, mappings, gaps, registers, the Statement of Applicability, and reports.'],
           ['PowerPoint', 'The swimlane diagram of a procedure.']
         ] } },
+        { h: 'Language of files' },
+        { p: 'Every file comes out in the language the interface is set to. Switch the interface to Arabic and the next export is Arabic throughout: headings, labels, column headers, sheet names and the knowledge-base wording; Excel sheets open right to left.' },
+        { p: 'A document exports in the other language from its translation when one exists; otherwise the platform builds that language from the same domain, frameworks and parameters, keeping any section a person wrote as written.' },
         { h: 'Document identity' },
         { p: 'Under Settings → Document identity:' },
         { ul: [

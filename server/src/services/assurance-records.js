@@ -11,8 +11,27 @@
 
 import { q } from '../db/index.js';
 import { h, joinBlocks } from './html.js';
+import { cellText } from './export-i18n.js';
+import { DECISION_CATEGORY, DECISION_CATEGORY_AR } from './decision-categories.js';
+
+export { DECISION_CATEGORY };
 
 const label = (s) => String(s || '').replace(/_/g, ' ');
+
+/**
+ * The record's wording in the reader's language. Fixed text is written in
+ * both here; stored values (statuses, knowledge-base names) go through the
+ * same dictionaries as the screens.
+ */
+function speaker(lang) {
+  const ar = lang === 'ar';
+  return {
+    ar,
+    tx: (en, arabic) => (ar ? arabic : en),
+    value: (v) => (ar ? cellText(v || '', 'ar') : label(v)),
+    text: (v) => (ar ? cellText(v, 'ar') : v)
+  };
+}
 
 function reportDocument({ reference, title, status, date }) {
   return {
@@ -41,7 +60,8 @@ function actionsFor(assessmentId) {
  * Internal audit report for one assessment.
  * Returns null when the assessment does not exist.
  */
-export function auditReportPayload(assessmentId) {
+export function auditReportPayload(assessmentId, lang = 'en') {
+  const { ar, tx, value, text } = speaker(lang);
   const a = q.get(
     `SELECT a.*, f.code AS framework_code, f.name AS framework_name, f.version AS framework_version, u.name AS owner_name
        FROM assessments a LEFT JOIN frameworks f ON f.id = a.framework_id LEFT JOIN users u ON u.id = a.owner_id
@@ -60,72 +80,77 @@ export function auditReportPayload(assessmentId) {
     && x.due_date && x.due_date < new Date().toISOString().slice(0, 10));
 
   const criteria = a.framework_name
-    ? `${a.framework_name}${a.framework_version ? ` (${a.framework_version})` : ''}`
-    : 'Not linked to a framework in the platform';
+    ? `${text(a.framework_name)}${a.framework_version ? ` (${a.framework_version})` : ''}`
+    : tx('Not linked to a framework in the platform', 'غير مرتبط بإطار في المنصة');
+  const day = (d) => String(d || '').slice(0, 10);
 
   const sections = [
-    { heading: 'Audit Objective and Scope', body: joinBlocks(
-      h.table(['Item', 'Detail'], [
-        ['Audit', a.name],
-        ['Audit criteria', criteria],
-        ['Scope', a.scope || 'Not recorded'],
-        ['Lead auditor', a.owner_name || 'Not assigned'],
-        ['Period', `${(a.started_at || a.created_at || '').slice(0, 10)} to ${(a.due_at || '').slice(0, 10) || 'open'}`],
-        ['Status', label(a.status)]
+    { heading: tx('Audit Objective and Scope', 'هدف التدقيق ونطاقه'), body: joinBlocks(
+      h.table([tx('Item', 'البند'), tx('Detail', 'التفاصيل')], [
+        [tx('Audit', 'التدقيق'), text(a.name)],
+        [tx('Audit criteria', 'معايير التدقيق'), criteria],
+        [tx('Scope', 'النطاق'), text(a.scope) || tx('Not recorded', 'غير مسجّل')],
+        [tx('Lead auditor', 'رئيس فريق التدقيق'), a.owner_name || tx('Not assigned', 'غير معيّن')],
+        [tx('Period', 'الفترة'), ar
+          ? `من ${day(a.started_at || a.created_at)} إلى ${day(a.due_at) || 'غير محدد'}`
+          : `${day(a.started_at || a.created_at)} to ${day(a.due_at) || 'open'}`],
+        [tx('Status', 'الحالة'), value(a.status)]
       ]),
-      h.p('The audit assessed each requirement in scope against the evidence recorded in the platform. NCA ECC 1-8-2 requires the review to be conducted independently of the cybersecurity function; the lead auditor named above is responsible for that independence.')
+      h.p(tx('The audit assessed each requirement in scope against the evidence recorded in the platform. NCA ECC 1-8-2 requires the review to be conducted independently of the cybersecurity function; the lead auditor named above is responsible for that independence.',
+        'قيّم التدقيق كل متطلب ضمن النطاق مقابل الأدلة المسجّلة في المنصة. ويشترط الضابط 1-8-2 من الضوابط الأساسية للأمن السيبراني أن تُجرى المراجعة باستقلالية عن إدارة الأمن السيبراني، ورئيس فريق التدقيق المذكور أعلاه مسؤول عن هذه الاستقلالية.'))
     ) },
-    { heading: 'Summary of Results', body: joinBlocks(
-      h.table(['Result', 'Requirements'], [
-        ['Compliant', String(count('compliant'))],
-        ['Partially compliant', String(count('partially_compliant'))],
-        ['Non-compliant', String(count('non_compliant'))],
-        ['Not applicable', String(count('not_applicable'))],
-        ['Total assessed', String(items.length)],
-        ['Compliance rate', `${rate}% (partial compliance counted as half)`]
+    { heading: tx('Summary of Results', 'ملخص النتائج'), body: joinBlocks(
+      h.table([tx('Result', 'النتيجة'), tx('Requirements', 'المتطلبات')], [
+        [tx('Compliant', 'ملتزم'), String(count('compliant'))],
+        [tx('Partially compliant', 'ملتزم جزئياً'), String(count('partially_compliant'))],
+        [tx('Non-compliant', 'غير ملتزم'), String(count('non_compliant'))],
+        [tx('Not applicable', 'غير منطبق'), String(count('not_applicable'))],
+        [tx('Total assessed', 'إجمالي ما قُيّم'), String(items.length)],
+        [tx('Compliance rate', 'نسبة الالتزام'), tx(`${rate}% (partial compliance counted as half)`, `${rate}٪ (يُحتسب الالتزام الجزئي نصفاً)`)]
       ])
     ) },
-    { heading: 'Nonconformities', body: nonconformities.length
-      ? h.table(['Requirement', 'Result', 'Gap', 'Risk', 'Recommendation', 'Owner', 'Due'],
-        nonconformities.map((n) => [n.requirement_ref || '', label(n.status), n.gap || '', n.risk_rating || '',
-          n.recommendation || '', n.owner || '', (n.due_date || '').slice(0, 10)]))
-      : h.p('No nonconformity was recorded.') },
-    { heading: 'Corrective Actions', body: joinBlocks(
+    { heading: tx('Nonconformities', 'حالات عدم المطابقة'), body: nonconformities.length
+      ? h.table([tx('Requirement', 'المتطلب'), tx('Result', 'النتيجة'), tx('Gap', 'الفجوة'), tx('Risk', 'الخطر'),
+        tx('Recommendation', 'التوصية'), tx('Owner', 'المالك'), tx('Due', 'الاستحقاق')],
+        nonconformities.map((n) => [n.requirement_ref || '', value(n.status), text(n.gap || ''), n.risk_rating ? value(n.risk_rating) : '',
+          text(n.recommendation || ''), n.owner || '', day(n.due_date)]))
+      : h.p(tx('No nonconformity was recorded.', 'لم تُسجَّل أي حالة عدم مطابقة.')) },
+    { heading: tx('Corrective Actions', 'الإجراءات التصحيحية'), body: joinBlocks(
       actions.length
-        ? h.table(['Action', 'Requirement', 'Owner', 'Status', 'Due', 'Root cause', 'Verified'],
-          actions.map((x) => [x.action_id, x.requirement_ref || 'Whole audit', x.owner_name || '', label(x.status),
-            (x.due_date || '').slice(0, 10), x.root_cause || 'Not recorded',
-            x.verified_at ? `${x.verified_by_name || ''} ${x.verified_at.slice(0, 10)}`.trim() : 'No']))
-        : h.p('No corrective action has been raised against this audit.'),
+        ? h.table([tx('Action', 'الإجراء'), tx('Requirement', 'المتطلب'), tx('Owner', 'المالك'), tx('Status', 'الحالة'),
+          tx('Due', 'الاستحقاق'), tx('Root cause', 'السبب الجذري'), tx('Verified', 'التحقق')],
+          actions.map((x) => [x.action_id, x.requirement_ref || tx('Whole audit', 'التدقيق كاملاً'), x.owner_name || '', value(x.status),
+            day(x.due_date), text(x.root_cause) || tx('Not recorded', 'غير مسجّل'),
+            x.verified_at ? `${x.verified_by_name || ''} ${day(x.verified_at)}`.trim() : tx('No', 'لا')]))
+        : h.p(tx('No corrective action has been raised against this audit.', 'لم يُفتح أي إجراء تصحيحي على هذا التدقيق.')),
       withoutAction.length
-        ? h.callout('warn', 'Nonconformities without a corrective action',
-          `${withoutAction.length} nonconformit${withoutAction.length === 1 ? 'y has' : 'ies have'} no corrective action: ${withoutAction.map((n) => n.requirement_ref).join(', ')}. ISO/IEC 27001 10.2 requires each to be acted on.`)
+        ? h.callout('warn', tx('Nonconformities without a corrective action', 'حالات عدم مطابقة بلا إجراء تصحيحي'), ar
+          ? `${withoutAction.length} من حالات عدم المطابقة بلا إجراء تصحيحي: ${withoutAction.map((n) => n.requirement_ref).join('، ')}. ويشترط البند 10.2 من ISO/IEC 27001 معالجة كل منها.`
+          : `${withoutAction.length} nonconformit${withoutAction.length === 1 ? 'y has' : 'ies have'} no corrective action: ${withoutAction.map((n) => n.requirement_ref).join(', ')}. ISO/IEC 27001 10.2 requires each to be acted on.`)
         : '',
       overdue.length
-        ? h.callout('warn', 'Overdue corrective actions', `${overdue.map((x) => x.action_id).join(', ')} ${overdue.length === 1 ? 'is' : 'are'} past the due date.`)
+        ? h.callout('warn', tx('Overdue corrective actions', 'إجراءات تصحيحية متأخرة'), ar
+          ? `تجاوز تاريخ الاستحقاق: ${overdue.map((x) => x.action_id).join('، ')}.`
+          : `${overdue.map((x) => x.action_id).join(', ')} ${overdue.length === 1 ? 'is' : 'are'} past the due date.`)
         : ''
     ) },
-    { heading: 'Audit Conclusion', body: joinBlocks(
-      h.p(`Of ${assessable} applicable requirement(s), ${count('compliant')} were found compliant, ${count('partially_compliant')} partially compliant and ${count('non_compliant')} non-compliant. ${nonconformities.length - withoutAction.length} of ${nonconformities.length} nonconformities have a corrective action.`),
-      h.p('The audit opinion is the lead auditor\'s judgement and is not generated by the platform. It is to be added here and signed before the report is issued.')
+    { heading: tx('Audit Conclusion', 'خلاصة التدقيق'), body: joinBlocks(
+      h.p(ar
+        ? `من أصل ${assessable} متطلباً منطبقاً، وُجد ${count('compliant')} ملتزماً و${count('partially_compliant')} ملتزماً جزئياً و${count('non_compliant')} غير ملتزم. ولـ${nonconformities.length - withoutAction.length} من أصل ${nonconformities.length} حالة عدم مطابقة إجراء تصحيحي.`
+        : `Of ${assessable} applicable requirement(s), ${count('compliant')} were found compliant, ${count('partially_compliant')} partially compliant and ${count('non_compliant')} non-compliant. ${nonconformities.length - withoutAction.length} of ${nonconformities.length} nonconformities have a corrective action.`),
+      h.p(tx('The audit opinion is the lead auditor\'s judgement and is not generated by the platform. It is to be added here and signed before the report is issued.',
+        'رأي التدقيق حكم يعود لرئيس فريق التدقيق ولا تولّده المنصة، ويُضاف هنا ويُوقَّع قبل إصدار التقرير.'))
     ) },
-    { heading: 'Distribution', body: h.p('NCA ECC 1-8-3 requires audit results, including scope, observations, recommendations and corrective actions, to be presented to the cybersecurity supervisory committee and to the Authorized Official.') }
+    { heading: tx('Distribution', 'التوزيع'), body: h.p(tx('NCA ECC 1-8-3 requires audit results, including scope, observations, recommendations and corrective actions, to be presented to the cybersecurity supervisory committee and to the Authorized Official.',
+      'يشترط الضابط 1-8-3 من الضوابط الأساسية للأمن السيبراني عرض نتائج التدقيق، بما فيها النطاق والملاحظات والتوصيات والإجراءات التصحيحية، على اللجنة الإشرافية للأمن السيبراني وعلى صاحب الصلاحية.')) }
   ];
 
   return {
-    document: reportDocument({ reference: `IAR-${a.id.slice(-6).toUpperCase()}`, title: `Internal Audit Report — ${a.name}`, status: a.status === 'completed' ? 'published' : 'draft', date: a.updated_at || a.created_at }),
+    document: reportDocument({ reference: `IAR-${a.id.slice(-6).toUpperCase()}`, title: `${tx('Internal Audit Report', 'تقرير التدقيق الداخلي')} — ${text(a.name)}`, status: a.status === 'completed' ? 'published' : 'draft', date: a.updated_at || a.created_at }),
     sections, owner: a.owner_name ? { name: a.owner_name } : null, approver: null, versions: [], approvals: [], frameworks: [],
-    domainName: 'All domains', docTypeLabel: 'Internal Audit Report'
+    domainName: tx('All domains', 'كل المجالات'), docTypeLabel: tx('Internal Audit Report', 'تقرير التدقيق الداخلي'), lang
   };
 }
-
-export const DECISION_CATEGORY = {
-  improvement: 'Opportunity for continual improvement',
-  change: 'Change to the management system',
-  resources: 'Resources',
-  risk: 'Risk acceptance or treatment',
-  other: 'Other'
-};
 
 /** The decisions of a review, with the state of the action raised for each. */
 export function reviewDecisions(reviewId) {
@@ -138,7 +163,8 @@ export function reviewDecisions(reviewId) {
 }
 
 /** Minutes of one management review, for export. */
-export function reviewMinutesPayload(reviewId) {
+export function reviewMinutesPayload(reviewId, lang = 'en') {
+  const { ar, tx, value, text } = speaker(lang);
   const r = q.get('SELECT * FROM management_reviews WHERE id = ? OR review_id = ?', reviewId, reviewId);
   if (!r) return null;
   let inputs = { headers: [], rows: [] };
@@ -146,31 +172,37 @@ export function reviewMinutesPayload(reviewId) {
   const decisions = reviewDecisions(r.id);
 
   const sections = [
-    { heading: 'Meeting', body: h.table(['Item', 'Detail'], [
-      ['Review', r.review_id],
-      ['Date', r.held_on],
-      ['Forum', r.forum || 'Not recorded'],
-      ['Chair', r.chair || 'Not recorded'],
-      ['Attendees', r.attendees || 'Not recorded'],
-      ['Status', r.status === 'closed' ? `Closed ${String(r.closed_at || '').slice(0, 10)}` : 'Draft']
+    { heading: tx('Meeting', 'الاجتماع'), body: h.table([tx('Item', 'البند'), tx('Detail', 'التفاصيل')], [
+      [tx('Review', 'المراجعة'), r.review_id],
+      [tx('Date', 'التاريخ'), r.held_on],
+      [tx('Forum', 'الجهة المنعقدة'), r.forum || tx('Not recorded', 'غير مسجّل')],
+      [tx('Chair', 'رئيس الاجتماع'), r.chair || tx('Not recorded', 'غير مسجّل')],
+      [tx('Attendees', 'الحضور'), r.attendees || tx('Not recorded', 'غير مسجّل')],
+      [tx('Status', 'الحالة'), r.status === 'closed'
+        ? `${tx('Closed', 'مغلق')} ${String(r.closed_at || '').slice(0, 10)}` : tx('Draft', 'مسودة')]
     ]) },
-    { heading: 'Inputs Considered', body: joinBlocks(
-      h.p(`The inputs ISO/IEC 27001 9.3.2 requires, as the platform reported them on ${String(inputs.capturedAt || r.created_at).slice(0, 10)}.`),
-      h.table(['Input', 'Reference', 'Position', 'Attention'],
-        (inputs.rows || []).map((row) => [row[0], row[1], row[2], row[4]]))
+    { heading: tx('Inputs Considered', 'المدخلات التي نُظر فيها'), body: joinBlocks(
+      h.p(ar
+        ? `المدخلات التي يشترطها البند 9.3.2 من ISO/IEC 27001، كما عرضتها المنصة في ${String(inputs.capturedAt || r.created_at).slice(0, 10)}.`
+        : `The inputs ISO/IEC 27001 9.3.2 requires, as the platform reported them on ${String(inputs.capturedAt || r.created_at).slice(0, 10)}.`),
+      h.table([tx('Input', 'المدخل'), tx('Reference', 'المرجع'), tx('Position', 'الوضع'), tx('Attention', 'الأولوية')],
+        // Minutes recorded before the Arabic wording was captured fall back to
+        // the English rows, through the same dictionaries as the screens.
+        (ar && inputs.ar?.rows ? inputs.ar.rows : inputs.rows || [])
+          .map((row) => [text(row[0]), row[1], text(row[2]), ar ? value(row[4]) : row[4]]))
     ) },
-    { heading: 'Discussion', body: h.p(r.summary || 'No summary recorded.') },
-    { heading: 'Decisions and Actions', body: decisions.length
-      ? h.table(['#', 'Category', 'Decision', 'Owner', 'Due', 'Action'],
-        decisions.map((d) => [String(d.position), DECISION_CATEGORY[d.category] || d.category, d.decision,
+    { heading: tx('Discussion', 'النقاش'), body: h.p(r.summary || tx('No summary recorded.', 'لم يُسجَّل ملخص.')) },
+    { heading: tx('Decisions and Actions', 'القرارات والإجراءات'), body: decisions.length
+      ? h.table(['#', tx('Category', 'الفئة'), tx('Decision', 'القرار'), tx('Owner', 'المالك'), tx('Due', 'الاستحقاق'), tx('Action', 'الإجراء')],
+        decisions.map((d) => [String(d.position), (ar ? DECISION_CATEGORY_AR : DECISION_CATEGORY)[d.category] || d.category, d.decision,
           d.owner_name || '', d.due_date || '',
-          d.action_ref ? `${d.action_ref} (${d.action_verified_at ? 'verified' : label(d.action_status)})` : 'None']))
-      : h.p('No decision recorded.') }
+          d.action_ref ? `${d.action_ref} (${d.action_verified_at ? tx('verified', 'تم التحقق') : value(d.action_status)})` : tx('None', 'لا يوجد')]))
+      : h.p(tx('No decision recorded.', 'لم يُسجَّل قرار.')) }
   ];
 
   return {
-    document: reportDocument({ reference: r.review_id, title: `Management Review Minutes — ${r.held_on}`, status: r.status === 'closed' ? 'published' : 'draft', date: r.updated_at }),
+    document: reportDocument({ reference: r.review_id, title: `${tx('Management Review Minutes', 'محضر مراجعة الإدارة')} — ${r.held_on}`, status: r.status === 'closed' ? 'published' : 'draft', date: r.updated_at }),
     sections, owner: null, approver: null, versions: [], approvals: [], frameworks: [],
-    domainName: 'All domains', docTypeLabel: 'Management Review Minutes'
+    domainName: tx('All domains', 'كل المجالات'), docTypeLabel: tx('Management Review Minutes', 'محضر مراجعة الإدارة'), lang
   };
 }

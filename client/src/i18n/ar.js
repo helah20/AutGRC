@@ -182,7 +182,6 @@ export default {
     language: 'اللغة',
     allLanguages: 'كل اللغات',
     translationOf: 'ترجمة لـ{reference}',
-    pdfEnglishOnly: 'محرّك PDF لا يدعم تشكيل الحروف العربية، لذلك يُصدَّر ملف PDF بالإنجليزية. للحصول على وثيقة عربية صدّرها إلى Word — فهو يعرضها بشكل صحيح ويستطيع حفظها بصيغة PDF بنفسه.',
     exportWord: 'Word',
     exportPdf: 'PDF'
   },

@@ -107,10 +107,10 @@ export default function DocumentDetail() {
     }
   }
 
-  async function exportAs(format, exportLanguage = language) {
+  // Every file comes out in the interface's language: the download carries it.
+  async function exportAs(format) {
     try {
-      const query = exportLanguage === 'ar' ? '?lang=ar' : '';
-      const name = await api.download(`/export/documents/${id}.${format}${query}`);
+      const name = await api.download(`/export/documents/${id}.${format}`);
       toast.success(t('documents.exportReady'), name);
     } catch (err) {
       toast.error(t('common.exportFailed'), err.message);
@@ -197,20 +197,13 @@ export default function DocumentDetail() {
         <div className="page-actions">
           <div className="btn-group">
             <button className="btn" onClick={() => exportAs('docx')}><IconDownload />{t('documentDetail.word')}</button>
-            {/* The swimlane chart follows the document's language, not the
-                interface's: it is the document's own flow. */}
             {data.flow && (
-              <button className="btn" onClick={() => exportAs('pptx', doc.language)}
+              <button className="btn" onClick={() => exportAs('pptx')}
                 title={t('documentDetail.powerpointHint')}>
                 <IconDownload />{t('documentDetail.powerpoint')}
               </button>
             )}
-            {/* Arabic PDF would come out with its letters unjoined, so the
-                button says so rather than producing it. */}
-            <button className="btn" onClick={() => exportAs('pdf', 'en')}
-              title={language === 'ar' ? t('documents.pdfEnglishOnly') : undefined}>
-              PDF{language === 'ar' ? ' (EN)' : ''}
-            </button>
+            <button className="btn" onClick={() => exportAs('pdf')}>PDF</button>
           </div>
           {can('ai:use') && (
             <button className="btn" onClick={runReview} disabled={reviewBusy}>

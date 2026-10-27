@@ -215,6 +215,10 @@ export function generatePackage(opts) {
         fullyTranslated: model.fullyTranslated !== false,
         frameworks: frameworkCodes,
         parameters: params,
+        // The values the user chose, as opposed to the resolved set above, so
+        // the document can be rebuilt in the other language with the same
+        // commitments (routes/exports.js).
+        parameterOverrides,
         assumptions,
         docTypes: ordered
       };
