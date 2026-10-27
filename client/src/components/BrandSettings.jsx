@@ -4,7 +4,7 @@
  * Curated choices rather than a free colour wheel. Each palette is a primary
  * that carries white text and an accent for headings, checked for contrast on
  * the server; each font option pairs a Latin face with an Arabic one that
- * Office has on Windows and Mac. The preview draws a cover and a table header
+ * ships with Windows. The preview draws a cover and a table header
  * with the same derived tints the exports use, so what is chosen here is what
  * the Word, PDF, Excel and PowerPoint files show.
  */

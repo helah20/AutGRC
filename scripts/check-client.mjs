@@ -151,6 +151,23 @@ for (const file of files) {
   }
 }
 
+// The guide is written twice, once per language. A page, section or link
+// present in one and missing from the other would leave a reader of that
+// language with a gap the other does not have, so the two must match in shape.
+const docsAr = (await import(pathToFileURL(path.join(ROOT, 'i18n/docs/ar.js')).href)).default;
+const docsEn = (await import(pathToFileURL(path.join(ROOT, 'i18n/docs/en.js')).href)).default;
+const shape = (docs) => docs.pages.map((page) => `${page.slug}|${page.group}|${page.blocks
+  .map((b) => Object.keys(b)[0] + (b.go ? `:${b.go.to}` : '') + (b.table ? `:${b.table.rows.length}x${b.table.head.length}` : '')
+    + (b.ul || b.ol ? `:${(b.ul || b.ol).length}` : '')).join(',')}`);
+const groupKeys = (docs) => docs.groups.map((g) => g.key).join(',');
+if (groupKeys(docsAr) !== groupKeys(docsEn)) problems.push('i18n/docs: the Arabic and English guides have different groups');
+const [shapeAr, shapeEn] = [shape(docsAr), shape(docsEn)];
+for (let i = 0; i < Math.max(shapeAr.length, shapeEn.length); i++) {
+  if (shapeAr[i] !== shapeEn[i]) {
+    problems.push(`i18n/docs: page ${i + 1} differs between languages (ar: ${shapeAr[i]?.split('|')[0]}, en: ${shapeEn[i]?.split('|')[0]})`);
+  }
+}
+
 if (!problems.length) {
   console.log(`Client checks: ${files.length} file(s), ${enKeys.size} translation key(s), no problems.`);
   process.exit(0);

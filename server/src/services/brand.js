@@ -6,8 +6,8 @@
  * logo, colours and type rather than the platform's. The choices are curated
  * rather than free: a palette is a primary and an accent that have been
  * checked against the white text and the light tints the exports put on them,
- * and a font is a Latin face paired with an Arabic one that Office has on
- * Windows and Mac. A custom colour is accepted only if it keeps that contrast,
+ * and a font is a Latin face paired with an Arabic one that ships with
+ * Windows (on a Mac, Word substitutes a similar face). A custom colour is accepted only if it keeps that contrast,
  * because a header nobody can read is not a brand.
  *
  * Every export derives its tints from the two colours here, so a table header,

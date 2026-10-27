@@ -66,6 +66,12 @@ const NAV = [
       { to: '/management-reviews', labelKey: 'nav.managementReviews', icon: IconUsers },
       { to: '/reports', labelKey: 'nav.reports', icon: IconChart }
     ]
+  },
+  {
+    labelKey: 'nav.help',
+    items: [
+      { to: '/docs', labelKey: 'nav.docs', icon: IconBook }
+    ]
   }
 ];
 
