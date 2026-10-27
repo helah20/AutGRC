@@ -17,6 +17,8 @@ import { DATA_DOMAINS } from './req-data.js';
 import { GOVERN_DOMAINS } from './req-govern.js';
 import { TECH_DOMAINS } from './req-tech.js';
 import { RESILIENCE_DOMAINS } from './req-resilience.js';
+import { STEP_IO, withStepIo } from './step-io.js';
+import { AR_STEP_IO } from './ar/ar-step-io.js';
 import {
   AR_DOMAINS, LANGUAGES, isTranslated, translatedDomains,
   arText, arParameters, arObjectives, arDomainName, arFrequency, arParameterLabel, AR_ROLES,
@@ -65,9 +67,10 @@ function assemble() {
       const meta = DOMAIN_INDEX[key];
       if (!meta) throw new Error(`Domain model "${key}" has no entry in DOMAIN_META`);
 
-      const procedure = raw.procedure
+      const built = raw.procedure
         ? raw.procedure
         : buildProcedure(meta.name, raw.procedureSeed, raw.requirements);
+      const procedure = { ...built, steps: withStepIo(built.steps, STEP_IO[key]) };
       // A derived KPI list is the control KPIs verbatim, so the Arabic one is
       // derived from the Arabic control KPIs rather than authored as a copy of
       // a copy. An authored list states process-level indicators the controls
@@ -428,6 +431,31 @@ export function validateKnowledgeBase() {
     }
   }
 
+  // ------------------------------------------------- step inputs/outputs --
+  // Each step states what starts it and what it hands on. The first step names
+  // its trigger, since there is no step before it to take an input from; any
+  // other step may leave its input to the previous output. The Arabic pairs
+  // must sit in the same positions, or a derived input in one language would
+  // be an authored one in the other and the two tables would disagree.
+  for (const [domainKey, model] of Object.entries(DOMAIN_MODELS)) {
+    const io = STEP_IO[domainKey];
+    const steps = model.procedure.steps;
+    if (!io) { problems.push(`${domainKey}: procedure steps have no inputs and outputs`); continue; }
+    if (io.length !== steps.length) problems.push(`${domainKey}: ${io.length} step inputs/outputs for ${steps.length} steps`);
+    if (!io[0]?.[0]) problems.push(`${domainKey}: the first procedure step names no trigger`);
+    io.forEach(([, output], i) => { if (!output) problems.push(`${domainKey}: step ${i + 1} has no output`); });
+    const arabic = AR_STEP_IO[domainKey];
+    if (!arabic) { problems.push(`${domainKey}: Arabic step inputs and outputs are missing`); continue; }
+    if (arabic.length !== io.length) problems.push(`${domainKey}: ${arabic.length} Arabic step inputs/outputs for ${io.length}`);
+    arabic.forEach(([input, output], i) => {
+      if (!output) problems.push(`${domainKey}: Arabic step ${i + 1} has no output`);
+      if (Boolean(input) !== Boolean(io[i]?.[0])) problems.push(`${domainKey}: step ${i + 1} input is authored in one language only`);
+    });
+  }
+  for (const key of Object.keys(STEP_IO)) {
+    if (!DOMAIN_MODELS[key]) problems.push(`Step inputs/outputs exist for unknown domain "${key}"`);
+  }
+
   // ------------------------------------------------- translated procedures --
   // Position carries meaning here: the flow diagram numbers the steps, the
   // decisions table pairs a question with its branches, and the RACI matrix
@@ -657,6 +685,9 @@ export function localisedModel(domainKey, language = 'en') {
       arabicProcedure.steps?.length === model.procedure.steps.length &&
       arabicProcedure.raciActivities?.length === model.raciActivities.length;
     if (sameShape) {
+      const arabicIo = AR_STEP_IO[domainKey]
+        ? withStepIo(model.procedure.steps, AR_STEP_IO[domainKey])
+        : [];
       procedure = {
         ...model.procedure,
         purpose: arabicProcedure.purpose || model.procedure.purpose,
@@ -671,8 +702,10 @@ export function localisedModel(domainKey, language = 'en') {
         steps: model.procedure.steps.map((step, i) => {
           const arabicStep = arabicProcedure.steps[i];
           if (!arabicStep) return step;
+          const io = arabicIo[i];
           return {
             ...step,
+            ...(io ? { input: io.input, output: io.output } : {}),
             name: arabicStep.name || step.name,
             actor: arabicStep.actor || step.actor,
             detail: arabicStep.detail || step.detail,

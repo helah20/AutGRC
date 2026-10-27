@@ -395,7 +395,27 @@ export function CoverageBar({ value, label }) {
   );
 }
 
-/** Renders sanitised document HTML produced by the server. */
+/**
+ * Whether a body of document HTML is Arabic: more Arabic letters than Latin
+ * ones once the markup is removed. A generated Arabic document still carries
+ * Latin references (ECC 2-2, ISO 27001), so the presence of either alone
+ * decides nothing.
+ */
+function isArabicHtml(html) {
+  const text = String(html || '').replace(/<[^>]*>/g, ' ');
+  const arabic = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  const latin = (text.match(/[A-Za-z]/g) || []).length;
+  return arabic > latin;
+}
+
+/**
+ * Renders sanitised document HTML produced by the server, in the direction of
+ * its own language: an Arabic document reads right to left in either
+ * interface, and an English one left to right.
+ */
 export function Prose({ html, className = '' }) {
-  return <div className={`prose ${className}`} dangerouslySetInnerHTML={{ __html: html || '' }} />;
+  return (
+    <div className={`prose ${className}`} dir={isArabicHtml(html) ? 'rtl' : 'ltr'}
+      dangerouslySetInnerHTML={{ __html: html || '' }} />
+  );
 }

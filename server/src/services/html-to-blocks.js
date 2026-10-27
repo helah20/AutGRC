@@ -104,9 +104,12 @@ function parseTable(html) {
       rows = rows.slice(1);
     }
   }
+  // Column widths, where the table states them as <col class="w-NN"> percentages.
+  const widths = [...html.matchAll(/<col\b[^>]*class="[^"]*\bw-(\d+)\b[^"]*"/gi)].map((m) => Number(m[1]));
   return {
     type: 'table',
     caption: caption ? decode(caption.replace(/<[^>]+>/g, '')) : null,
+    widths: widths.length ? widths : null,
     head,
     rows: rows.filter((r) => r.length)
   };
