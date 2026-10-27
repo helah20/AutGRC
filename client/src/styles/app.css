@@ -678,7 +678,7 @@ table.data .cell-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 
 
 /* Framework requirement titles and generated document bodies are the two
    places this applies wholesale. */
-[dir="rtl"] .prose,
+[dir="rtl"] .prose:not([dir="rtl"]),
 [dir="rtl"] .cell-title.source-text,
 [dir="rtl"] .requirement-statement {
   direction: ltr;

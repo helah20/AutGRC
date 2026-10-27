@@ -132,10 +132,22 @@ const CLASSIFICATION_AR = {
 const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: BORDER };
 const cellBorders = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
 
+/**
+ * A non-breaking hyphen between digits (U+2011) is a neutral character to the
+ * bidirectional algorithm, so in a right-to-left paragraph "1‑2" is laid out
+ * as "2‑1" — a control reference silently reversed. A plain hyphen keeps the
+ * digits in order. Imported text is where this arrives from, usually pasted
+ * from a document that used the non-breaking form to keep a reference on one
+ * line.
+ */
+export function fixDigitHyphens(text) {
+  return String(text).replace(/(\d)\u2011(?=\d)/g, '$1-');
+}
+
 function textRuns(runs, extra = {}) {
   if (!runs?.length) return [new TextRun({ text: '', ...extra })];
   return runs.flatMap((r) =>
-    r.text.split('\n').flatMap((part, i) =>
+    fixDigitHyphens(r.text).split('\n').flatMap((part, i) =>
       i === 0
         ? [new TextRun({ text: part, bold: r.bold, italics: r.italic, font: r.code ? 'Consolas' : undefined, ...extra })]
         : [new TextRun({ text: part, bold: r.bold, italics: r.italic, break: 1, font: r.code ? 'Consolas' : undefined, ...extra })]
@@ -155,12 +167,19 @@ function textRuns(runs, extra = {}) {
  */
 let activeRtl = false;
 
+// Width of the text block: A4 (11906) less the one-inch margins either side.
+// Column widths are given in these units as well as in percent, because a
+// percentage on the cell alone is ignored by LibreOffice and by Word's own
+// table grid, which then splits every table evenly.
+const CONTENT_DXA = 11906 - 2 * 1440;
+const dxa = (pct) => Math.round((pct / 100) * CONTENT_DXA);
+
 function cell(content, { header = false, width, bold = false } = {}) {
   return new TableCell({
     borders: cellBorders,
     shading: header ? { type: ShadingType.CLEAR, fill: LIGHT } : undefined,
     margins: { top: 80, bottom: 80, left: 120, right: 120 },
-    width: width ? { size: width, type: WidthType.PERCENTAGE } : undefined,
+    width: width ? { size: dxa(width), type: WidthType.DXA } : undefined,
     children: [
       new Paragraph({
         spacing: { before: 20, after: 20 },
@@ -176,23 +195,33 @@ function infoTable(rows) {
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     visuallyRightToLeft: activeRtl || undefined,
+    columnWidths: [dxa(30), dxa(70)],
     rows: rows.map(([k, v]) =>
       new TableRow({ children: [cell(k, { header: true, width: 30 }), cell(v, { width: 70 })] })
     )
   });
 }
 
-function gridTable(head, rows) {
+function gridTable(head, rows, widths) {
   const colCount = Math.max(head?.[0]?.length || 0, rows[0]?.length || 0) || 1;
-  const width = Math.floor(100 / colCount);
+  // A table that states its column widths keeps them; the procedure steps
+  // table needs its step column wider than the input and output beside it.
+  const widthOf = (i) => (widths?.length === colCount ? widths[i] : Math.floor(100 / colCount));
   const trs = [];
   for (const hr of head || []) {
-    trs.push(new TableRow({ tableHeader: true, children: hr.map((c) => cell(c, { header: true, width })) }));
+    trs.push(new TableRow({ tableHeader: true, cantSplit: true, children: hr.map((c, i) => cell(c, { header: true, width: widthOf(i) })) }));
   }
+  // A row is kept on one page: a procedure step split across a page break
+  // separates its input from its output.
   for (const r of rows) {
-    trs.push(new TableRow({ children: r.map((c) => cell(c, { width })) }));
+    trs.push(new TableRow({ cantSplit: true, children: r.map((c, i) => cell(c, { width: widthOf(i) })) }));
   }
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, visuallyRightToLeft: activeRtl || undefined, rows: trs });
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    columnWidths: Array.from({ length: colCount }, (_, i) => dxa(widthOf(i))),
+    visuallyRightToLeft: activeRtl || undefined,
+    rows: trs
+  });
 }
 
 function blocksToDocx(blocks) {
@@ -218,7 +247,7 @@ function blocksToDocx(blocks) {
       }
     } else if (b.type === 'table') {
       if (b.caption) out.push(new Paragraph({ spacing: { before: 120, after: 60 }, children: [new TextRun({ text: b.caption, italics: true, size: 18 })] }));
-      out.push(gridTable(b.head, b.rows));
+      out.push(gridTable(b.head, b.rows, b.widths));
       out.push(new Paragraph({ spacing: { after: 160 }, children: [] }));
     } else if (b.type === 'callout') {
       out.push(new Table({
@@ -444,12 +473,16 @@ export async function buildDocx(data) {
           children: [new Paragraph({
             border: { top: { style: BorderStyle.SINGLE, size: 6, color: BORDER } },
             tabStops: [{ type: 'right', position: 9360 }],
+            bidirectional: rtl,
+            // Arabic words around the page fields, in a right-to-left run, so
+            // the line reads «صفحة ٥ من ٩» rather than English words reordered
+            // around the numbers.
             children: [
-              new TextRun({ text: `${doc.reference}  ·  Version ${doc.version}`, size: 16, color: '6B7C8F' }),
-              new TextRun({ text: '\tPage ', size: 16, color: '6B7C8F' }),
-              new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '6B7C8F' }),
-              new TextRun({ text: ' of ', size: 16, color: '6B7C8F' }),
-              new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: '6B7C8F' })
+              new TextRun({ text: `${doc.reference}  ·  ${rtl ? 'الإصدار' : 'Version'} ${doc.version}`, size: 16, color: '6B7C8F', rightToLeft: rtl }),
+              new TextRun({ text: rtl ? '\tصفحة ' : '\tPage ', size: 16, color: '6B7C8F', rightToLeft: rtl }),
+              new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '6B7C8F', rightToLeft: rtl }),
+              new TextRun({ text: rtl ? ' من ' : ' of ', size: 16, color: '6B7C8F', rightToLeft: rtl }),
+              new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: '6B7C8F', rightToLeft: rtl })
             ]
           })]
         })

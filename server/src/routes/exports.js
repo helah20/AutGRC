@@ -59,8 +59,10 @@ function documentPayload(documentId) {
 }
 
 router.get('/documents/:id.docx', asyncHandler(async (req, res) => {
-  const lang = req.query.lang === 'ar' ? 'ar' : 'en';
   const payload = documentPayload(req.params.id);
+  // An Arabic document is laid out right to left unless the reader asks for
+  // the English layout; without a choice it follows the document itself.
+  const lang = (req.query.lang || payload.document.language) === 'ar' ? 'ar' : 'en';
   const buffer = await buildDocx({ ...payload, lang });
   audit(req, {
     action: 'export:docx', entityType: 'document', entityId: req.params.id,

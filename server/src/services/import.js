@@ -10,6 +10,7 @@
  * unless the user explicitly promotes the import.
  */
 
+import { checkProcedureStructure, checkArabicWording, checkDigitHyphens, outdatedNcaEditions } from './procedure-check.js';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import mammoth from 'mammoth';
@@ -278,6 +279,7 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
   if (/ISO\s*\/?\s*IEC\s*27001\s*:?\s*20(05|13)/i.test(text)) outdated.push('References ISO/IEC 27001:2013 or earlier; the current edition is 2022.');
   if (/NIST\s+(CSF|Cybersecurity Framework)\s*(v?1\.[01])/i.test(text)) outdated.push('References NIST CSF 1.x; version 2.0 was published in 2024.');
   if (/CIS\s+(Controls?|CSC)\s*(v?[1-7]\b)/i.test(text)) outdated.push('References a CIS Controls version earlier than v8.');
+  outdated.push(...outdatedNcaEditions(text));
   const years = [...text.matchAll(/\b(19|20)\d{2}\b/g)].map((m) => Number(m[0])).filter((y) => y > 1990 && y <= new Date().getFullYear());
   const latestYear = years.length ? Math.max(...years) : null;
   if (latestYear && new Date().getFullYear() - latestYear >= 3) {
@@ -292,6 +294,19 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
       evidence: { signals: outdated }
     });
   }
+
+  // ---------------------------------------------- procedure structure ----
+  // A procedure is checked for the parts that make it operable, not only for
+  // the requirements it names: inputs, outputs and a responsible role per step,
+  // service levels, exceptions, escalation, verification, indicators, records.
+  const procedureGaps = docType === 'procedure' ? checkProcedureStructure(text) : null;
+  if (procedureGaps) for (const f of procedureGaps.findings) add(f);
+
+  // ---------------------------------------------------- wording, layout ----
+  const wording = checkArabicWording(text);
+  if (wording) add(wording);
+  const hyphens = checkDigitHyphens(text);
+  if (hyphens) add(hyphens);
 
   // ----------------------------------------------------- compliance gap ----
   const coverageRatio = model?.requirements.length ? covered.length / model.requirements.length : 0;
@@ -311,6 +326,7 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
     covered,
     missing,
     metadata: { hasOwner, hasApprover, hasVersion, hasReview, hasClassification, hasEvidence },
+    procedureGaps: procedureGaps ? procedureGaps.missing : null,
     findings: findings.sort((a, b) => severityRank(b.severity) - severityRank(a.severity))
   };
 }

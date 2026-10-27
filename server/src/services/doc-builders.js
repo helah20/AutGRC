@@ -518,20 +518,33 @@ export function buildProcedureDoc({ model, params, frameworkCodes }) {
   const steps = proc.steps.map((s, i) => ({ ...s, no: i + 1 }));
   const decisions = steps.filter((s) => s.decision);
 
-  const stepBody = steps
-    .map(
-      (s) =>
-        `<div class="proc-step"><h4>${escapeHtml(T('Step'))} ${s.no} — ${escapeHtml(resolveText(s.name, params))}</h4>` +
-        `<p class="proc-actor"><strong>${escapeHtml(TP('procedure.performedBy', 'Performed by:'))}</strong> ${escapeHtml(resolveText(s.actor, params))}</p>` +
-        `<p>${escapeHtml(resolveText(s.detail, params))}</p>` +
-        (s.decision
-          ? `<div class="callout" data-callout="decision"><strong>${escapeHtml(TP('procedure.decision', 'Decision:'))} ${escapeHtml(resolveText(s.decision.question, params))}</strong>` +
-            `<p><strong>${escapeHtml(TP('procedure.ifYes', 'Yes'))} →</strong> ${escapeHtml(resolveText(s.decision.yes, params))}</p>` +
-            `<p><strong>${escapeHtml(TP('procedure.ifNo', 'No'))} →</strong> ${escapeHtml(resolveText(s.decision.no, params))}</p></div>`
-          : '') +
-        `</div>`
-    )
-    .join('');
+  // One table, one row per step: what starts the step, what is done and by
+  // whom, and what it hands on. This is the form procedures are written in at
+  // Saudi organisations, and it makes a gap visible on the page — a step that
+  // produces nothing, or that waits for something no earlier step produced.
+  // In an Arabic document the table direction puts the input column at the
+  // reader's right, where the row starts.
+  const R = (text) => escapeHtml(resolveText(text, params));
+  const stepCell = (s) =>
+    `<strong>${s.no}. ${R(s.name)}:</strong> ${R(s.detail)}` +
+    (s.decision
+      ? `<br><strong>${escapeHtml(TP('procedure.decision', 'Decision:'))}</strong> ${R(s.decision.question)}` +
+        `<br><strong>${escapeHtml(TP('procedure.ifYes', 'Yes'))}:</strong> ${R(s.decision.yes)}` +
+        `<br><strong>${escapeHtml(TP('procedure.ifNo', 'No'))}:</strong> ${R(s.decision.no)}`
+      : '');
+  const stepBody = joinBlocks(
+    h.p(TP('procedure.stepsLead', 'Each row states what starts the step, what is done and by whom, and what the step hands on to the next.')),
+    '<table class="proc-table">' +
+      '<colgroup><col class="w-22"><col class="w-40"><col class="w-16"><col class="w-22"></colgroup>' +
+      `<thead><tr>${[TP('procedure.colInput', 'Input'), T('Step'), TP('procedure.colResponsible', 'Responsible'), TP('procedure.colOutput', 'Output')]
+        .map((x) => `<th scope="col">${escapeHtml(x)}</th>`).join('')}</tr></thead>` +
+      `<tbody>${steps.map((s) => '<tr>' +
+        `<td>${s.input ? R(s.input) : '—'}</td>` +
+        `<td>${stepCell(s)}</td>` +
+        `<td>${R(s.actor)}</td>` +
+        `<td>${s.output ? R(s.output) : '—'}</td>` +
+        '</tr>').join('')}</tbody></table>`
+  );
 
   // Lanes as columns and steps as rows: a procedure has two to seven actors and
   // six to nine steps, so this is the orientation that fits a page, and it
