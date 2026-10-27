@@ -35,7 +35,7 @@ export default {
           'The sidebar groups the screens by part; the numbers beside them count what each holds.',
           'The search box at the top (or Ctrl+K) searches documents, controls, requirements and roles together.',
           'The language button switches the interface between Arabic and English; the moon button switches to the dark theme.',
-          'The bell shows notifications: review dates, overdue actions, and what is waiting for your approval.'
+          'The bell shows notifications: what is waiting for your review, approval or publication, document review dates, new comments and findings, and evidence waiting to be verified.'
         ] },
         { go: { to: '/dashboard', label: 'Open the dashboard' } }
       ]
@@ -125,7 +125,7 @@ export default {
           'Process flow (procedures): the lanes and decision points.'
         ] },
         { h: 'Editing' },
-        { p: 'Each section is edited with the Edit button beside it. An edited section is labelled user input, so it stays clear what a person wrote and what the platform generated.' }
+        { p: 'Each section is edited with the Edit button beside it. A section that was an automated recommendation is labelled user input once edited, so it stays clear what a person has reviewed. A published document cannot be edited until it is opened for revision.' }
       ]
     },
     {
@@ -133,12 +133,12 @@ export default {
       summary: 'From draft through review, approval and publication, then periodic review.',
       blocks: [
         { table: { head: ['Status', 'Meaning', 'Who moves it on'], rows: [
-          ['Draft', 'Being prepared.', 'The owner or a Cybersecurity User submits it for review.'],
-          ['Under review', 'Waiting for review and approval.', 'The Approver approves it or returns it for changes.'],
+          ['Draft', 'Being prepared.', 'The GRC Manager or a Cybersecurity User submits it for review.'],
+          ['Under review', 'Waiting for review and approval.', 'The Approver approves it, or the Reviewer or GRC Manager returns it to draft for changes.'],
           ['Approved', 'Approved, not yet published.', 'The GRC Manager or Administrator publishes it.'],
           ['Published', 'In force, with an effective date and a next review date.', 'Opened for revision when needed.'],
-          ['Under revision', 'Published and being changed for a new version.', 'Goes back to review.'],
-          ['Retired', 'No longer in force; its record is kept.', '—']
+          ['Under revision', 'Published and being changed for a new version.', 'Submitted for review again, or published directly by the GRC Manager.'],
+          ['Retired', 'No longer in force; its record is kept.', 'Can be returned to draft to be issued again.']
         ] } },
         { h: 'Periodic review' },
         { p: 'Every published document has a review date, set by default one year after publication. The dashboard lists documents due for review within 90 days, and notifications remind the owner ahead of the date. A document past its review date is raised as a finding.' },
@@ -173,10 +173,10 @@ export default {
           ['Accountability', 'Every clause and activity has a responsible role.'],
           ['Auditability', 'Every control has evidence and an indicator.'],
           ['Compliance', 'Every requirement of the applicable frameworks has a mapped control.'],
-          ['Currency', 'Missed review dates and references to superseded framework editions.']
+          ['Currency', 'A document with no review date, or past it.']
         ] } },
         { h: 'Review with AI' },
-        { p: 'The Review with AI button on a document suggests rewording vague statements with measurable values from the defined values, and shows the changes before they are applied. A suggestion stays a recommendation until a person accepts it.' },
+        { p: 'The Review with AI button on a document runs the full review and gives the document a readiness score and its findings in the Quality review tab. While a section is being edited, the Improve, Formalise and Shorten tools suggest rewording it; nothing they suggest is saved until you save the section yourself.' },
         { go: { to: '/findings', label: 'Open Findings' } }
       ]
     },
@@ -190,7 +190,7 @@ export default {
         { p: 'The platform shows the frameworks in its knowledge base, with their requirements and coverage. Requirement text in the catalogue is reference data compiled for mapping, and must be checked against the official publication.' },
         { tip: 'To replace the reference data with the official text, import your copy on the Frameworks page as a spreadsheet of requirement numbers and text. Rows are updated in place and nothing is deleted, so existing mappings stay intact.' },
         { h: 'Mappings' },
-        { p: 'The Mappings page shows how a requirement in one framework corresponds to requirements in others (ECC 2-2-3 against ISO A.8.5, for example), and which of the organisation\'s controls covers them.' },
+        { p: 'The Mappings page shows how a requirement in one framework corresponds to requirements in others (ECC 2-2-3-2 against ISO A.8.5, for example), and which of the organisation\'s controls covers them.' },
         { h: 'Statement of Applicability' },
         { p: 'For each control: whether it applies, why, and its implementation status (implemented, planned, not implemented, excluded). Exported to Excel for the auditor.' },
         { go: { to: '/controls', label: 'Open the control library' } }
@@ -206,7 +206,7 @@ export default {
           'The item becomes Collected, with the collection date.',
           'Someone other than the collector (a Reviewer, Auditor or GRC Manager) verifies it, and it becomes Verified.'
         ] },
-        { p: 'Evidence past its collection date appears in notifications and in the audit readiness report.' },
+        { p: 'Evidence that has been collected but not yet verified is notified to everyone who can verify it, and the audit readiness report shows the share of verified evidence in each domain.' },
         { go: { to: '/evidence', label: 'Open the evidence register' } }
       ]
     },
@@ -221,7 +221,7 @@ export default {
           'Non-compliant: no control covers it.',
           'Not applicable: with a recorded rationale.'
         ] },
-        { p: 'A corrective action can be raised directly from a gap item, and the internal audit report is produced from the assessment.' },
+        { p: 'To treat a gap, raise a corrective action on the Corrective actions page with the gap item as its source. The internal audit report is exported to Word from the assessment page.' },
         { go: { to: '/gap-assessment', label: 'Open Gap assessment' } }
       ]
     },
@@ -237,7 +237,7 @@ export default {
           'The matrix shows how risks are distributed; the coloured cells are the ones that hold risks.'
         ] },
         { h: 'Treatment and acceptance' },
-        { p: 'Treatment options are mitigate, transfer, avoid or accept. Only an Approver accepts a risk, with a rationale and an expiry date; an acceptance without an expiry is refused.' },
+        { p: 'Treatment options are mitigate, transfer, avoid or accept. Only an Approver or Administrator accepts a risk, with a rationale and an expiry date; an acceptance without an expiry is refused.' },
         { go: { to: '/risks', label: 'Open the risk register' } }
       ]
     },
@@ -249,10 +249,10 @@ export default {
         { ol: [
           'A corrective action is raised from a finding, a gap item or a risk, with an owner, a priority and a due date.',
           'The owner records progress, and can mark the action blocked with the reason.',
-          'Completing the action requires a root cause; completion is refused without one.',
+          'When the action arises from a finding, a gap item or an assessment, it cannot be completed without a root cause.',
           'Someone other than the owner (a Reviewer, Auditor or GRC Manager) verifies it, and it closes.'
         ] },
-        { tip: 'Overdue actions appear on the dashboard and in the owner\'s notifications.' },
+        { tip: 'The Corrective actions page has a filter for overdue actions, and the number still open shows beside it in the sidebar.' },
         { go: { to: '/actions', label: 'Open Corrective actions' } }
       ]
     },
@@ -264,10 +264,10 @@ export default {
         { p: 'The GRC Manager records the management review meeting. Its inputs — compliance, risks, findings and actions — are kept as they stood on the day, so they do not change afterwards. Each decision in the minutes can become a corrective action with an owner and a date, and the minutes are locked once closed.' },
         { h: 'Reports' },
         { ul: [
-          'Compliance coverage for each framework.',
-          'Audit readiness: documents, evidence and open findings.',
-          'The internal audit plan.',
-          'Management review inputs.'
+          'Compliance: compliance coverage, policy coverage, control coverage, framework mapping and gap assessment.',
+          'Accountability: roles and responsibilities, and RACI assignment.',
+          'Documents: document status and review status.',
+          'Assurance: audit readiness, the internal audit plan, and management review inputs.'
         ] },
         { p: 'Every report exports to Excel or PDF.' },
         { go: { to: '/reports', label: 'Open Reports' } }
@@ -308,7 +308,7 @@ export default {
         { ul: [
           'Logo: PNG or JPEG up to 512 KB, ideally on a transparent background. It appears on the cover and in the page header.',
           'Colours: six ready palettes, or your own. The primary colour must carry white text and the accent must read on white; colours that do not are refused.',
-          'Type: four pairings of a Latin and an Arabic font installed with Office.'
+          'Type: four pairings of a Latin and an Arabic font. All ship with Windows; on a Mac, Segoe UI and Sakkal Majalla are replaced by a similar font.'
         ] },
         { note: 'If the chosen font is not installed on the reader\'s computer, a similar one is substituted automatically.' }
       ]
@@ -336,7 +336,7 @@ export default {
         { h: 'Why can\'t I see the Generate button?' },
         { p: 'Generation is for the Administrator, GRC Manager and Cybersecurity User. Other roles read, review and approve.' },
         { h: 'Why isn\'t a document in my approval queue?' },
-        { p: 'Because you own it. A document must be approved by someone other than its owner.' },
+        { p: 'If you own it, it will not be: a document must be approved by someone other than its owner.' },
         { h: 'I changed a number in a procedure and got a consistency finding. Why?' },
         { p: 'The number disagrees with the defined value in the standard. Either put it back to the defined value, or change the defined value itself so it changes in every document in the domain.' },
         { h: 'Can I export an Arabic document to PDF?' },

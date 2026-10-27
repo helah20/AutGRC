@@ -2452,7 +2452,7 @@ export default {
     manual: 'Manual'
   },
   brand: {
-    intro: 'Every Word, PDF, Excel and PowerPoint file the platform produces carries this identity. The colours are checked for legibility, and each font pairs a Latin face with an Arabic one installed with Office.',
+    intro: 'Every Word, PDF, Excel and PowerPoint file the platform produces carries this identity. The colours are checked for legibility, and each font pairs a Latin face with an Arabic one that ships with Windows.',
     logo: 'Logo',
     logoHint: 'PNG or JPEG up to 512 KB. A logo on a transparent background works best.',
     noLogo: 'No logo',
@@ -2467,7 +2467,7 @@ export default {
     accent: 'Accent colour',
     accentHint: 'Readable as heading text on white.',
     font: 'Type',
-    fontHint: 'Office on Windows and Mac includes all four pairings.',
+    fontHint: 'All four ship with Windows; on a Mac, Segoe UI and Sakkal Majalla are replaced by a similar font when the file is opened.',
     sample: 'سياسة إدارة الهويات — Identity Policy',
     save: 'Save identity',
     saved: 'Document identity saved',
