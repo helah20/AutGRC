@@ -95,3 +95,30 @@ test('superseded NCA editions are named', () => {
   assert.equal(outdatedNcaEditions('aligned to CCC-1:2020').length, 1);
   assert.deepEqual(outdatedNcaEditions('aligned to ECC-2:2024'), []);
 });
+
+test('every procedure exports as an editable swimlane chart in both languages', async () => {
+  const { buildSwimlanePptx } = await import('../src/services/export-pptx.js');
+  const { swimlanes } = await import('../src/services/swimlane.js');
+  const { default: JSZip } = await import('jszip');
+  for (const key of Object.keys(DOMAIN_MODELS)) {
+    for (const lang of ['en', 'ar']) {
+      const model = localisedModel(key, lang);
+      const params = buildParameterSet(key, { org_name: 'Test Org' }, {}, lang);
+      const lane = swimlanes(model.procedure.steps, (t) => String(t).replace(/\{\{(\w+)\}\}/g, (m, k) => params[k] ?? m));
+      const buffer = await buildSwimlanePptx({
+        flow: { steps: model.procedure.steps, lanes: lane.lanes, rows: lane.rows }, params, lang, title: model.name
+      });
+      const zip = await JSZip.loadAsync(buffer);
+      const slide = await zip.file('ppt/slides/slide1.xml').async('string');
+      // One box per step and one lane bar per actor, each a named shape.
+      for (const [i] of model.procedure.steps.entries()) {
+        assert.ok(slide.includes(`name="${lang === 'ar' ? 'الخطوة' : 'Step'} ${i + 1}"`), `${key}/${lang}: step ${i + 1} is a shape`);
+      }
+      const decisions = model.procedure.steps.filter((s) => s.decision).length;
+      assert.equal((slide.match(/prst="flowChartDecision"/g) || []).length, decisions, `${key}/${lang}: one diamond per decision`);
+      assert.equal((slide.match(/vert="vert270"/g) || []).length, lane.lanes.length, `${key}/${lang}: one lane name per actor`);
+      assert.doesNotMatch(slide, /\{\{\w+\}\}/, `${key}/${lang}: no placeholder on the slide`);
+      if (lang === 'ar') assert.match(slide, /rtl="1"/, `${key}: Arabic text runs right to left`);
+    }
+  }
+});

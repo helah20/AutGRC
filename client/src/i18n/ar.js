@@ -238,6 +238,8 @@ export default {
     properties: 'الخصائص',
     reviewWithAi: 'مراجعة بالذكاء الاصطناعي',
     word: 'Word',
+    powerpoint: 'PowerPoint',
+    powerpointHint: 'مخطط سير الإجراء بمسارات قابلة للتعديل',
     saveChanges: 'حفظ التغييرات',
     readOnly: 'الوثائق المنشورة للقراءة فقط',
     overdue: 'تجاوزت موعد المراجعة',
