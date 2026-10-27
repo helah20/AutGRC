@@ -11,6 +11,8 @@ export default {
   },
 
   nav: {
+    help: 'Help',
+    docs: 'Platform guide',
     overview: 'Overview',
     library: 'Governance Library',
     accountability: 'Accountability',
@@ -2491,5 +2493,10 @@ export default {
     font_arial: 'The most portable: looks the same everywhere, including LibreOffice.',
     font_calibri_sakkal: 'Formal, in the style of Saudi government documents.',
     font_tahoma: 'Compact and very legible at small sizes.'
+  },
+  docs: {
+    previous: 'Previous',
+    next: 'Next',
+    onThisPage: 'On this page'
   }
 };

@@ -29,6 +29,7 @@ import Imports from './pages/Imports.jsx';
 import Reports from './pages/Reports.jsx';
 import ManagementReviews from './pages/ManagementReviews.jsx';
 import SearchPage from './pages/SearchPage.jsx';
+import Docs from './pages/Docs.jsx';
 import Settings from './pages/Settings.jsx';
 import Setup from './pages/Setup.jsx';
 
@@ -103,6 +104,8 @@ export default function App() {
         <Route path="/management-reviews" element={<ManagementReviews />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/docs/:slug" element={<Docs />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Shell>

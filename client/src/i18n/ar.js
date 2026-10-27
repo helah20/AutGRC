@@ -18,6 +18,8 @@ export default {
   },
 
   nav: {
+    help: 'المساعدة',
+    docs: 'دليل المنصة',
     overview: 'نظرة عامة',
     library: 'مكتبة الحوكمة',
     accountability: 'المسؤوليات',
@@ -2475,5 +2477,10 @@ export default {
     font_arial: 'الأكثر توافقاً: يظهر بالشكل نفسه في كل مكان، ومنه ليبر أوفيس.',
     font_calibri_sakkal: 'رسمي، على طراز الوثائق الحكومية السعودية.',
     font_tahoma: 'مدمج وواضح جداً في الأحجام الصغيرة.'
+  },
+  docs: {
+    previous: 'السابق',
+    next: 'التالي',
+    onThisPage: 'في هذه الصفحة'
   }
 };
