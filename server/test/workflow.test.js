@@ -1289,23 +1289,22 @@ test('AutGRC end-to-end governance workflow', {
     assert.ok(!(en.document.match(/[\u0600-\u06FF]{2,}/g) || []).length, 'the English export has no Arabic');
   });
 
-  await t.test('Arabic PDF is refused rather than produced unshaped', async () => {
+  await t.test('a PDF follows the interface language, Arabic included', async () => {
     const docId = state.docs.policy.id;
 
-    // PDFKit writes glyphs in code-point order with no Arabic shaping, so an
-    // Arabic PDF would come out with its letters unjoined. Refusing says so.
-    const refused = await api('GET', `/api/export/documents/${docId}.pdf?lang=ar`);
-    assert.equal(refused.status, 501);
-    assert.match(refused.body.error, /shape Arabic/i);
-    assert.match(refused.body.error, /Word/, 'the refusal names the format that does work');
-    assert.deepEqual(refused.body.detail.supported, ['docx']);
-
-    // A deliberate 5xx keeps the message it was given; only unexpected ones
-    // are masked, and this proves the distinction holds.
-    assert.notEqual(refused.body.error, 'An unexpected error occurred');
+    // The interface language travels with the download; ?lang overrides it.
+    const arabic = await fetch(`${BASE}/api/export/documents/${docId}.pdf`, {
+      headers: { authorization: `Bearer ${state.tokens['grc@autgrc.demo']}`, 'x-language': 'ar' }
+    });
+    assert.equal(arabic.status, 200);
+    const bytes = Buffer.from(await arabic.arrayBuffer());
+    assert.equal(bytes.subarray(0, 4).toString(), '%PDF');
+    assert.match(bytes.toString('latin1'), /IBMPlexSansArabic/, 'Arabic is set in a face that shapes it');
+    assert.match(arabic.headers.get('content-disposition'), /filename\*=UTF-8''/, 'an Arabic title survives as the file name');
 
     const english = await api('GET', `/api/export/documents/${docId}.pdf`, { raw: true });
     assert.equal(english.status, 200, 'the English PDF still works');
+    assert.doesNotMatch(Buffer.from(await english.arrayBuffer()).toString('latin1'), /IBMPlexSansArabic/);
   });
 
   await t.test('audit log captures the workflow', async () => {
