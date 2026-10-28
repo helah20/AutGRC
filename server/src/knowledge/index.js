@@ -618,6 +618,15 @@ export function buildParameterSet(domainKey, orgProfile = {}, overrides = {}, la
   for (const [k, v] of Object.entries(base)) {
     if (typeof v === 'string' && v.includes('{{')) base[k] = resolveText(v, base);
   }
+  // A form sends back every value it showed, changed or not, and the server
+  // maps Arabic it sent back to the stored English. An "override" that is
+  // just the English default is no decision at all: honouring it would put
+  // "annually" into an Arabic Standard. Only a value someone changed applies.
+  if (language !== 'en' && overrides && Object.keys(overrides).length) {
+    const english = buildParameterSet(domainKey, orgProfile, {}, 'en');
+    overrides = Object.fromEntries(Object.entries(overrides)
+      .filter(([k, v]) => v !== english[k] && v !== DOMAIN_MODELS[domainKey]?.parameters?.[k]));
+  }
   return { ...base, ...overrides };
 }
 

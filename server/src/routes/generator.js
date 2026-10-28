@@ -6,7 +6,8 @@ import { q } from '../db/index.js';
 import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, HttpError } from '../middleware/errors.js';
 import { generatePackage, previewPackage, DOC_TYPE_LABEL } from '../services/generator.js';
-import { DOMAIN_META, DOMAIN_MODELS, FRAMEWORKS, buildParameterSet, ROLE_LIBRARY } from '../knowledge/index.js';
+import { DOMAIN_META, DOMAIN_MODELS, FRAMEWORKS, buildParameterSet, ROLE_LIBRARY, arParameterLabel } from '../knowledge/index.js';
+import { requestLanguage } from '../services/localise.js';
 import { providerInfo } from '../services/ai.js';
 import { applicableFrameworkCodes, getOrgProfile, enrichDocuments } from './_shared.js';
 
@@ -57,7 +58,10 @@ router.get('/domains/:key', asyncHandler(async (req, res) => {
     objectives: model.objectives,
     parameters: Object.entries(model.parameters).map(([name, value]) => ({
       name,
-      label: name.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim(),
+      // The label in the reader's language; the camel-case name humanised only
+      // where the knowledge base holds no Arabic for it.
+      label: (requestLanguage(req) === 'ar' && arParameterLabel(name))
+        || name.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim(),
       value: params[name] ?? value
     })),
     requirements: model.requirements.map((r) => ({

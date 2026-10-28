@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, qs } from '../lib/api.js';
 import { useFetch, useDebounced } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -33,6 +34,17 @@ export default function Actions() {
   const [overdue, setOverdue] = useState(false);
   const [selected, setSelected] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
+  // Raised from a finding, a risk or a gap item: the record arrives in the
+  // address, so nobody types an identifier.
+  const [params, setParams] = useSearchParams();
+  const [raiseFrom, setRaiseFrom] = useState(null);
+  useEffect(() => {
+    const type = params.get('raise');
+    if (!type || !params.get('source')) return;
+    setRaiseFrom({ source_type: type, source_id: params.get('source'), title: params.get('title') || '', label: params.get('label') || '' });
+    setAddOpen(true);
+    setParams({}, { replace: true });
+  }, [params, setParams]);
 
   const { data, loading, error, reload } = useFetch(
     `/actions${qs({ search: debounced, status, priority, mine: mine || undefined, overdue: overdue || undefined, limit: 500 })}`
@@ -142,8 +154,8 @@ export default function Actions() {
         canWrite={can('action:write')} canVerify={can('action:verify')}
         directory={directory || []} />
 
-      <RaiseAction open={addOpen} onClose={() => setAddOpen(false)} onCreated={reload}
-        toast={toast} directory={directory || []} />
+      <RaiseAction open={addOpen} onClose={() => { setAddOpen(false); setRaiseFrom(null); }} onCreated={reload}
+        toast={toast} directory={directory || []} from={raiseFrom} />
     </>
   );
 }
@@ -287,7 +299,7 @@ function ActionDrawer({ action, onClose, onChanged, toast, user, canWrite, canVe
 
 /* --------------------------------------------------------------- raise --- */
 
-function RaiseAction({ open, onClose, onCreated, toast, directory }) {
+function RaiseAction({ open, onClose, onCreated, toast, directory, from }) {
   const labels = useLabels();
   const { t, formatNumber } = useI18n();
   const blank = {
@@ -295,6 +307,9 @@ function RaiseAction({ open, onClose, onCreated, toast, directory }) {
     owner_id: '', priority: 'medium', due_date: ''
   };
   const [form, setForm] = useState(blank);
+  useEffect(() => {
+    if (from) setForm({ ...blank, source_type: from.source_type, source_id: from.source_id, title: from.title });
+  }, [from]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const needsSource = form.source_type !== 'manual';
   const ready = form.title.trim().length >= 5 && form.owner_id && form.due_date
@@ -343,7 +358,12 @@ function RaiseAction({ open, onClose, onCreated, toast, directory }) {
               { value: 'assessment', label: t('actions.sourceAssessment') }
             ]} />
         </Field>
-        {needsSource && (
+        {needsSource && from?.source_id === form.source_id && (
+          <Field label={t('actions.raisedFrom')}>
+            <div className="input" style={{ display: 'flex', alignItems: 'center' }}>{from.label || form.source_id}</div>
+          </Field>
+        )}
+        {needsSource && from?.source_id !== form.source_id && (
           <Field label={t('actions.recordId')} hint={t('actions.recordIdHint')} required>
             <input className="input mono" value={form.source_id}
               onChange={(e) => setForm((f) => ({ ...f, source_id: e.target.value }))} />

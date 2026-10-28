@@ -438,7 +438,34 @@ export default {
     loadingArtefacts: 'جارٍ تحميل الشواهد…'
   },
 
+  riskScale: {
+    likelihood: { 1: 'نادر', 2: 'غير مرجّح', 3: 'محتمل', 4: 'مرجّح', 5: 'شبه مؤكد' },
+    impact: { 1: 'ضئيل', 2: 'طفيف', 3: 'متوسط', 4: 'كبير', 5: 'جسيم' },
+    treatmentHelp: {
+      mitigate: 'خفض الخطر بتطبيق الضوابط أو تعزيزها.',
+      accept: 'تحمّل الخطر عن وعي، بمالك مساءل مُسمّى وتاريخ انتهاء.',
+      transfer: 'مشاركة الأثر مع طرف خارجي، بالتأمين أو بالعقد.',
+      avoid: 'إيقاف النشاط الذي ينشأ عنه الخطر أو تغييره.'
+    }
+  },
   risks: {
+    raiseAction: 'فتح إجراء تصحيحي',
+    add: 'خطر جديد',
+    addTitle: 'تسجيل خطر',
+    addIt: 'إضافة إلى السجل',
+    addedToast: 'أُضيف الخطر إلى السجل',
+    addFailed: 'تعذّرت إضافة الخطر',
+    fieldTitle: 'الخطر',
+    fieldTitleHint: 'صِف الحدث وأثره، مثل: إفشاء بيانات العملاء عبر خادم مكشوف على الإنترنت غير محدَّث.',
+    category: 'الفئة',
+    threat: 'التهديد',
+    vulnerability: 'الثغرة',
+    asset: 'الأصل المتأثر',
+    description: 'الوصف',
+    likelihood: 'الاحتمال الأصلي',
+    impact: 'الأثر الأصلي',
+    scaleHint: 'من 1 (نادر / طفيف) إلى 5 (شبه مؤكد / جسيم)',
+    inherentScore: 'الدرجة الأصلية',
     title: 'سجل المخاطر',
     subtitle: 'مبني على نفس نموذج المتطلبات المرجعي الذي تُبنى عليه السياسات، فالخطر والضوابط التي تعالجه يأتيان من مصدر واحد لا من مصدرين يتباعدان.',
     searchPlaceholder: 'ابحث في المخاطر…',
@@ -495,6 +522,7 @@ export default {
   },
 
   actions: {
+    raisedFrom: 'مُثار من',
     title: 'الإجراءات التصحيحية',
     subtitle: 'ما يُنفَّذ بشأن كل ملاحظة وفجوة وخطر — بمالك وتاريخ استحقاق وتحقّق من شخص غير الذي نفّذ العمل.',
     raise: 'رفع إجراء',
@@ -1685,7 +1713,9 @@ export default {
     filterDomains: 'تصفية المجالات…',
     requirementsCount: '{count} متطلب',
     activitiesCount: '{count} نشاط',
-    existingCount: 'القائمة: {count}',
+    existingCount: 'وثائق موجودة: {count}',
+    existingWarnTitle: 'لهذا المجال وثائق قائمة',
+    existingWarnBody: 'يوجد لهذا المجال {count} وثيقة. التوليد ينشئ مجموعة جديدة بأرقام مرجعية جديدة بجانبها ولا يستبدلها. لتعديل وثيقة قائمة افتحها وعدّلها، أو افتحها للتنقيح.',
     noMatchingDomain: 'لا يوجد مجال مطابق',
     clearFilterHint: 'امسح التصفية لعرض المجالات كلها وعددها 28 مجالاً.',
     orgTitle: 'سياق المنشأة',
@@ -1768,6 +1798,7 @@ export default {
     approverLine: 'المعتمِد: {name}',
     reviewDueLine: 'موعد المراجعة: {date}',
     returnToDraft: 'إعادة إلى المسودة',
+    transitionAction: { under_review: 'إرسال للمراجعة', approved: 'اعتماد', published: 'نشر', retired: 'إلغاء الوثيقة', under_revision: 'فتح للتنقيح' },
     overdueDays: 'أيام التأخير: {count}',
     overdueBody: 'حلّ موعد مراجعة هذه الوثيقة في {date} ({days})، وما زالت منشورة. انقلها إلى حالة «قيد التنقيح» لتحديثها.',
     readOnlyBody: 'انقل هذه الوثيقة إلى حالة «قيد التنقيح» لتعديل محتواها. وتبقى النسخة المنشورة سارية حتى يُنشر إصدار جديد.',
@@ -1918,6 +1949,7 @@ export default {
   },
 
   findingsUi: {
+    raiseAction: 'فتح إجراء تصحيحي',
     conflicting: 'متعارض — {document}',
     agreesWithStandard: 'متوافق مع المعيار — {document}',
     agreedValue: 'القيمة المعتمدة في المنظمة:',

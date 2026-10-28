@@ -164,10 +164,12 @@ router.post('/', requirePermission('risk:write'), validate(z.object(riskBody)),
     }
     const at = nowIso();
     const rowId = id('rsk');
-    const existing = q.get(
-      "SELECT COUNT(*) AS n FROM risks WHERE domain_key = ?", b.domain_key
-    ).n;
-    const reference = `RSK-${domainShort(b.domain_key)}-${padNumber(existing + 1, 3)}`;
+    // The next number after the highest in use: a count would reuse the
+    // reference of a deleted risk, or of one a second package added.
+    const prefix = `RSK-${domainShort(b.domain_key)}-`;
+    const highest = q.all('SELECT risk_id FROM risks WHERE risk_id LIKE ?', `${prefix}%`)
+      .reduce((max, r) => Math.max(max, Number(r.risk_id.slice(prefix.length)) || 0), 0);
+    const reference = `${prefix}${padNumber(highest + 1, 3)}`;
 
     q.run(
       `INSERT INTO risks (id, risk_id, title, description, domain_key, category, threat, vulnerability,
