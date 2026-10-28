@@ -24,6 +24,7 @@ import { controlText, TESTING_METHOD, DOC_TYPE_LABEL, DOC_TYPE_LABEL_AR } from '
 import { arabicTitle, DOC_STRINGS_AR } from './doc-strings.js';
 import { FINDING_PATTERNS } from './localise-findings.js';
 import { UI_PHRASES_AR } from './localise-ui.js';
+import { AR_REQUIREMENT_TITLES } from '../knowledge/ar/ar-requirement-titles.js';
 
 /** The reader's language for this request: the client sends it on every call. */
 export function requestLanguage(req) {
@@ -64,6 +65,9 @@ function buildPhrases(org) {
     put(en.trim(), to);
     if (en.includes('{{')) put(resolveText(en.trim(), orgParams), to);
   };
+
+  // The catalogue's requirement names (knowledge/ar/ar-requirement-titles.js).
+  for (const [en, ar] of Object.entries(AR_REQUIREMENT_TITLES)) add(en, ar);
 
   for (const key of Object.keys(DOMAIN_INDEX)) {
     add(domainName(key), arDomainName(key));

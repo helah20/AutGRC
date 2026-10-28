@@ -1,6 +1,7 @@
 /** Evidence register, and the artefacts collected against it. */
 
 import express from 'express';
+import { attachment } from '../services/export-i18n.js';
 import path from 'node:path';
 import fsp from 'node:fs/promises';
 import multer from 'multer';
@@ -229,7 +230,7 @@ router.get('/:id/files/:fileId', asyncHandler(async (req, res) => {
   // Always an attachment, and never the stored content type: an evidence
   // artefact is a record to keep, not a page to render in the app's origin.
   res.setHeader('Content-Type', 'application/octet-stream');
-  res.setHeader('Content-Disposition', `attachment; filename="${file.filename.replace(/["\\\r\n]/g, '_')}"`);
+  res.setHeader('Content-Disposition', attachment(file.filename));
   res.sendFile(onDisk);
 }));
 

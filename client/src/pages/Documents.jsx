@@ -93,15 +93,15 @@ export default function Documents({ fixedType }) {
         </>
       )
     },
-    { key: 'doc_type', header: t('common.type'), nowrap: true, render: (d) => <Badge tone="neutral">{labels.docType(d.doc_type, d.doc_type_label)}</Badge> },
+    { key: 'doc_type', minor: true, header: t('common.type'), nowrap: true, render: (d) => <Badge tone="neutral">{labels.docType(d.doc_type, d.doc_type_label)}</Badge> },
     {
-      key: 'language', header: t('documents.language'), nowrap: true, width: 84,
+      key: 'language', minor: true, header: t('documents.language'), nowrap: true, width: 84,
       render: (d) => (d.language === 'ar'
         ? <Badge tone="info" lang="ar">العربية</Badge>
         : <span className="small muted">English</span>)
     },
     { key: 'status', header: t('common.status'), nowrap: true, render: (d) => <StatusBadge status={d.status} /> },
-    { key: 'owner_name', header: t('common.owner'), nowrap: true, render: (d) => d.owner_name || <span className="muted">{t('common.unassigned')}</span> },
+    { key: 'owner_name', minor: true, header: t('common.owner'), nowrap: true, render: (d) => d.owner_name || <span className="muted">{t('common.unassigned')}</span> },
     {
       key: 'review_date', header: t('documentsUi.columnReviewDue'), nowrap: true,
       render: (d) => {
@@ -117,7 +117,7 @@ export default function Documents({ fixedType }) {
         );
       }
     },
-    { key: 'updated_at', header: t('common.updated'), nowrap: true, render: (d) => <span className="small muted">{relativeTime(d.updated_at)}</span> }
+    { key: 'updated_at', minor: true, header: t('common.updated'), nowrap: true, render: (d) => <span className="small muted">{relativeTime(d.updated_at)}</span> }
   ];
 
   const activeFilters = [type && !fixedType, domain, status, reviewDue, debounced].filter(Boolean).length;
