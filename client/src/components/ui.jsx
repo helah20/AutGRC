@@ -338,7 +338,7 @@ export function DataTable({ columns, rows, onRowClick, empty, keyOf, rowClass })
     <div className="table-wrap" tabIndex={0}>
       <table className="data">
         <thead>
-          <tr>{columns.map((c) => <th key={c.key} className={c.align === 'right' ? 'num' : ''} style={c.width ? { width: c.width } : undefined}>{c.header}</th>)}</tr>
+          <tr>{columns.map((c) => <th key={c.key} className={`${c.align === 'right' ? 'num' : ''} ${c.minor ? 'col-minor' : ''}`} style={c.width ? { width: c.width } : undefined}>{c.header}</th>)}</tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
@@ -346,7 +346,7 @@ export function DataTable({ columns, rows, onRowClick, empty, keyOf, rowClass })
               className={`${onRowClick ? 'clickable' : ''} ${rowClass ? rowClass(row) : ''}`}
               onClick={onRowClick ? () => onRowClick(row) : undefined}>
               {columns.map((c) => (
-                <td key={c.key} className={`${c.align === 'right' ? 'num' : ''} ${c.nowrap ? 'nowrap' : ''}`}>
+                <td key={c.key} className={`${c.align === 'right' ? 'num' : ''} ${c.nowrap ? 'nowrap' : ''} ${c.minor ? 'col-minor' : ''}`}>
                   {c.render ? c.render(row) : typeof row[c.key] === 'number' ? formatNumber(row[c.key]) : row[c.key]}
                 </td>
               ))}

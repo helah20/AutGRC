@@ -9,6 +9,9 @@
  * Run with `npm run seed`. Pass --force to rebuild from an existing database.
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
 import { db, q, nowIso, toJson, fromJson } from './index.js';
 import { id, padNumber } from '../utils/ids.js';
 import config from '../config.js';
@@ -580,14 +583,43 @@ export function settleFindings() {
  */
 export function seedEvidence() {
   const rows = q.all(
-    `SELECT e.id FROM evidence e JOIN controls c ON c.id = e.control_id
+    `SELECT e.id, e.evidence_id, e.name, c.control_id, c.name AS control_name FROM evidence e JOIN controls c ON c.id = e.control_id
       WHERE c.domain_key IN (SELECT DISTINCT domain_key FROM documents WHERE status = 'published')
       ORDER BY e.evidence_id`
   );
+  // An item the register calls collected has an artefact on file, uploaded by
+  // the GRC function; a verified one was checked by someone else, as the
+  // platform requires. Each artefact says plainly that it is demonstration data.
+  const uploader = q.get("SELECT id FROM users WHERE email = 'grc@autgrc.demo'")?.id || null;
+  const verifier = q.get("SELECT id FROM users WHERE email = 'ciso@autgrc.demo'")?.id || null;
+  const at = nowIso();
   rows.forEach((row, i) => {
     const collected = new Date(Date.now() - (5 + (i * 11) % 80) * 86400000).toISOString().slice(0, 10);
+    const verified = i % 2 === 1;
     q.run('UPDATE evidence SET status = ?, last_collected = ?, updated_at = ? WHERE id = ?',
-      i % 2 ? 'verified' : 'collected', collected, nowIso(), row.id);
+      verified ? 'verified' : 'collected', collected, at, row.id);
+    if (q.get('SELECT id FROM evidence_files WHERE evidence_id = ?', row.id)) return;
+
+    const content = [
+      'AutGRC demonstration artefact — not a real record.',
+      `Evidence: ${row.evidence_id} ${row.name}`,
+      `Control: ${row.control_id} ${row.control_name}`,
+      `Collected: ${collected}`,
+      '',
+      'سجل تجريبي لأغراض العرض — ليس سجلاً حقيقياً.'
+    ].join('\n');
+    const storedName = `demo-${row.evidence_id}.txt`;
+    fs.writeFileSync(path.join(config.evidenceDir, storedName), content);
+    q.run(
+      `INSERT INTO evidence_files
+         (id, evidence_id, filename, stored_name, mime, size_bytes, sha256, note, period, collected_at,
+          uploaded_by, verified_by, verified_at, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      id('evf'), row.id, `${row.evidence_id} demo artefact.txt`, storedName, 'text/plain',
+      Buffer.byteLength(content), crypto.createHash('sha256').update(content).digest('hex'),
+      'Demonstration artefact generated with the demo data.', collected.slice(0, 7), collected,
+      uploader, verified ? verifier : null, verified ? at : null, at
+    );
   });
   return rows.length;
 }

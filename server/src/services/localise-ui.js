@@ -8,6 +8,7 @@ import { SOURCE_NOTE } from '../knowledge/frameworks.js';
 import { DECISION_CATEGORY, DECISION_CATEGORY_AR } from './decision-categories.js';
 
 export const UI_PHRASES_AR = {
+  'Demonstration artefact generated with the demo data.': 'شاهد تجريبي أُنشئ مع بيانات العرض.',
   // The analysis of an uploaded document (services/import.js).
   'Consolidate rather than maintaining two statements of the same requirement in separate documents.': 'وحّد الصياغة بدل الإبقاء على بندين للمتطلب نفسه في وثيقتين منفصلتين.',
   'Replace each with a stated frequency, threshold or deadline.': 'استبدل كلاً منها بدورية أو حد أو موعد محدد.',
