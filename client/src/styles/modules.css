@@ -54,12 +54,15 @@
 .prose table tbody tr:nth-child(even) { background: var(--bg-sunken); }
 .prose caption { caption-side: top; text-align: start; font-size: 11.5px; color: var(--text-muted); padding-bottom: 5px; font-style: italic; }
 
-/* Numbered clause lists, e.g. policy statements 5.1, 5.2 … */
+/* Numbered clause lists, e.g. policy statements 4.1, 4.2 … */
 .prose ol.clause-list { list-style: none; padding-inline-start: 0; counter-reset: none; }
 .prose ol.clause-list > li {
-  padding: 9px 0 9px 58px; position: relative; border-bottom: 1px solid var(--border); margin: 0;
+  padding-block: 9px; padding-inline: 58px 0; position: relative; border-bottom: 1px solid var(--border); margin: 0;
 }
 .prose ol.clause-list > li:last-child { border-bottom: none; }
+/* A regulatory control quoted under the clause that implements it (4.2.1). */
+.prose ol.clause-list > li.subclause { padding-inline-start: 112px; border-bottom-style: dashed; }
+.prose ol.clause-list > li.subclause .clause-ref { inset-inline-start: 46px; }
 .prose .clause-ref {
   position: absolute; inset-inline-start: 0; top: 9px;
   font-family: var(--mono); font-size: 11.5px; font-weight: 700;

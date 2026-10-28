@@ -7,6 +7,8 @@ import { asyncHandler, notFound, HttpError } from '../middleware/errors.js';
 import { buildDocx } from '../services/export-docx.js';
 import { buildPdf } from '../services/export-pdf.js';
 import { buildSwimlanePptx } from '../services/export-pptx.js';
+import { previewPackage } from '../services/generator.js';
+import { exportLanguage, sheetText, cellText, attachment } from '../services/export-i18n.js';
 import {
   buildControlWorkbook, buildRaciWorkbook, buildMappingWorkbook,
   buildGapWorkbook, buildRegisterWorkbook, buildSoaWorkbook, buildRiskTreatmentWorkbook
@@ -24,7 +26,7 @@ router.use(requirePermission('export:run'));
 
 function send(res, buffer, filename, mime) {
   res.setHeader('Content-Type', mime);
-  res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/[^\w.\- ]/g, '')}"`);
+  res.setHeader('Content-Disposition', attachment(filename));
   res.setHeader('Content-Length', Buffer.byteLength(buffer));
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.send(Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer));
@@ -67,11 +69,63 @@ function exportVersions(doc) {
   return rows;
 }
 
-function documentPayload(documentId) {
-  const doc = q.get('SELECT * FROM documents WHERE id = ?', documentId);
-  if (!doc) throw notFound('Document');
-  const sections = q.all('SELECT * FROM document_sections WHERE document_id = ? ORDER BY position', doc.id)
-    .filter((s) => !s.section_key.startsWith('_'));
+/**
+ * The document in the language the file is asked for.
+ *
+ * A file follows the reader's language, not the language the document was
+ * written in. The same document in that language is used when it exists —
+ * the version made from it, or the original it was made from. Otherwise it
+ * is rebuilt from the same domain model and values in that language, the way
+ * the Arabic version of a package is generated; a section a person wrote
+ * stays as they wrote it, since there is no model text to rebuild it from.
+ */
+function documentInLanguage(doc, lang) {
+  const stored = (id) => q.all('SELECT * FROM document_sections WHERE document_id = ? ORDER BY position', id);
+  const own = (d) => {
+    const all = stored(d.id);
+    const flowRow = all.find((x) => x.section_key === '_flow');
+    return { doc: d, sections: all.filter((x) => !x.section_key.startsWith('_')), flow: flowRow ? fromJson(flowRow.body, null) : null };
+  };
+  if ((doc.language || 'en') === lang) return own(doc);
+
+  const sibling = q.get(
+    `SELECT * FROM documents
+      WHERE id != ? AND language = ? AND doc_type = ? AND status != 'retired'
+        AND (translation_of = ? OR id = ? OR (translation_of IS NOT NULL AND translation_of = ?))
+      ORDER BY updated_at DESC LIMIT 1`,
+    doc.id, lang, doc.doc_type, doc.id, doc.translation_of || '', doc.translation_of || '');
+  if (sibling) {
+    const found = own(sibling);
+    // The reader exported this document; its own status and dates are the record.
+    return { ...found, doc: { ...sibling, status: doc.status, version: doc.version, effective_date: doc.effective_date, review_date: doc.review_date } };
+  }
+
+  const meta = fromJson(doc.generation_meta, {});
+  if (!meta.domain && !doc.domain_key) return own(doc);
+  let built = null;
+  try {
+    const preview = previewPackage({
+      domainKey: doc.domain_key, docTypes: [doc.doc_type], frameworkCodes: meta.frameworks || [],
+      org: getOrgProfile(), parameterOverrides: meta.parameterOverrides || {}, language: lang
+    });
+    if (preview.language === lang) built = preview.documents[0];
+  } catch { built = null; }
+  if (!built) return own(doc);
+
+  const original = own(doc);
+  const written = new Map(original.sections.filter((x) => x.provenance === 'user_input').map((x) => [x.section_key, x]));
+  return {
+    doc: { ...doc, title: built.title, language: lang },
+    sections: built.sections.map((x, i) => written.get(x.key)
+      || { section_key: x.key, heading: x.heading, body: x.body, provenance: x.provenance, position: i }),
+    flow: built.flow || original.flow
+  };
+}
+
+function documentPayload(documentId, lang = 'en') {
+  const source = q.get('SELECT * FROM documents WHERE id = ?', documentId);
+  if (!source) throw notFound('Document');
+  const { doc, sections, flow } = documentInLanguage(source, lang);
   const meta = fromJson(doc.generation_meta, {});
   const codes = meta.frameworks || [];
   const frameworks = codes.length
@@ -80,6 +134,8 @@ function documentPayload(documentId) {
   return {
     document: doc,
     sections,
+    flow,
+    lang,
     org: getOrgProfile(),
     owner: doc.owner_id ? q.get('SELECT name, job_title FROM users WHERE id = ?', doc.owner_id) : null,
     approver: doc.approver_id ? q.get('SELECT name, job_title FROM users WHERE id = ?', doc.approver_id) : null,
@@ -97,14 +153,12 @@ function documentPayload(documentId) {
 }
 
 router.get('/documents/:id.docx', asyncHandler(async (req, res) => {
-  const payload = documentPayload(req.params.id);
-  // An Arabic document is laid out right to left unless the reader asks for
-  // the English layout; without a choice it follows the document itself.
-  const lang = (req.query.lang || payload.document.language) === 'ar' ? 'ar' : 'en';
-  const buffer = await buildDocx({ ...payload, lang });
+  const lang = exportLanguage(req);
+  const payload = documentPayload(req.params.id, lang);
+  const buffer = await buildDocx(payload);
   audit(req, {
     action: 'export:docx', entityType: 'document', entityId: req.params.id,
-    summary: `Exported ${payload.document.reference} to Word${lang === 'ar' ? ' (Arabic layout)' : ''}`
+    summary: `Exported ${payload.document.reference} to Word${lang === 'ar' ? ' (Arabic)' : ''}`
   });
   send(res, buffer, `${payload.document.reference} ${payload.document.title}.docx`, MIME.docx);
 }));
@@ -112,41 +166,35 @@ router.get('/documents/:id.docx', asyncHandler(async (req, res) => {
 // A procedure's process flow as an editable PowerPoint swimlane chart. Only a
 // document with a flow has one to export.
 router.get('/documents/:id.pptx', asyncHandler(async (req, res) => {
-  const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
-  if (!doc) throw notFound('Document');
-  const stored = q.get("SELECT body FROM document_sections WHERE document_id = ? AND section_key = '_flow'", doc.id);
-  const flow = stored ? fromJson(stored.body, null) : null;
-  if (!flow?.steps?.length) throw new HttpError(400, 'This document has no process flow to export.');
-  const lang = (req.query.lang || doc.language) === 'ar' ? 'ar' : 'en';
+  const lang = exportLanguage(req);
+  const payload = documentPayload(req.params.id, lang);
+  const doc = payload.document;
+  if (!payload.flow?.steps?.length) throw new HttpError(400, 'This document has no process flow to export.');
   const params = fromJson(doc.generation_meta, {}).parameters || {};
   const buffer = await buildSwimlanePptx({
-    flow, params, lang, title: doc.title, subtitle: `${doc.reference} · ${lang === 'ar' ? 'الإصدار' : 'Version'} ${doc.version}`
+    flow: payload.flow, params, lang, title: doc.title,
+    subtitle: `${doc.reference} · ${lang === 'ar' ? 'الإصدار' : 'Version'} ${doc.version}`
   });
   audit(req, {
-    action: 'export:pptx', entityType: 'document', entityId: doc.id,
-    summary: `Exported the ${doc.reference} process flow to PowerPoint`
+    action: 'export:pptx', entityType: 'document', entityId: req.params.id,
+    summary: `Exported the ${doc.reference} process flow to PowerPoint${lang === 'ar' ? ' (Arabic)' : ''}`
   });
-  send(res, buffer, `${doc.reference} swimlane.pptx`, MIME.pptx);
+  send(res, buffer, `${doc.reference} ${lang === 'ar' ? 'مخطط سير العملية' : 'swimlane'}.pptx`, MIME.pptx);
 }));
 
 router.get('/documents/:id.pdf', asyncHandler(async (req, res) => {
-  // PDFKit renders glyphs in code-point order with no Arabic shaping and no
-  // bidi reordering, so an Arabic PDF from here would come out as disconnected
-  // letters running the wrong way. Saying so is better than shipping that:
-  // Word does the shaping itself, and the Word file is what a governance team
-  // circulates and edits anyway.
-  if (req.query.lang === 'ar') {
-    throw new HttpError(501,
-      'Arabic PDF export is not supported. The PDF engine does not shape Arabic script, so the text would come out with its letters unjoined. Export to Word instead — Word renders Arabic correctly and can save as PDF.',
-      { supported: ['docx'], reason: 'no_arabic_shaping' });
-  }
-  const payload = documentPayload(req.params.id);
+  const lang = exportLanguage(req);
+  const payload = documentPayload(req.params.id, lang);
   const buffer = await buildPdf(payload);
-  audit(req, { action: 'export:pdf', entityType: 'document', entityId: req.params.id, summary: `Exported ${payload.document.reference} to PDF` });
+  audit(req, {
+    action: 'export:pdf', entityType: 'document', entityId: req.params.id,
+    summary: `Exported ${payload.document.reference} to PDF${lang === 'ar' ? ' (Arabic)' : ''}`
+  });
   send(res, buffer, `${payload.document.reference} ${payload.document.title}.pdf`, MIME.pdf);
 }));
 
 router.get('/controls.xlsx', asyncHandler(async (req, res) => {
+  const lang = exportLanguage(req);
   const domains = listParam(req.query.domain);
   const where = domains.length ? `WHERE domain_key IN (${domains.map(() => '?').join(',')})` : '';
   const controls = q.all(`SELECT * FROM controls ${where} ORDER BY control_id`, ...domains)
@@ -162,19 +210,20 @@ router.get('/controls.xlsx', asyncHandler(async (req, res) => {
            JOIN frameworks f ON f.id = fr.framework_id
           WHERE cm.control_id IN (${ids.map(() => '?').join(',')})`, ...ids)
     : [];
-  const buffer = await buildControlWorkbook({
+  const buffer = await buildControlWorkbook({ lang,
     controls, evidence, mappings,
     orgName: getOrgProfile().org_name,
     domainLabel: domains.length === 1 ? domainName(domains[0]) : null
   });
   audit(req, { action: 'export:xlsx', entityType: 'control', summary: `Exported ${controls.length} controls to Excel` });
-  send(res, buffer, 'Control Matrix.xlsx', MIME.xlsx);
+  send(res, buffer, `${sheetText('Control Matrix', lang)}.xlsx`, MIME.xlsx);
 }));
 
 router.get('/raci/:id.xlsx', asyncHandler(async (req, res) => {
+  const lang = exportLanguage(req);
   const matrix = q.get('SELECT * FROM raci_matrices WHERE id = ?', req.params.id);
   if (!matrix) throw notFound('Matrix');
-  const buffer = await buildRaciWorkbook({
+  const buffer = await buildRaciWorkbook({ lang,
     matrix,
     columns: q.all('SELECT * FROM raci_roles WHERE matrix_id = ? ORDER BY position', matrix.id),
     activities: q.all('SELECT * FROM raci_activities WHERE matrix_id = ? ORDER BY position', matrix.id),
@@ -183,10 +232,11 @@ router.get('/raci/:id.xlsx', asyncHandler(async (req, res) => {
     orgName: getOrgProfile().org_name
   });
   audit(req, { action: 'export:xlsx', entityType: 'raci', entityId: matrix.id, summary: `Exported RACI matrix "${matrix.name}"` });
-  send(res, buffer, `${matrix.name}.xlsx`, MIME.xlsx);
+  send(res, buffer, `${cellText(matrix.name, lang)}.xlsx`, MIME.xlsx);
 }));
 
 router.get('/mappings.xlsx', asyncHandler(async (req, res) => {
+  const lang = exportLanguage(req);
   const codes = listParam(req.query.framework);
   const frameworks = codes.length
     ? q.all(`SELECT * FROM frameworks WHERE code IN (${codes.map(() => '?').join(',')})`, ...codes)
@@ -206,10 +256,13 @@ router.get('/mappings.xlsx', asyncHandler(async (req, res) => {
         rows.push({ framework_code: f.code, ref: r.ref, title: r.title, domain_key: r.domain_key, domain_label: r.domain_key ? domainName(r.domain_key) : '', coverage: 'not_covered' });
         continue;
       }
+      // The summary counts requirements, each at the best coverage any of its
+      // controls gives; the sheet below still lists every mapping.
+      const best = ['covered', 'partial', 'not_applicable'].find((c) => maps.some((m) => m.coverage === c));
+      if (best === 'covered') covered += 1;
+      else if (best === 'partial') partial += 1;
+      else if (best === 'not_applicable') notApplicable += 1;
       for (const m of maps) {
-        if (m.coverage === 'covered') covered += 1;
-        else if (m.coverage === 'partial') partial += 1;
-        else if (m.coverage === 'not_applicable') notApplicable += 1;
         rows.push({
           framework_code: f.code, ref: r.ref, title: r.title,
           domain_key: r.domain_key, domain_label: r.domain_key ? domainName(r.domain_key) : '',
@@ -228,21 +281,22 @@ router.get('/mappings.xlsx', asyncHandler(async (req, res) => {
     });
   }
 
-  const buffer = await buildMappingWorkbook({ rows, frameworks, summary, orgName: getOrgProfile().org_name });
+  const buffer = await buildMappingWorkbook({ lang, rows, frameworks, summary, orgName: getOrgProfile().org_name });
   audit(req, { action: 'export:xlsx', entityType: 'mapping', summary: `Exported framework mapping (${frameworks.map((f) => f.code).join(', ')})` });
-  send(res, buffer, 'Framework Mapping.xlsx', MIME.xlsx);
+  send(res, buffer, `${sheetText('Framework Compliance Mapping', lang)}.xlsx`, MIME.xlsx);
 }));
 
 router.get('/gap/:id.xlsx', asyncHandler(async (req, res) => {
+  const lang = exportLanguage(req);
   const assessment = q.get('SELECT * FROM assessments WHERE id = ?', req.params.id);
   if (!assessment) throw notFound('Assessment');
   const items = q.all(
     `SELECT g.*, d.reference AS document_ref FROM gap_items g LEFT JOIN documents d ON d.id = g.document_id
       WHERE g.assessment_id = ? ORDER BY g.requirement_ref`, assessment.id
   );
-  const buffer = await buildGapWorkbook({ assessment, items, orgName: getOrgProfile().org_name });
+  const buffer = await buildGapWorkbook({ lang, assessment, items, orgName: getOrgProfile().org_name });
   audit(req, { action: 'export:xlsx', entityType: 'assessment', entityId: assessment.id, summary: `Exported gap assessment "${assessment.name}"` });
-  send(res, buffer, `${assessment.name}.xlsx`, MIME.xlsx);
+  send(res, buffer, `${cellText(assessment.name, lang)}.xlsx`, MIME.xlsx);
 }));
 
 /**
@@ -251,21 +305,23 @@ router.get('/gap/:id.xlsx', asyncHandler(async (req, res) => {
  * raised against them with their root causes, and the conclusion.
  */
 router.get('/audit-report/:id.:format(docx|pdf)', asyncHandler(async (req, res) => {
-  const payload = auditReportPayload(req.params.id);
+  const lang = exportLanguage(req);
+  const payload = auditReportPayload(req.params.id, lang);
   if (!payload) throw notFound('Assessment');
   const org = getOrgProfile();
   const docx = req.params.format === 'docx';
   const buffer = docx ? await buildDocx({ ...payload, org }) : await buildPdf({ ...payload, org });
   audit(req, { action: `export:${req.params.format}`, entityType: 'assessment', entityId: req.params.id,
-    summary: `Exported the internal audit report for ${payload.document.title.replace('Internal Audit Report — ', '')}` });
+    summary: `Exported the internal audit report for ${payload.document.title.split(' — ').slice(1).join(' — ')}${lang === 'ar' ? ' (Arabic)' : ''}` });
   send(res, buffer, `${payload.document.title}.${req.params.format}`, docx ? MIME.docx : MIME.pdf);
 }));
 
 router.get('/register.xlsx', asyncHandler(async (req, res) => {
+  const lang = exportLanguage(req);
   const documents = enrichDocuments(q.all('SELECT * FROM documents ORDER BY reference'));
-  const buffer = await buildRegisterWorkbook({ documents, orgName: getOrgProfile().org_name });
+  const buffer = await buildRegisterWorkbook({ lang, documents, orgName: getOrgProfile().org_name });
   audit(req, { action: 'export:xlsx', entityType: 'document', summary: `Exported the document register (${documents.length} documents)` });
-  send(res, buffer, 'Document Register.xlsx', MIME.xlsx);
+  send(res, buffer, `${sheetText('Governance Document Register', lang)}.xlsx`, MIME.xlsx);
 }));
 
 /**
@@ -273,6 +329,7 @@ router.get('/register.xlsx', asyncHandler(async (req, res) => {
  * the spreadsheet an auditor receives says what the screen says.
  */
 router.get('/soa.xlsx', asyncHandler(async (req, res) => {
+  const lang = exportLanguage(req);
   const code = req.query.framework || 'ISO-27001';
   const framework = q.get('SELECT * FROM frameworks WHERE code = ? OR id = ?', code, code);
   if (!framework) throw notFound(`Framework "${code}"`);
@@ -323,15 +380,16 @@ router.get('/soa.xlsx', asyncHandler(async (req, res) => {
     decisionsRecorded: Object.keys(decisions).length
   };
 
-  const buffer = await buildSoaWorkbook({ framework, rows, summary, orgName: getOrgProfile().org_name });
+  const buffer = await buildSoaWorkbook({ lang, framework, rows, summary, orgName: getOrgProfile().org_name });
   audit(req, {
     action: 'export:xlsx', entityType: 'framework', entityId: framework.id,
     summary: `Exported the Statement of Applicability for ${framework.code}`
   });
-  send(res, buffer, `Statement of Applicability - ${framework.code}.xlsx`, MIME.xlsx);
+  send(res, buffer, `${sheetText('Statement of Applicability', lang)} - ${framework.code}.xlsx`, MIME.xlsx);
 }));
 
 router.get('/risk-treatment.xlsx', asyncHandler(async (req, res) => {
+  const lang = exportLanguage(req);
   const risks = q.all('SELECT * FROM risks ORDER BY risk_id').map((row) => {
     const risk = enrichRisk(row);
     return {
@@ -349,12 +407,12 @@ router.get('/risk-treatment.xlsx', asyncHandler(async (req, res) => {
     };
   });
 
-  const buffer = await buildRiskTreatmentWorkbook({ risks, orgName: getOrgProfile().org_name });
+  const buffer = await buildRiskTreatmentWorkbook({ lang, risks, orgName: getOrgProfile().org_name });
   audit(req, {
     action: 'export:xlsx', entityType: 'risk',
     summary: `Exported the risk treatment plan (${risks.length} risks)`
   });
-  send(res, buffer, 'Risk Treatment Plan.xlsx', MIME.xlsx);
+  send(res, buffer, `${sheetText('Risk Treatment Plan', lang)}.xlsx`, MIME.xlsx);
 }));
 
 export default router;

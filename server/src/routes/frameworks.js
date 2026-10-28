@@ -354,7 +354,7 @@ router.post('/:code/catalogue', requirePermission('settings:write'),
     let analysis;
     try {
       analysis = await analyseCatalogue({
-        filePath: req.file.path, originalName: req.file.originalname, existing
+        filePath: req.file.path, originalName: req.file.originalname, existing, frameworkCode: framework.code
       });
     } catch (err) {
       throw new HttpError(400, err.message);

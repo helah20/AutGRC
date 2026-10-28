@@ -178,7 +178,6 @@ export default {
     language: 'Language',
     allLanguages: 'All languages',
     translationOf: 'Translation of {reference}',
-    pdfEnglishOnly: 'The PDF engine cannot shape Arabic script, so a PDF is produced in English. Export to Word for an Arabic document — Word renders it correctly and can save as PDF itself.',
     exportWord: 'Word',
     exportPdf: 'PDF'
   },

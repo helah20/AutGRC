@@ -23,7 +23,7 @@ let LIGHT = 'F2F5F9';
 let BORDER = 'C9D4E0';
 let LOGO = null;
 
-const CLASSIFICATION_LABEL = {
+export const CLASSIFICATION_LABEL = {
   public: 'PUBLIC', internal: 'INTERNAL', confidential: 'CONFIDENTIAL',
   secret: 'SECRET', top_secret: 'TOP SECRET'
 };
@@ -41,7 +41,7 @@ const STATUS_LABEL = {
  * and the text stays joined. That is why Word carries the Arabic export and
  * the PDF path does not.
  */
-const FURNITURE = {
+export const FURNITURE = {
   en: {
     documentControl: 'Document Control',
     title: 'Document title',
@@ -78,6 +78,14 @@ const FURNITURE = {
     change: 'Change',
     initialIssue: 'Initial issue',
     changeLabel: { generated: 'First draft', published: 'Approved and published' },
+    actionLabel: {
+      submitted: 'Submitted', approved: 'Approved', published: 'Published', returned: 'Returned',
+      rejected: 'Rejected', retired: 'Retired', revised: 'Opened for revision', reopened: 'Opened for revision'
+    },
+    docTypeLabel: {
+      policy: 'Policy', standard: 'Standard', procedure: 'Procedure', guideline: 'Guideline', framework: 'Framework',
+      roles: 'Roles and Responsibilities', raci: 'RACI Matrix', control_matrix: 'Control Matrix', report: 'Report'
+    },
     contents: 'Contents',
     organisation: 'Organisation',
     statusLabel: STATUS_LABEL
@@ -122,11 +130,11 @@ const FURNITURE = {
     organisation: 'المنظمة',
     actionLabel: {
       submitted: 'رُفعت للمراجعة', approved: 'اعتُمدت', published: 'نُشرت', returned: 'أُعيدت للتعديل',
-      rejected: 'رُفضت', retired: 'أُلغيت', revised: 'فُتحت للتنقيح'
+      rejected: 'رُفضت', retired: 'أُلغيت', revised: 'فُتحت للتنقيح', reopened: 'فُتحت للتنقيح'
     },
     docTypeLabel: {
       policy: 'سياسة', standard: 'معيار', procedure: 'إجراء', guideline: 'دليل إرشادي', framework: 'إطار',
-      roles: 'الأدوار والمسؤوليات', raci: 'مصفوفة RACI', control_matrix: 'مصفوفة الضوابط'
+      roles: 'الأدوار والمسؤوليات', raci: 'مصفوفة RACI', control_matrix: 'مصفوفة الضوابط', report: 'تقرير'
     },
     statusLabel: {
       draft: 'مسودة', under_review: 'قيد المراجعة', approved: 'معتمدة',
@@ -137,7 +145,7 @@ const FURNITURE = {
 
 // The national data classification levels (NDMO): عام، مقيّد، سري، سري للغاية.
 // "Internal" is the platform's own level between public and restricted.
-const CLASSIFICATION_AR = {
+export const CLASSIFICATION_AR = {
   public: 'عام', internal: 'داخلي', confidential: 'مقيّد',
   secret: 'سري', top_secret: 'سري للغاية'
 };
@@ -272,12 +280,19 @@ function blocksToDocx(blocks) {
       out.push(new Paragraph({ spacing: { after: 120, line: 276 }, alignment: AlignmentType.JUSTIFIED, children: textRuns(b.runs) }));
     } else if (b.type === 'list') {
       for (const item of b.items) {
-        out.push(new Paragraph({
-          numbering: b.ordered ? { reference: 'ordered-list', level: Math.min(item.level, 2) } : undefined,
-          bullet: b.ordered ? undefined : { level: Math.min(item.level, 2) },
-          spacing: { after: 80 },
-          children: textRuns(item.runs)
-        }));
+        out.push(b.plain
+          ? new Paragraph({
+            indent: item.level ? { start: 480 * item.level } : undefined,
+            spacing: { after: 100, line: 276 },
+            alignment: AlignmentType.JUSTIFIED,
+            children: textRuns(item.runs)
+          })
+          : new Paragraph({
+            numbering: b.ordered ? { reference: 'ordered-list', level: Math.min(item.level, 2) } : undefined,
+            bullet: b.ordered ? undefined : { level: Math.min(item.level, 2) },
+            spacing: { after: 80 },
+            children: textRuns(item.runs)
+          }));
       }
     } else if (b.type === 'table') {
       if (b.caption) out.push(new Paragraph({ spacing: { before: 120, after: 60 }, children: [new TextRun({ text: b.caption, italics: true, size: 18 })] }));
@@ -388,7 +403,7 @@ export async function buildDocx(data) {
     infoTable([
       [L.title, doc.title],
       [L.reference, doc.reference],
-      [L.docType, (rtl && L.docTypeLabel[doc.doc_type]) || data.docTypeLabel || (doc.doc_type || '').replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())],
+      [L.docType, data.docTypeLabel || (rtl && L.docTypeLabel[doc.doc_type]) || (doc.doc_type || '').replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())],
       [L.domain, (rtl && arDomainName(doc.domain_key)) || data.domainName || doc.domain_key],
       [L.version, doc.version],
       [L.status, L.statusLabel[doc.status] || doc.status],

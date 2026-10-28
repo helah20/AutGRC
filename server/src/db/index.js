@@ -61,7 +61,10 @@ const ADDED_COLUMNS = [
   ['org_profile', 'brand_font', 'TEXT'],
   // Why the nonconformity happened (ISO/IEC 27001 10.2 b), so the action
   // removes the cause and not only the instance.
-  ['corrective_actions', 'root_cause', 'TEXT']
+  ['corrective_actions', 'root_cause', 'TEXT'],
+  // The publisher's own Arabic wording of a control, when the organisation
+  // imports it, so an Arabic policy quotes the Arabic text.
+  ['framework_requirements', 'statement_ar', 'TEXT']
 ];
 
 function applyColumnMigrations() {

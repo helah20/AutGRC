@@ -16,6 +16,7 @@ import { h, joinBlocks, escapeHtml } from './html.js';
 import { swimlanes } from './swimlane.js';
 import { translator, arabicTitle } from './doc-strings.js';
 import { AR_FRAMEWORKS } from '../knowledge/ar/ar-frameworks.js';
+import { regulatoryClauses } from './regulatory-text.js';
 
 const P = {
   REGULATORY: 'regulatory_requirement',
@@ -160,22 +161,50 @@ function scopeBody(model, params, org) {
 
 // -------------------------------------------------------------- policy -----
 
-export function buildPolicy({ model, params, org, frameworkCodes, frameworks }) {
+/** The section of a Policy that holds its statements, which numbers its clauses. */
+export const POLICY_STATEMENTS_SECTION = 4;
+
+export function buildPolicy({ model, params, org, frameworkCodes, frameworks, regulatory = {} }) {
   const reqs = model.requirements;
+  // Each clause carries, beneath it, the regulatory controls it cites in the
+  // publisher's full wording (services/regulatory-text.js).
+  const used = new Set();
   const clauses = reqs.map((r, i) => ({
-    ref: `5.${i + 1}`,
+    ref: `${POLICY_STATEMENTS_SECTION}.${i + 1}`,
     text: resolveText(r.policy, params),
-    req: r
+    req: r,
+    regulatory: regulatoryClauses(r, regulatory, used, activeT.language)
   }));
+  const quoted = clauses.flatMap((c) => c.regulatory.filter((x) => !x.missing));
+  const missing = clauses.flatMap((c) => c.regulatory.filter((x) => x.missing));
+  const englishOnly = quoted.filter((x) => x.englishOnly);
 
   const statementsBody = `<ol class="clause-list">${clauses
-    .map(
-      (c) =>
-        `<li><span class="clause-ref">${escapeHtml(c.ref)}</span> <strong>${escapeHtml(c.req.title)}.</strong> ` +
-        `${escapeHtml(c.text)} ` +
-        `<span class="clause-source">[${escapeHtml(refLabel(applicableRefs(c.req, frameworkCodes)))}]</span></li>`
-    )
+    .map((c) => {
+      const own = `<li><span class="clause-ref">${escapeHtml(c.ref)}</span> <strong>${escapeHtml(c.req.title)}.</strong> `
+        + `${escapeHtml(c.text)} `
+        + `<span class="clause-source">[${escapeHtml(refLabel(applicableRefs(c.req, frameworkCodes)))}]</span></li>`;
+      const subs = c.regulatory.filter((x) => !x.missing).map((x, j) =>
+        `<li class="subclause"><span class="clause-ref">${escapeHtml(`${c.ref}.${j + 1}`)}</span> `
+        + `${escapeHtml(x.text)} <span class="clause-source">[${escapeHtml(`${x.framework} ${x.ref}`)}]</span></li>`);
+      return own + subs.join('');
+    })
     .join('')}</ol>`;
+
+  const regulatoryNotes = [
+    englishOnly.length
+      ? h.callout('note', TP('policy.englishOnlyTitle', 'Regulatory text held in English only'),
+        TP('policy.englishOnlyBody',
+          `${englishOnly.length} regulatory control(s) are quoted in English because the publisher's Arabic text has not been imported: ${englishOnly.map((x) => `${x.framework} ${x.ref}`).join(', ')}.`,
+          { count: englishOnly.length, list: englishOnly.map((x) => `${x.framework} ${x.ref}`).join('، ') }))
+      : '',
+    missing.length
+      ? h.callout('warn', TP('policy.missingTitle', 'Regulatory controls cited without their text'),
+        TP('policy.missingBody',
+          `${missing.length} cited regulatory control(s) are not quoted because the catalogue holds only their reference: ${missing.map((x) => `${x.framework} ${x.ref}`).join(', ')}. Import the official publication under Frameworks and regenerate this Policy to include them in full.`,
+          { count: missing.length, list: missing.map((x) => `${x.framework} ${x.ref}`).join('، ') }))
+      : ''
+  ];
 
   const roleRows = model.roles.map((code) => {
     const acts = model.raciActivities.filter((a) => a.assign[code] === 'A').map((a) => a.activity);
@@ -213,7 +242,11 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks }) 
       section('statements', 'Policy Statements',
         joinBlocks(
           h.p(TP('policy.statementsLead', 'The following statements are mandatory. The bracketed reference after each statement identifies the authoritative source requirement it addresses.')),
-          statementsBody
+          quoted.length
+            ? h.p(TP('policy.regulatoryLead', 'Beneath each statement, the legislative and regulatory controls it implements are set out in full, in the publisher\'s own words, and are mandatory as written.'))
+            : '',
+          statementsBody,
+          ...regulatoryNotes
         ), P.POLICY, reqs.flatMap((r) => refsForRequirement(model.key, r, frameworkCodes))),
 
       section('roles', 'Roles and Responsibilities',
@@ -321,7 +354,7 @@ export function buildStandard({ model, params, frameworkCodes, frameworks }) {
   const mandatory = reqs.map((r, i) => ({
     ref: `3.${i + 1}`,
     title: r.title,
-    policyRef: `5.${i + 1}`,
+    policyRef: `${POLICY_STATEMENTS_SECTION}.${i + 1}`,
     req: r
   }));
 

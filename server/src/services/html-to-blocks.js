@@ -8,7 +8,7 @@
  * Block shapes:
  *   { type:'heading', level, runs }
  *   { type:'paragraph', runs }
- *   { type:'list', ordered, items:[{ runs, level }] }
+ *   { type:'list', ordered, plain?, items:[{ runs, level }] }  (plain: no marker)
  *   { type:'table', caption, head:[[runs]], rows:[[runs]] }
  *   { type:'callout', kind, title, runs }
  *   { type:'rule' }
@@ -133,6 +133,21 @@ function parseList(html, ordered, level = 0) {
   return { type: 'list', ordered, items };
 }
 
+/**
+ * A clause list numbers itself: each clause opens with its own reference
+ * (4.2, 4.2.1). Exported as a numbered list it would read "1. 4.2", so it is
+ * a plain list, a subclause one level in.
+ */
+function parseClauses(html) {
+  const items = [];
+  const re = /<li\b([^>]*)>([\s\S]*?)<\/li\s*>/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    items.push({ runs: parseRuns(m[2]), level: /\bsubclause\b/.test(m[1]) ? 1 : 0 });
+  }
+  return { type: 'list', ordered: false, plain: true, items };
+}
+
 const BLOCK_RE = /<(h[1-6]|p|ul|ol|table|blockquote|hr|div)\b([^>]*)>([\s\S]*?)<\/\1\s*>|<hr\s*\/?>/gi;
 
 export function htmlToBlocks(html) {
@@ -161,7 +176,7 @@ export function htmlToBlocks(html) {
       const runs = parseRuns(inner);
       if (runs.length) blocks.push({ type: 'paragraph', runs });
     } else if (tag === 'ul' || tag === 'ol') {
-      blocks.push(parseList(inner, tag === 'ol'));
+      blocks.push(/\bclause-list\b/.test(attrs) ? parseClauses(inner) : parseList(inner, tag === 'ol'));
     } else if (tag === 'table') {
       blocks.push(parseTable(inner));
     } else if (tag === 'blockquote') {

@@ -56,10 +56,16 @@ import { parseApplicability } from './applicability.js';
  * "ControlNumber" are the same header.
  */
 const HEADERS = {
-  ref: ['controlnumber', 'control', 'controlid', 'reference', 'ref', 'requirementref', 'clause', 'id'],
+  ref: ['controlnumber', 'controlreference', 'controlref', 'controlno', 'control', 'controlid', 'reference', 'ref', 'requirementref', 'clause', 'id'],
   title: ['title', 'controltitle', 'name', 'purpose', 'objective', 'controlobjective'],
-  statement: ['statement', 'policystatement', 'requirement', 'controlstatement', 'text', 'description', 'controldescription'],
-  domain: ['capabilityname', 'capability', 'domain', 'domainkey', 'area', 'controldomain', 'category'],
+  statement: ['statement', 'policystatement', 'requirement', 'controlstatement', 'controlsstatement', 'text', 'description', 'controldescription'],
+  // The publisher's Arabic wording, beside the English. A header written in
+  // Arabic is recognised separately (see mapColumns).
+  statementAr: ['statementar', 'arabicstatement', 'statementarabic', 'controlstatementar', 'controlstatementarabic', 'arabictext', 'textar', 'arabic'],
+  domain: ['capabilityname', 'capability', 'relevantcapability', 'releventcapability', 'releventcapapility', 'domain', 'domainkey', 'area', 'controldomain', 'category'],
+  // The publication a row belongs to, in a file that holds several (ECC, CSCC,
+  // DCC ... in one sheet). Rows of other publications are passed over.
+  standard: ['relevantstandard', 'relevantstander', 'releventstandard', 'releventstander', 'standard', 'framework', 'publication', 'source'],
   parentRef: ['parentref', 'parent', 'parentcontrol', 'parentnumber'],
   level: ['level', 'depth'],
   relatedStandards: ['relevantstandards', 'relatedstandards', 'standards', 'mappings', 'crossreference', 'crossreferences'],
@@ -82,7 +88,23 @@ function mapColumns(headerRow) {
       if (at !== -1 && !Object.values(found).includes(at)) { found[field] = at; break; }
     }
   }
+  // An Arabic header ("نص الضابط بالعربية", "النص العربي") normalises to
+  // nothing above, so it is recognised by its own words.
+  if (found.statementAr === undefined) {
+    const at = headerRow.findIndex((h, i) => /عرب|النص/.test(String(h ?? '')) && !Object.values(found).includes(i));
+    if (at !== -1) found.statementAr = at;
+  }
   return found;
+}
+
+/**
+ * The short name a multi-publication file uses for a framework: NCA-ECC is
+ * "ECC", ISO-27001 is "ISO". A row's own value is read the same way, so
+ * "ECC-1" (the subcontrols) and "CCC-P" (the provider controls) belong to
+ * ECC and CCC.
+ */
+function publicationKey(value) {
+  return String(value ?? '').toUpperCase().replace(/^NCA[-\s]*/, '').split(/[-\s:]/)[0];
 }
 
 // ------------------------------------------------------------- the reading --
@@ -167,7 +189,7 @@ function levelFromRef(ref) {
  * the catalogue rows the file does not cover, and the crosswalk candidates found
  * in a "Relevant Standards" column.
  */
-export async function analyseCatalogue({ filePath, originalName, existing = [] }) {
+export async function analyseCatalogue({ filePath, originalName, existing = [], frameworkCode = null }) {
   const rows = await readRows(filePath, originalName);
   if (rows.length < 2) throw new Error('The file has no data rows beneath its header.');
 
@@ -198,13 +220,21 @@ export async function analyseCatalogue({ filePath, originalName, existing = [] }
   const candidates = [];
   const seen = new Set();
   const unmatchedDomains = new Map();
+  let otherPublication = 0;
+
+  // The catalogue numbers NCA controls with hyphens (2-2-3-1); a file that
+  // writes them with dots (2.2.3.1) means the same control.
+  const hyphenated = existing.some((r) => /^\d+-\d+/.test(r.ref));
+  const wanted = frameworkCode && columns.standard !== undefined ? publicationKey(frameworkCode) : null;
 
   for (let i = 1; i < rows.length; i += 1) {
     const row = rows[i];
     const line = i + 1;
     if (row.every((v) => tidy(v) === '')) continue;
+    if (wanted && publicationKey(at(row, 'standard')) !== wanted) { otherPublication += 1; continue; }
 
-    const ref = at(row, 'ref');
+    let ref = at(row, 'ref');
+    if (hyphenated && /^\d+(\.\d+)+$/.test(ref)) ref = ref.replace(/\./g, '-');
     const statement = at(row, 'statement');
     const title = at(row, 'title');
 
@@ -235,9 +265,12 @@ export async function analyseCatalogue({ filePath, originalName, existing = [] }
       // mid-word, and never fabricated.
       title: title || statement.split(/(?<=[.;:])\s|\s—\s/)[0].slice(0, 200),
       statement: statement || null,
+      statementAr: at(row, 'statementAr') || null,
       domainKey,
       capability: capability || null,
-      parentRef: at(row, 'parentRef') || null,
+      // A file that does not name the parent states it in the reference:
+      // 1-5-3-1 sits under 1-5-3.
+      parentRef: at(row, 'parentRef') || (/[-.]/.test(ref) ? ref.replace(/[-.][^-.]+$/, '') : null),
       level: /^[1-6]$/.test(levelCell) ? Number(levelCell) : levelFromRef(ref),
       applicability,
       action: byRef.has(ref) ? 'update' : 'insert'
@@ -250,6 +283,8 @@ export async function analyseCatalogue({ filePath, originalName, existing = [] }
       Object.entries(columns).map(([field, index]) => [field, tidy(rows[0][index])])
     ),
     dataRows: rows.length - 1,
+    // Rows of the other publications in a multi-publication file.
+    otherPublication,
     accepted,
     rejected,
     inserts: accepted.filter((a) => a.action === 'insert').length,
@@ -291,20 +326,21 @@ export function applyCatalogue({ framework, accepted }) {
       if (existing) {
         q.run(
           `UPDATE framework_requirements
-              SET title = ?, statement = ?, domain_key = ?, parent_ref = ?, level = ?,
+              SET title = ?, statement = ?, statement_ar = COALESCE(?, statement_ar),
+                  domain_key = COALESCE(?, domain_key), parent_ref = COALESCE(?, parent_ref), level = ?,
                   applicability = ?, source_status = 'user_imported'
             WHERE id = ?`,
-          row.title, row.statement, row.domainKey, row.parentRef, row.level,
+          row.title, row.statement, row.statementAr || null, row.domainKey, row.parentRef, row.level,
           row.applicability ? JSON.stringify(row.applicability) : null, existing.id
         );
         result.updated += 1;
       } else {
         q.run(
           `INSERT INTO framework_requirements
-             (id, framework_id, ref, parent_ref, title, statement, domain_key, level,
+             (id, framework_id, ref, parent_ref, title, statement, statement_ar, domain_key, level,
               applicability, provenance, source_status, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,'user_imported',?)`,
-          id('fwr'), framework.id, row.ref, row.parentRef, row.title, row.statement,
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,'user_imported',?)`,
+          id('fwr'), framework.id, row.ref, row.parentRef, row.title, row.statement, row.statementAr || null,
           row.domainKey, row.level, row.applicability ? JSON.stringify(row.applicability) : null, provenance, at
         );
         result.inserted += 1;

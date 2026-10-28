@@ -19,6 +19,8 @@ import { managementReviewInputs } from '../services/management-reports.js';
 import { reviewDecisions, reviewMinutesPayload, DECISION_CATEGORY } from '../services/assurance-records.js';
 import { buildDocx } from '../services/export-docx.js';
 import { buildPdf } from '../services/export-pdf.js';
+import { exportLanguage, attachment } from '../services/export-i18n.js';
+import { requestLanguage } from '../services/localise.js';
 import { getOrgProfile } from './_shared.js';
 
 const router = express.Router();
@@ -28,9 +30,14 @@ function load(ref) {
   return q.get('SELECT * FROM management_reviews WHERE id = ? OR review_id = ?', ref, ref);
 }
 
-function detail(row) {
+function detail(row, req) {
   let inputs = null;
   try { inputs = JSON.parse(row.inputs_snapshot); } catch { /* shown as absent */ }
+  // The inputs in the reader's language, when the record captured that wording.
+  if (inputs) {
+    const { ar, ...en } = inputs;
+    inputs = req && requestLanguage(req) === 'ar' && ar ? { ...en, ...ar } : en;
+  }
   return { review: { ...row, inputs_snapshot: undefined }, inputs, decisions: reviewDecisions(row.id) };
 }
 
@@ -49,7 +56,7 @@ router.get('/', asyncHandler(async (req, res) => {
 router.get('/:id', asyncHandler(async (req, res) => {
   const row = load(req.params.id);
   if (!row) throw notFound('Management review');
-  res.json(detail(row));
+  res.json(detail(row, req));
 }));
 
 router.post('/', requirePermission('review:write'), validate(z.object({
@@ -63,7 +70,9 @@ router.post('/', requirePermission('review:write'), validate(z.object({
   const at = nowIso();
   const rowId = id('mrv');
   const reference = `MR-${padNumber(q.get('SELECT COUNT(*) AS n FROM management_reviews').n + 1, 4)}`;
-  const inputs = { ...managementReviewInputs(), capturedAt: at };
+  // Both wordings are captured with the record, so the minutes read the same
+  // figures in either language.
+  const inputs = { ...managementReviewInputs(), ar: managementReviewInputs('ar'), capturedAt: at };
   q.run(
     `INSERT INTO management_reviews (id, review_id, held_on, forum, chair, attendees, summary, inputs_snapshot,
        status, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
@@ -71,7 +80,7 @@ router.post('/', requirePermission('review:write'), validate(z.object({
     JSON.stringify(inputs), 'draft', req.user.id, at, at
   );
   audit(req, { action: 'review:create', entityType: 'management_review', entityId: rowId, summary: `Recorded management review ${reference} held ${b.held_on}` });
-  res.status(201).json(detail(load(rowId)));
+  res.status(201).json(detail(load(rowId), req));
 }));
 
 router.patch('/:id', requirePermission('review:write'), validate(z.object({
@@ -90,7 +99,7 @@ router.patch('/:id', requirePermission('review:write'), validate(z.object({
       ...entries.map(([, v]) => v), nowIso(), row.id);
   }
   audit(req, { action: 'review:update', entityType: 'management_review', entityId: row.id, summary: `Updated ${row.review_id}` });
-  res.json(detail(load(row.id)));
+  res.json(detail(load(row.id), req));
 }));
 
 /**
@@ -140,7 +149,7 @@ router.post('/:id/decisions', requirePermission('review:write'), validate(z.obje
   })();
   audit(req, { action: 'review:decision', entityType: 'management_review', entityId: row.id,
     summary: `Recorded decision ${position} in ${row.review_id}${b.raise_action ? ' and raised a corrective action' : ''}` });
-  res.status(201).json(detail(load(row.id)));
+  res.status(201).json(detail(load(row.id), req));
 }));
 
 router.post('/:id/close', requirePermission('review:write'), asyncHandler(async (req, res) => {
@@ -151,11 +160,12 @@ router.post('/:id/close', requirePermission('review:write'), asyncHandler(async 
   q.run("UPDATE management_reviews SET status = 'closed', closed_by = ?, closed_at = ?, updated_at = ? WHERE id = ?",
     req.user.id, at, at, row.id);
   audit(req, { action: 'review:close', entityType: 'management_review', entityId: row.id, summary: `Closed the minutes of ${row.review_id}` });
-  res.json(detail(load(row.id)));
+  res.json(detail(load(row.id), req));
 }));
 
 router.get('/:id/minutes.:format(docx|pdf)', requirePermission('export:run'), asyncHandler(async (req, res) => {
-  const payload = reviewMinutesPayload(req.params.id);
+  const lang = exportLanguage(req);
+  const payload = reviewMinutesPayload(req.params.id, lang);
   if (!payload) throw notFound('Management review');
   const org = getOrgProfile();
   const docx = req.params.format === 'docx';
@@ -164,7 +174,7 @@ router.get('/:id/minutes.:format(docx|pdf)', requirePermission('export:run'), as
     summary: `Exported the minutes of ${payload.document.reference}` });
   res.setHeader('Content-Type', docx
     ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="${payload.document.reference} Minutes.${req.params.format}"`);
+  res.setHeader('Content-Disposition', attachment(`${payload.document.reference} ${lang === 'ar' ? 'محضر' : 'Minutes'}.${req.params.format}`));
   res.send(Buffer.from(buffer));
 }));
 

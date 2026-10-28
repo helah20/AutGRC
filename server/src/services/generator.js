@@ -20,8 +20,9 @@ import {
 import {
   buildPolicy, buildStandard, buildProcedureDoc, buildGuideline,
   buildRolesDoc, buildRaciDoc, buildControlMatrix, buildFrameworkDoc, withLanguage,
-  applicableRefs, defaultResponsible, defaultAccountable, PROVENANCE
+  applicableRefs, defaultResponsible, defaultAccountable, PROVENANCE, POLICY_STATEMENTS_SECTION
 } from './doc-builders.js';
+import { loadRegulatoryText } from './regulatory-text.js';
 import { indexDocument, indexControl, indexRole, indexEvidence, indexRaciActivity } from './search.js';
 
 export const DOC_TYPE_PREFIX = {
@@ -182,7 +183,7 @@ export function generatePackage(opts) {
 
   // ---------------------------------------------------- build documents ----
   const builders = {
-    policy: () => buildPolicy({ model, params, org, frameworkCodes, frameworks: selectedFrameworks }),
+    policy: () => buildPolicy({ model, params, org, frameworkCodes, frameworks: selectedFrameworks, regulatory: loadRegulatoryText(frameworkCodes) }),
     standard: () => buildStandard({ model, params, frameworkCodes, frameworks: selectedFrameworks }),
     procedure: () => buildProcedureDoc({ model, params, frameworkCodes }),
     guideline: () => buildGuideline({ model, params }),
@@ -215,6 +216,10 @@ export function generatePackage(opts) {
         fullyTranslated: model.fullyTranslated !== false,
         frameworks: frameworkCodes,
         parameters: params,
+        // The values the user chose, as opposed to the resolved set above, so
+        // the document can be rebuilt in the other language with the same
+        // commitments (routes/exports.js).
+        parameterOverrides,
         assumptions,
         docTypes: ordered
       };
@@ -309,7 +314,7 @@ export function generatePackage(opts) {
         c.id, c.control_id, c.name, domainKey, c.description, c.requirement, c.control_type, c.control_nature,
         c.implementation, c.responsible_role, c.accountable_role, c.frequency, c.kpi, c.risk, c.risk_rating,
         c.testing_method,
-        created.policy ? `${created.policy.reference} §5.${model.requirements.findIndex((r) => r.key === c.requirementKey) + 1}` : null,
+        created.policy ? `${created.policy.reference} §${POLICY_STATEMENTS_SECTION}.${model.requirements.findIndex((r) => r.key === c.requirementKey) + 1}` : null,
         created.standard ? `${created.standard.reference} §3.${model.requirements.findIndex((r) => r.key === c.requirementKey) + 1}` : null,
         created.procedure ? `${created.procedure.reference}` : null,
         created.policy?.id || null, created.standard?.id || null, created.procedure?.id || null,
@@ -501,7 +506,7 @@ export function previewPackage({
   }));
 
   const builders = {
-    policy: () => buildPolicy({ model, params, org, frameworkCodes, frameworks: selectedFrameworks }),
+    policy: () => buildPolicy({ model, params, org, frameworkCodes, frameworks: selectedFrameworks, regulatory: loadRegulatoryText(frameworkCodes) }),
     standard: () => buildStandard({ model, params, frameworkCodes, frameworks: selectedFrameworks }),
     procedure: () => buildProcedureDoc({ model, params, frameworkCodes }),
     guideline: () => buildGuideline({ model, params }),

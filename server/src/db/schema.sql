@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS framework_requirements (
   parent_ref    TEXT,
   title         TEXT NOT NULL,
   statement     TEXT,
+  statement_ar  TEXT,                     -- the publisher's Arabic wording, when imported
   domain_key    TEXT,
   level         INTEGER NOT NULL DEFAULT 1,
   provenance    TEXT NOT NULL DEFAULT 'framework_guidance'

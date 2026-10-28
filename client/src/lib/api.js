@@ -138,7 +138,8 @@ export const api = {
   async download(path, fallbackName) {
     const attempt = async () => fetch(`/api${path}`, {
       credentials: 'include',
-      headers: accessToken ? { authorization: `Bearer ${accessToken}` } : {}
+      // The file is produced in the reader's language, like every response.
+      headers: { 'x-language': requestLanguage, ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}) }
     });
     let res = await attempt();
     if (res.status === 401) {
@@ -151,8 +152,11 @@ export const api = {
     }
 
     const disposition = res.headers.get('content-disposition') || '';
-    const match = disposition.match(/filename="?([^"]+)"?/);
-    const filename = match ? match[1] : fallbackName || 'download';
+    // RFC 6266: the UTF-8 name (an Arabic title) wins over the ASCII fallback.
+    const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    let filename = match ? match[1] : fallbackName || 'download';
+    if (utf8) { try { filename = decodeURIComponent(utf8[1]); } catch { /* keep the fallback */ } }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

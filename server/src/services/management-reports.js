@@ -10,7 +10,7 @@
  */
 
 import { q } from '../db/index.js';
-import { DOMAIN_META, DOMAIN_MODELS } from '../knowledge/index.js';
+import { DOMAIN_META, DOMAIN_MODELS, arDomainName } from '../knowledge/index.js';
 import { rating } from './risk.js';
 
 const OPEN_FINDING = "status IN ('open','acknowledged')";
@@ -50,7 +50,8 @@ function openRisksAtOrAbove(domainKey, bands) {
  * reader can disagree with a ranking by pointing at the driver rather than at
  * a formula they cannot see.
  */
-export function internalAuditPlan() {
+export function internalAuditPlan(lang = 'en') {
+  const ar = lang === 'ar';
   const rows = [];
   for (const d of DOMAIN_META) {
     const controls = q.get('SELECT COUNT(*) AS n FROM controls WHERE domain_key = ?', d.key).n;
@@ -68,23 +69,25 @@ export function internalAuditPlan() {
 
     const basis = [];
     let points = 0;
-    if (risks) { points += 3 * risks; basis.push(`${risks} high or critical open risk(s)`); }
-    if (findings) { points += 2 * findings; basis.push(`${findings} open high or critical finding(s)`); }
-    if (overdue) { points += overdue; basis.push(`${overdue} overdue corrective action(s)`); }
-    if (evidencePct !== null && evidencePct < 50) { points += 2; basis.push(`${evidencePct}% of evidence items verified`); }
-    if (!policy) { points += 2; basis.push('no published policy'); }
-    if (criticalControls >= 5) { points += 1; basis.push(`${criticalControls} high or critical controls`); }
+    if (risks) { points += 3 * risks; basis.push(ar ? `${risks} خطر مفتوح مرتفع أو حرج` : `${risks} high or critical open risk(s)`); }
+    if (findings) { points += 2 * findings; basis.push(ar ? `${findings} ملاحظة مفتوحة مرتفعة أو حرجة` : `${findings} open high or critical finding(s)`); }
+    if (overdue) { points += overdue; basis.push(ar ? `${overdue} إجراء تصحيحي متأخر` : `${overdue} overdue corrective action(s)`); }
+    if (evidencePct !== null && evidencePct < 50) { points += 2; basis.push(ar ? `${evidencePct}٪ من الأدلة متحقق منها` : `${evidencePct}% of evidence items verified`); }
+    if (!policy) { points += 2; basis.push(ar ? 'لا توجد سياسة منشورة' : 'no published policy'); }
+    if (criticalControls >= 5) { points += 1; basis.push(ar ? `${criticalControls} ضابطاً مرتفع أو حرج الخطورة` : `${criticalControls} high or critical controls`); }
 
     const priority = points >= 8 ? 'High' : points >= 3 ? 'Medium' : 'Low';
+    const PRIORITY_AR = { High: 'مرتفعة', Medium: 'متوسطة', Low: 'منخفضة' };
+    const timing = { High: ['Within 3 months', 'خلال 3 أشهر'], Medium: ['Within 6 months', 'خلال 6 أشهر'], Low: ['Within 12 months', 'خلال 12 شهراً'] }[priority];
     rows.push({
       points,
       row: [
-        d.name, priority,
-        priority === 'High' ? 'Within 3 months' : priority === 'Medium' ? 'Within 6 months' : 'Within 12 months',
+        ar ? arDomainName(d.key) || d.name : d.name, ar ? PRIORITY_AR[priority] : priority, timing[ar ? 1 : 0],
         citedRefs(d.key, 'NCA-ECC'), citedRefs(d.key, 'ISO-27001'),
-        controls, criticalControls, evidencePct === null ? 'No evidence defined' : `${evidencePct}%`,
+        controls, criticalControls, evidencePct === null ? (ar ? 'لا أدلة محددة' : 'No evidence defined') : `${evidencePct}%`,
         findings, risks, overdue,
-        basis.length ? basis.join('; ') : 'No adverse indicator; audited within the annual cycle'
+        basis.length ? basis.join(ar ? '؛ ' : '; ')
+          : (ar ? 'لا مؤشر سلبي؛ يُدقَّق ضمن الدورة السنوية' : 'No adverse indicator; audited within the annual cycle')
       ]
     });
   }
@@ -103,7 +106,14 @@ export function internalAuditPlan() {
  * cybersecurity supervisory committee and the Authorized Official, which is
  * the same meeting for most organisations.
  */
-export function managementReviewInputs() {
+export function managementReviewInputs(lang = 'en') {
+  if (lang === 'ar') return managementReviewInputsAr(collectReviewInputs());
+  const f = collectReviewInputs();
+  return reviewInputsEn(f);
+}
+
+/** The measures the review inputs report, gathered once for either language. */
+function collectReviewInputs() {
   const count = (sql, ...args) => q.get(sql, ...args).n;
 
   const actions = {
@@ -144,13 +154,10 @@ export function managementReviewInputs() {
   const exclusions = count('SELECT COUNT(*) AS n FROM soa_decisions WHERE applicable = 0');
   const unjustified = count("SELECT COUNT(*) AS n FROM soa_decisions WHERE applicable = 0 AND TRIM(COALESCE(justification, '')) = ''");
 
-  const pct = (a, b) => (b ? `${Math.round(((a || 0) / b) * 100)}%` : 'n/a');
-  const decide = (flag) => (flag ? 'Decision needed' : 'For information');
-
   // The decisions of the last closed review are what 9.3.2 a asks about; the
   // whole action register follows as context.
   const previous = q.get("SELECT id, review_id, held_on FROM management_reviews WHERE status = 'closed' ORDER BY held_on DESC, closed_at DESC LIMIT 1");
-  let previousLine = 'No earlier management review is recorded in the platform. ';
+  let prev = null;
   let previousOpen = 0;
   if (previous) {
     const decisions = q.all(
@@ -161,9 +168,25 @@ export function managementReviewInputs() {
     previousOpen = withAction.filter((d) => ['open', 'in_progress', 'blocked'].includes(d.status)).length;
     const overduePrev = withAction.filter((d) => ['open', 'in_progress', 'blocked'].includes(d.status)
       && d.due_date && d.due_date < new Date().toISOString().slice(0, 10)).length;
-    previousLine = `${previous.review_id} (${previous.held_on}) recorded ${decisions.length} decision(s), ${withAction.length} with an action: `
-      + `${verifiedPrev} verified, ${previousOpen} open (${overduePrev} overdue). `;
+    prev = { ...previous, decisions: decisions.length, withAction: withAction.length, verified: verifiedPrev, open: previousOpen, overdue: overduePrev };
   }
+  return {
+    actions, frameworks, bySeverity, findingsOpen, controls, evidence, gaps, assessments, chains, overdueReviews,
+    openRisks, riskBands, expiredAcceptances, untreated, unassessed, exclusions, unjustified, prev, previousOpen,
+    domainCount: DOMAIN_META.length
+  };
+}
+
+const pct = (a, b, na = 'n/a') => (b ? `${Math.round(((a || 0) / b) * 100)}%` : na);
+
+function reviewInputsEn(f) {
+  const { actions, frameworks, bySeverity, findingsOpen, controls, evidence, gaps, assessments, chains, overdueReviews,
+    openRisks, riskBands, expiredAcceptances, untreated, unassessed, exclusions, unjustified, prev, previousOpen } = f;
+  const decide = (flag) => (flag ? 'Decision needed' : 'For information');
+  const previousLine = prev
+    ? `${prev.review_id} (${prev.held_on}) recorded ${prev.decisions} decision(s), ${prev.withAction} with an action: `
+      + `${prev.verified} verified, ${prev.open} open (${prev.overdue} overdue). `
+    : 'No earlier management review is recorded in the platform. ';
 
   const rows = [
     ['Status of actions from previous management reviews', 'ISO 9.3.2 a',
@@ -189,7 +212,7 @@ export function managementReviewInputs() {
         : 'No assessment recorded in the platform. Independent audit results are presented by the internal audit function.',
       'Gap assessments', decide(gaps.non)],
     ['Fulfilment of information security objectives', 'ISO 9.3.2 d 4; ECC 1-1',
-      `${chains.length} of ${DOMAIN_META.length} domains hold a published Policy, Standard and Procedure. ${overdueReviews} document(s) past their review date.`,
+      `${chains.length} of ${f.domainCount} domains hold a published Policy, Standard and Procedure. ${overdueReviews} document(s) past their review date.`,
       'Documents', decide(overdueReviews)],
     ['Feedback from interested parties', 'ISO 9.3.2 e',
       'Not held in the platform. Presented by the CISO: regulator correspondence, customer and supplier feedback, complaints.', 'CISO', 'For information'],
@@ -205,6 +228,63 @@ export function managementReviewInputs() {
   ];
   return {
     headers: ['Input', 'Reference', 'Current position', 'Source', 'Attention'],
+    rows,
+    widths: [40, 22, 90, 26, 18]
+  };
+}
+
+/** The same inputs, worded in Arabic. */
+function managementReviewInputsAr(f) {
+  const { actions, frameworks, bySeverity, findingsOpen, controls, evidence, gaps, assessments, chains, overdueReviews,
+    openRisks, riskBands, expiredAcceptances, untreated, unassessed, exclusions, unjustified, prev, previousOpen } = f;
+  const decide = (flag) => (flag ? 'يحتاج قراراً' : 'للعلم');
+  const per = (a, b) => pct(a, b, 'غير متاح');
+  const previousLine = prev
+    ? `سجّلت المراجعة ${prev.review_id} (${prev.held_on}) ${prev.decisions} قراراً، منها ${prev.withAction} بإجراء: `
+      + `${prev.verified} متحقق منه، و${prev.open} مفتوح (${prev.overdue} متأخر). `
+    : 'لا توجد مراجعة إدارة سابقة مسجّلة في المنصة. ';
+  const SEVERITY = { critical: 'حرجة', high: 'مرتفعة', medium: 'متوسطة', low: 'منخفضة', info: 'معلوماتية' };
+
+  const rows = [
+    ['حالة الإجراءات من مراجعات الإدارة السابقة', 'ISO 9.3.2 a',
+      `${previousLine}وفي السجل كاملاً: ${actions.open} إجراء تصحيحي مفتوح، منها ${actions.overdue} متأخر؛ و${actions.awaiting} مكتمل بانتظار التحقق؛ و${actions.verified} تحقق منه خلال آخر 12 شهراً.`,
+      'مراجعات الإدارة؛ الإجراءات التصحيحية', decide(previousOpen || actions.overdue || actions.awaiting)],
+    ['التغيرات في القضايا الخارجية والداخلية', 'ISO 9.3.2 b; ECC 1-7',
+      `${frameworks.applicable ? `${frameworks.applicable} إطار منطبق مسجّل في الملف التعريفي للجهة.` : 'لا أطر منطبقة مسجّلة في الملف التعريفي للجهة.'}${frameworks.draft.length
+        ? ` إصدارات مسودة بانتظار الترحيل: ${frameworks.draft.map((x) => `${x.code} ${x.version || ''}`.trim()).join('، ')}.` : ''}`
+        + ' أما التغيرات في سياق الأعمال والتقنية والتهديدات فلا تحفظها المنصة، ويعرضها رئيس الأمن السيبراني.',
+      'الأطر؛ رئيس الأمن السيبراني', decide(frameworks.draft.length)],
+    ['التغيرات في احتياجات الأطراف المعنية وتوقعاتها', 'ISO 9.3.2 c',
+      'لا تحفظها المنصة. يعرضها رئيس الأمن السيبراني، بما في ذلك أي تعليمات تنظيمية جديدة.', 'رئيس الأمن السيبراني', 'للعلم'],
+    ['حالات عدم المطابقة والإجراءات التصحيحية', 'ISO 9.3.2 d 1; ECC 1-8-3',
+      `${findingsOpen} ملاحظة مفتوحة: ${['critical', 'high', 'medium', 'low', 'info'].map((s) => `${bySeverity[s] || 0} ${SEVERITY[s]}`).join('، ')}.`,
+      'الملاحظات؛ الإجراءات التصحيحية', decide((bySeverity.critical || 0) + (bySeverity.high || 0))],
+    ['نتائج المراقبة والقياس', 'ISO 9.3.2 d 2; ECC 1-8-1',
+      `الضوابط المطبقة: ${controls.implemented || 0} من ${controls.total} (${per(controls.implemented, controls.total)}). `
+        + `الأدلة المتحقق منها: ${evidence.verified || 0} من ${evidence.total} (${per(evidence.verified, evidence.total)})؛ و${evidence.lapsed || 0} مفقود أو منتهي الصلاحية.`,
+      'الضوابط؛ الأدلة', decide(evidence.lapsed)],
+    ['نتائج التدقيق', 'ISO 9.3.2 d 3; ECC 1-8-2, 1-8-3',
+      assessments
+        ? `${assessments} تقييم، قُيّم فيها ${gaps.total} متطلباً: ${gaps.compliant || 0} ملتزم، و${gaps.partial || 0} ملتزم جزئياً، و${gaps.non || 0} غير ملتزم.`
+        : 'لا يوجد تقييم مسجّل في المنصة. تعرض وظيفة التدقيق الداخلي نتائج التدقيق المستقل.',
+      'تقييمات الفجوات', decide(gaps.non)],
+    ['تحقيق أهداف أمن المعلومات', 'ISO 9.3.2 d 4; ECC 1-1',
+      `${chains.length} من ${f.domainCount} مجالاً لديها سياسة ومعيار وإجراء منشورة. و${overdueReviews} وثيقة تجاوزت تاريخ مراجعتها.`,
+      'الوثائق', decide(overdueReviews)],
+    ['التغذية الراجعة من الأطراف المعنية', 'ISO 9.3.2 e',
+      'لا تحفظها المنصة. يعرضها رئيس الأمن السيبراني: مراسلات الجهات التنظيمية، وملاحظات العملاء والموردين، والشكاوى.', 'رئيس الأمن السيبراني', 'للعلم'],
+    ['نتائج تقييم المخاطر وحالة خطة معالجتها', 'ISO 9.3.2 f; ECC 1-5',
+      `${openRisks.length} خطراً مفتوحاً حسب التصنيف الحالي: ${riskBands.critical} حرج، و${riskBands.high} مرتفع، و${riskBands.medium} متوسط، و${riskBands.low} منخفض `
+        + `(المتبقي حيث قُيّم، والأصلي للـ${unassessed} التي لم يُعد تقييمها). `
+        + `${untreated} لم يُعالَج بعد؛ و${expiredAcceptances} قبول تجاوز تاريخ انتهائه.`,
+      'سجل المخاطر', decide(riskBands.critical || untreated || expiredAcceptances)],
+    ['فرص التحسين المستمر', 'ISO 9.3.2 g; ISO 10.1',
+      `${exclusions} متطلباً مستثنى في بيان القابلية للتطبيق، منها ${unjustified} بلا مسوّغ. `
+        + 'تُسجَّل مقترحات التحسين قرارات لهذه المراجعة.',
+      'بيان القابلية للتطبيق', decide(unjustified)]
+  ];
+  return {
+    headers: ['المدخل', 'المرجع', 'الوضع الحالي', 'المصدر', 'الأولوية'],
     rows,
     widths: [40, 22, 90, 26, 18]
   };
