@@ -447,6 +447,7 @@ export default {
     }
   },
   risks: {
+    raiseAction: 'Raise corrective action',
     add: 'New risk',
     addTitle: 'Record a risk',
     addIt: 'Add to register',
@@ -519,6 +520,7 @@ export default {
   },
 
   actions: {
+    raisedFrom: 'Raised from',
     title: 'Corrective Actions',
     subtitle: 'What is being done about each finding, gap and risk — with an owner, a date, and a verification by someone other than the person who did the work.',
     raise: 'Raise an action',
@@ -1963,6 +1965,7 @@ export default {
   },
 
   findingsUi: {
+    raiseAction: 'Raise corrective action',
     conflicting: 'Conflicting — {document}',
     agreesWithStandard: 'Agrees with the Standard — {document}',
     agreedValue: 'Agreed organisational value:',

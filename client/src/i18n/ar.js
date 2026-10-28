@@ -449,6 +449,7 @@ export default {
     }
   },
   risks: {
+    raiseAction: 'فتح إجراء تصحيحي',
     add: 'خطر جديد',
     addTitle: 'تسجيل خطر',
     addIt: 'إضافة إلى السجل',
@@ -521,6 +522,7 @@ export default {
   },
 
   actions: {
+    raisedFrom: 'مُثار من',
     title: 'الإجراءات التصحيحية',
     subtitle: 'ما يُنفَّذ بشأن كل ملاحظة وفجوة وخطر — بمالك وتاريخ استحقاق وتحقّق من شخص غير الذي نفّذ العمل.',
     raise: 'رفع إجراء',
@@ -1947,6 +1949,7 @@ export default {
   },
 
   findingsUi: {
+    raiseAction: 'فتح إجراء تصحيحي',
     conflicting: 'متعارض — {document}',
     agreesWithStandard: 'متوافق مع المعيار — {document}',
     agreedValue: 'القيمة المعتمدة في المنظمة:',

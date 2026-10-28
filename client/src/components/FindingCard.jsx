@@ -14,7 +14,7 @@ function parseEvidence(evidence) {
   return evidence;
 }
 
-export default function FindingCard({ finding, onStatusChange, canManage }) {
+export default function FindingCard({ finding, onStatusChange, canManage, onRaiseAction }) {
   const { t } = useI18n();
   const labels = useLabels();
   const evidence = parseEvidence(finding.evidence);
@@ -96,6 +96,9 @@ export default function FindingCard({ finding, onStatusChange, canManage }) {
           <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'resolved')}><IconCheck width={12} height={12} />{t('findingsUi.resolved')}</button>
           <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'accepted_risk')}><IconAlert width={12} height={12} />{t('findingsUi.acceptRisk')}</button>
           <button className="btn btn-ghost btn-sm" onClick={() => onStatusChange(finding, 'false_positive')}><IconX width={12} height={12} />{t('findingsUi.falsePositive')}</button>
+          {onRaiseAction && (
+            <button className="btn btn-sm" onClick={() => onRaiseAction(finding)}>{t('findingsUi.raiseAction')}</button>
+          )}
           {finding.created_at && <span className="tiny faint" style={{ marginInlineStart: 'auto' }}>{t('findingsUi.raised', { when: relativeTime(finding.created_at) })}</span>}
         </div>
       )}

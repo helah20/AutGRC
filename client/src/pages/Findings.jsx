@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, qs } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -12,6 +13,7 @@ import { useI18n } from '../i18n/index.jsx';
 export default function Findings() {
   const labels = useLabels();
   const { t, formatNumber } = useI18n();
+  const navigate = useNavigate();
   const toast = useToast();
   const { can } = useAuth();
   const [severity, setSeverity] = useState('');
@@ -68,6 +70,9 @@ export default function Findings() {
                     {labels.findingScope(f.scope_type, titleCase(f.scope_type))} · {f.scope_label}
                   </div>
                   <FindingCard finding={f} canManage={can('finding:write')}
+                    onRaiseAction={can('action:write') ? (finding) => navigate(`/actions?${new URLSearchParams({
+                      raise: 'finding', source: finding.id, title: finding.title.slice(0, 200), label: finding.title.slice(0, 120)
+                    })}`) : undefined}
                     onStatusChange={async (finding, next) => {
                       try {
                         await api.patch(`/findings/${finding.id}`, { status: next });

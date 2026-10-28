@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, qs } from '../lib/api.js';
 import { useFetch, useDebounced } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -211,6 +212,7 @@ function RiskMatrix({ cells, onPick }) {
 /* ------------------------------------------------------------- drawer --- */
 
 function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
+  const navigate = useNavigate();
   const { t: tr } = useI18n();
   // The scale words in the reader's language; the server's English if missing.
   const scaleWord = (kind, value, fallback) => {
@@ -398,7 +400,14 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
               </ul>
             ) : <p className="small muted">{t('risks.noTreatingControls')}</p>}
 
-            <h4>{t('risks.correctiveActions')}</h4>
+            <div className="row" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+              <h4>{t('risks.correctiveActions')}</h4>
+              {canWrite && (
+                <button className="btn btn-sm" onClick={() => navigate(`/actions?${new URLSearchParams({
+                  raise: 'risk', source: r.id, title: r.title.slice(0, 200), label: `${r.risk_id} — ${r.title}`.slice(0, 160)
+                })}`)}><IconPlus width={12} height={12} />{t('risks.raiseAction')}</button>
+              )}
+            </div>
             {detail.actions.length ? (
               <ul className="attachment-list">
                 {detail.actions.map((a) => (

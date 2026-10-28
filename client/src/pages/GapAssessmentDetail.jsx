@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -28,6 +28,7 @@ function assessmentStatusLabel(t, value, fallback) {
 export default function GapAssessmentDetail() {
   const labels = useLabels();
   const { t, formatNumber } = useI18n();
+  const navigate = useNavigate();
   const { id } = useParams();
   const toast = useToast();
   const { can } = useAuth();
@@ -131,6 +132,14 @@ export default function GapAssessmentDetail() {
           selected && (
             <>
               <button className="btn" onClick={() => setSelected(null)}>{t('common.cancel')}</button>
+              {/* A nonconformity is closed by an action (ISO/IEC 27001 10.2). */}
+              {can('action:write') && ['non_compliant', 'partially_compliant'].includes(selected.status) && (
+                <button className="btn" onClick={() => navigate(`/actions?${new URLSearchParams({
+                  raise: 'gap_item', source: selected.id,
+                  title: `${selected.requirement_ref}: ${selected.recommendation || selected.gap || ''}`.slice(0, 200),
+                  label: `${selected.requirement_ref} — ${selected.gap || selected.requirement_txt || ''}`.slice(0, 160)
+                })}`)}>{t('risks.raiseAction')}</button>
+              )}
               <button className="btn btn-primary" onClick={save}><IconCheck width={13} height={13} />{t('gapDetailUi.saveRow')}</button>
             </>
           )
