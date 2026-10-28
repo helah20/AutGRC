@@ -50,6 +50,26 @@ const TIER_AR = { Standard: 'معيار', Procedure: 'إجراء', standard: 'ا
  * localiser and returns it unchanged when it is not knowledge-base text.
  */
 export const FINDING_PATTERNS = [
+  // ---- the analysis of an uploaded document (services/import.js) ----
+  [/^Requirement not addressed: (.+)$/, (m, t) => `متطلب غير مُعالَج: ${t(m[1])}`],
+  [/^The uploaded document does not appear to address "(.+)", which the (.+) requirement model treats as mandatory\. This leaves a gap against (.+)\.$/,
+    (m, t) => `لا يبدو أن الوثيقة المرفوعة تعالج «${t(m[1])}»، وهو متطلب إلزامي في نموذج متطلبات ${t(m[2])}. ويترك ذلك فجوة مقابل ${m[3].split(', ').join('، ')}.`],
+  [/^Add a statement covering "(.+)", or record why it does not apply\.$/,
+    (m, t) => `أضف بنداً يغطي «${t(m[1])}»، أو سجّل سبب عدم انطباقه.`],
+  [/^Conflicting commitment: (.+)$/, (m) => `التزام متعارض: ${m[1]}`],
+  [/^The uploaded document states "(.+)" where the organisational Standard for this domain records "(.+)"\.$/,
+    (m, t) => `تنص الوثيقة المرفوعة على «${m[1]}» بينما يسجّل معيار المنشأة لهذا المجال «${t(m[2])}».`],
+  [/^Reconcile the uploaded document to "(.+)", or change the Standard and propagate the change to every document in the domain\.$/,
+    (m, t) => `وفّق الوثيقة المرفوعة مع «${t(m[1])}»، أو غيّر المعيار وعمّم التغيير على كل وثائق المجال.`],
+  [/^(\d+) requirements? already exists? in the control library$/, (m) => `${m[1]} من المتطلبات موجودة مسبقاً في مكتبة الضوابط`],
+  [/^The uploaded document restates subject matter already covered by (.+)\.$/,
+    (m) => `تعيد الوثيقة المرفوعة تناول موضوعات تغطيها مسبقاً الضوابط ${m[1].split(', ').join('، ')}.`],
+  [/^(\d+) unmeasurable statements?$/, (m) => `${m[1]} من العبارات غير قابلة للقياس`],
+  [/^The document contains obligations expressed without a measurable value \(for example "(.+)"\), which cannot be objectively audited\.$/,
+    (m) => `تتضمن الوثيقة التزامات بلا قيمة قابلة للقياس (مثل «${m[1]}»)، فلا يمكن تدقيقها موضوعياً.`],
+  [/^The most recent year referenced is (\d{4}), suggesting the document has not been reviewed for at least (\d+) years\.$/,
+    (m) => `أحدث سنة مذكورة في الوثيقة ${m[1]}، ما يشير إلى أنها لم تُراجَع منذ ${m[2]} سنوات على الأقل.`],
+
   [/^Finding: (.+)$/, (m, t) => `ملاحظة: ${t(m[1])}`],
   [/^Resolve: (.+)$/, (m, t) => `معالجة: ${t(m[1])}`],
   [/^Addressed by (.+) with documented policy, standard and procedure\.$/,

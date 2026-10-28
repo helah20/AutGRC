@@ -16,8 +16,9 @@ import crypto from 'node:crypto';
 import mammoth from 'mammoth';
 import ExcelJS from 'exceljs';
 import { q } from '../db/index.js';
-import { DOMAIN_MODELS, DOMAIN_META, domainName, resolveText, buildParameterSet } from '../knowledge/index.js';
+import { DOMAIN_MODELS, DOMAIN_META, domainName, resolveText, buildParameterSet, localisedModel, arDomainName } from '../knowledge/index.js';
 import { htmlToText, sanitiseHtml } from './html.js';
+import { localise } from './localise.js';
 
 // ------------------------------------------------------------ extraction ---
 
@@ -107,30 +108,98 @@ function sentencesOf(text) {
     .filter((s) => s.length > 25 && s.length < 800);
 }
 
+// ------------------------------------------------- language of the text ---
+
+/**
+ * The language a document is written in: Arabic when Arabic letters
+ * outnumber Latin ones. An Arabic policy quotes English references and
+ * framework names, so a plain "contains Arabic" test would misread nothing,
+ * but a mostly English one with an Arabic heading would be misread.
+ */
+export function textLanguage(text) {
+  const arabic = (String(text).match(/[\u0621-\u064A]/g) || []).length;
+  const latin = (String(text).match(/[A-Za-z]/g) || []).length;
+  return arabic > latin ? 'ar' : 'en';
+}
+
+/** Arabic spelling variants folded together: hamza seats, taa marbuta, alef maqsura, diacritics. */
+function foldArabic(value) {
+  return String(value)
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+    .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي');
+}
+
+const AR_STOP = new Set(['من', 'في', 'علي', 'الي', 'عن', 'مع', 'او', 'ان', 'التي', 'الذي', 'ذلك', 'هذه', 'هذا', 'كل', 'عند', 'بعد', 'قبل', 'بين', 'غير', 'لدي', 'حيث', 'اي']);
+
+/**
+ * The words of a title worth matching on. Arabic words lose the article and
+ * a joined conjunction or preposition, so "والوصول" matches "الوصول" and
+ * "وصول"; they are matched as substrings, which carries the rest.
+ */
+function matchWords(title, language, minLength) {
+  if (language !== 'ar') return title.toLowerCase().split(/\W+/).filter((w) => w.length > minLength);
+  return foldArabic(title).split(/[^\u0621-\u064A]+/)
+    .map((w) => w.replace(/^(وال|بال|فال|كال|لل|ال)/, '').replace(/^[وبفل](?=[\u0621-\u064A]{4,})/, ''))
+    .filter((w) => w.length >= 3 && !AR_STOP.has(w));
+}
+
+/** The text prepared for matching in its own language. */
+function matchText(text, language) {
+  return language === 'ar' ? foldArabic(text) : text.toLowerCase();
+}
+
+/** The opening of a document, where its title is: the first few non-empty lines. */
+function titleRegion(text) {
+  return String(text).split(/\n+/).map((l) => l.trim()).filter(Boolean).slice(0, 4).join(' \n ').slice(0, 400);
+}
+
 /** Detect the most likely domain from the document text. */
 export function detectDomain(text) {
-  const lower = text.toLowerCase();
+  const language = textLanguage(text);
+  const haystack = matchText(text, language);
+  const head = matchText(titleRegion(text), language);
   const scores = DOMAIN_META.map((meta) => {
-    const model = DOMAIN_MODELS[meta.key];
+    // An Arabic document is read against the Arabic model: its domain name
+    // and requirement titles, not the English ones it does not contain.
+    const model = language === 'ar' ? localisedModel(meta.key, 'ar') : DOMAIN_MODELS[meta.key];
+    const name = language === 'ar' ? (arDomainName(meta.key) || meta.name) : meta.name;
     let score = 0;
+    // The title names the domain more reliably than anything in the body,
+    // where every domain's vocabulary turns up somewhere.
+    if (head.includes(matchText(name, language))) score += 40;
     // Domain name and abbreviation are strong signals.
-    if (lower.includes(meta.name.toLowerCase())) score += 12;
-    for (const word of meta.name.toLowerCase().split(/\W+/).filter((w) => w.length > 4)) {
-      if (lower.includes(word)) score += 2;
+    if (haystack.includes(matchText(name, language))) score += 12;
+    for (const word of matchWords(name, language, 4)) {
+      if (haystack.includes(word)) score += 2;
     }
     for (const req of model?.requirements || []) {
-      const words = req.title.toLowerCase().split(/\W+/).filter((w) => w.length > 5);
-      const hits = words.filter((w) => lower.includes(w)).length;
+      const words = matchWords(req.title, language, 5);
+      const hits = words.filter((w) => haystack.includes(w)).length;
       if (words.length && hits / words.length > 0.5) score += 3;
     }
     return { key: meta.key, name: meta.name, score };
   }).sort((a, b) => b.score - a.score);
 
-  return { best: scores[0], candidates: scores.slice(0, 4).filter((s) => s.score > 0) };
+  return { best: scores[0], candidates: scores.slice(0, 4).filter((s) => s.score > 0), language };
 }
 
 /** Detect the document type from its headings and language. */
 export function detectDocType(text) {
+  // A title that names the type settles it: "Change Management Procedure",
+  // «معيار النسخ الاحتياطي».
+  const title = titleRegion(text).toLowerCase();
+  const TITLE_TYPES = [
+    ['raci', /\b(raci|rasci)\b|مصفوفة raci/i],
+    ['control_matrix', /control matrix|مصفوفة الضوابط|مصفوفة ضوابط/i],
+    ['roles', /roles and responsibilities|الأدوار والمسؤوليات|أدوار ومسؤوليات/i],
+    ['procedure', /\bprocedure\b|إجراء/i],
+    ['standard', /\bstandard\b|معيار/i],
+    ['guideline', /\bguideline\b|دليل إرشادي/i],
+    ['policy', /\bpolicy\b|سياسة/i]
+  ];
+  const named = TITLE_TYPES.find(([, re]) => re.test(title));
+  if (named) return named[0];
+
   const lower = text.slice(0, 6000).toLowerCase();
   const signals = [
     ['procedure', /\b(procedure|step \d|process flow|work instruction)\b/g],
@@ -138,7 +207,13 @@ export function detectDocType(text) {
     ['policy', /\b(policy|policy statements|shall be|enforcement)\b/g],
     ['control_matrix', /\b(control id|control matrix|control objective)\b/g],
     ['raci', /\b(raci|rasci|responsible.*accountable|accountable.*consulted)\b/g],
-    ['guideline', /\b(guideline|guidance|recommended practice|advisory)\b/g]
+    ['guideline', /\b(guideline|guidance|recommended practice|advisory)\b/g],
+    // The same signals in an Arabic document.
+    ['procedure', /(إجراء|الإجراء|الخطوة|المدخل|المخرج|مخطط سير)/g],
+    ['standard', /(معيار|المعيار|الحد الأدنى|المتطلبات التقنية|خط الأساس)/g],
+    ['policy', /(سياسة|السياسة|بنود السياسة|الالتزام بهذه)/g],
+    ['control_matrix', /(مصفوفة الضوابط|رقم الضابط|هدف الضابط)/g],
+    ['guideline', /(دليل إرشادي|إرشادات|الممارسات الموصى بها)/g]
   ];
   let best = { type: 'policy', score: 0 };
   for (const [type, re] of signals) {
@@ -156,6 +231,11 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
   const model = DOMAIN_MODELS[domainKey];
   const params = buildParameterSet(domainKey, org);
   const lower = text.toLowerCase();
+  // Requirements are matched in the document's own language. The findings
+  // keep the English titles: the response localiser shows them in Arabic.
+  const language = textLanguage(text);
+  const haystack = matchText(text, language);
+  const arModel = language === 'ar' ? localisedModel(domainKey, 'ar') : null;
   const sentences = sentencesOf(text);
   const findings = [];
   const add = (f) => findings.push({ severity: 'medium', category: 'completeness', ...f });
@@ -164,19 +244,20 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
   const covered = [];
   const missing = [];
   if (model) {
-    for (const req of model.requirements) {
-      const words = req.title.toLowerCase().split(/\W+/).filter((w) => w.length > 4);
-      const hits = words.filter((w) => lower.includes(w)).length;
+    model.requirements.forEach((req, i) => {
+      const title = arModel ? arModel.requirements[i]?.title || req.title : req.title;
+      const words = matchWords(title, language, 4);
+      const hits = words.filter((w) => haystack.includes(w)).length;
       const ratio = words.length ? hits / words.length : 0;
       (ratio >= 0.5 ? covered : missing).push({ key: req.key, title: req.title, ratio: Number(ratio.toFixed(2)), refs: req.refs });
-    }
+    });
     for (const m of missing) {
       add({
         category: 'completeness',
         severity: 'high',
         title: `Requirement not addressed: ${m.title}`,
         detail: `The uploaded document does not appear to address "${m.title}", which the ${domainName(domainKey)} requirement model treats as mandatory. This leaves a gap against ${Object.entries(m.refs).map(([c, l]) => `${c} ${l.join('/')}`).join(', ')}.`,
-        recommendation: `Add a statement covering ${m.title.toLowerCase()}, or record why it does not apply.`
+        recommendation: `Add a statement covering "${m.title}", or record why it does not apply.`
       });
     }
   }
@@ -213,12 +294,20 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
 
   // ------------------------------------------------------- duplication -----
   const existingControls = q.all('SELECT control_id, name, domain_key FROM controls');
+  // An Arabic document is compared with the Arabic names of the controls.
+  const controlNames = language === 'ar'
+    ? localise(existingControls.map((c) => c.name), 'ar')
+    : existingControls.map((c) => c.name);
   const duplicates = [];
-  for (const c of existingControls) {
-    const words = c.name.toLowerCase().split(/\W+/).filter((w) => w.length > 5);
-    if (words.length < 2) continue;
-    const hits = words.filter((w) => lower.includes(w)).length;
-    if (hits / words.length >= 0.7) duplicates.push(c);
+  for (const [i, c] of existingControls.entries()) {
+    // Arabic stems are short and the domain vocabulary is shared ("أمن",
+    // "إدارة"), so an Arabic name needs longer words and a closer match.
+    const words = language === 'ar'
+      ? matchWords(controlNames[i], language, 0).filter((w) => w.length >= 4)
+      : matchWords(controlNames[i], language, 5);
+    if (words.length < (language === 'ar' ? 3 : 2)) continue;
+    const hits = words.filter((w) => haystack.includes(w)).length;
+    if (hits / words.length >= (language === 'ar' ? 0.85 : 0.7)) duplicates.push(c);
   }
   if (duplicates.length) {
     add({
@@ -232,12 +321,13 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
   }
 
   // -------------------------------------------------------- ambiguity ------
-  const vague = ['regularly', 'periodically', 'as needed', 'as appropriate', 'where applicable', 'timely', 'adequate', 'sufficient', 'from time to time'];
+  const vague = ['regularly', 'periodically', 'as needed', 'as appropriate', 'where applicable', 'timely', 'adequate', 'sufficient', 'from time to time',
+    'بشكل دوري', 'بصفة دورية', 'دورياً', 'دوريا', 'عند الحاجة', 'حسب الحاجة', 'كلما دعت الحاجة', 'في الوقت المناسب', 'بشكل مناسب', 'بشكل كاف', 'من وقت لآخر'];
   const vagueHits = [];
   for (const sentence of sentences) {
     const sl = sentence.toLowerCase();
     const term = vague.find((v) => sl.includes(v));
-    if (term && !/\d/.test(sentence)) vagueHits.push({ term, sentence: sentence.slice(0, 300) });
+    if (term && !/[\d٠-٩]/.test(sentence)) vagueHits.push({ term, sentence: sentence.slice(0, 300) });
   }
   if (vagueHits.length) {
     add({
@@ -251,11 +341,12 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
   }
 
   // -------------------------------------------------------- ownership ------
-  const hasOwner = /(document owner|policy owner|owned by|owner\s*[:|])/i.test(text);
-  const hasApprover = /(approved by|approver|approval date|authorised by)/i.test(text);
-  const hasVersion = /(version|v\d+\.\d+|revision)/i.test(text);
-  const hasReview = /(review date|next review|shall be reviewed)/i.test(text);
-  const hasClassification = /(classification|confidential|internal use|restricted)/i.test(text);
+  // Each marking in English or Arabic, the two languages documents arrive in.
+  const hasOwner = /(document owner|policy owner|owned by|owner\s*[:|]|مالك الوثيقة|مالك السياسة|مالك الإجراء|مالك المعيار)/i.test(text);
+  const hasApprover = /(approved by|approver|approval date|authorised by|المعتمِ?د|اعتمدها|اعتمده|تاريخ الاعتماد|جهة الاعتماد|صاحب الصلاحية)/i.test(text);
+  const hasVersion = /(version|v\d+\.\d+|revision|الإصدار|رقم الإصدار|النسخة|سجل الإصدارات)/i.test(text);
+  const hasReview = /(review date|next review|shall be reviewed|تاريخ المراجعة|المراجعة القادمة|دورية المراجعة|تُ?راجَ?ع هذه|يجب مراجعة)/i.test(text);
+  const hasClassification = /(classification|confidential|internal use|restricted|التصنيف|مقيّ?د|سري|داخلي|للاستخدام الداخلي)/i.test(text);
 
   if (!hasOwner) add({ category: 'ownership', severity: 'high', title: 'No document owner identified', detail: 'The document does not name an owner, so no one is accountable for keeping it current.', recommendation: 'Add a document control table recording the owner, approver, version and review date.' });
   if (!hasApprover) add({ category: 'ownership', severity: 'high', title: 'No approval recorded', detail: 'The document does not record who approved it or when.', recommendation: 'Add an approval table with name, role and date.' });
@@ -264,7 +355,7 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
   if (!hasClassification) add({ category: 'completeness', severity: 'low', title: 'No information classification', detail: 'The document does not carry a classification marking.', recommendation: 'Apply the organisation classification marking to the cover and page headers.' });
 
   // --------------------------------------------------------- evidence ------
-  const hasEvidence = /(evidence|record(s)? (shall|are|will) be|audit trail|log(s)? shall be retained)/i.test(text);
+  const hasEvidence = /(evidence|record(s)? (shall|are|will) be|audit trail|log(s)? shall be retained|الأدلة|الدليل|السجلات|سجل التدقيق|يُ?حتفظ|الاحتفاظ)/i.test(text);
   if (!hasEvidence) {
     add({
       category: 'auditability', severity: 'high',
@@ -285,13 +376,15 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
   if (latestYear && new Date().getFullYear() - latestYear >= 3) {
     outdated.push(`The most recent year referenced is ${latestYear}, suggesting the document has not been reviewed for at least ${new Date().getFullYear() - latestYear} years.`);
   }
-  if (outdated.length) {
+  // One finding per signal, so each reads as a sentence of its own in either
+  // language.
+  for (const signal of outdated) {
     add({
       category: 'currency', severity: 'medium',
       title: 'Content appears outdated',
-      detail: outdated.join(' '),
+      detail: signal,
       recommendation: 'Update references to current framework editions and reissue the document.',
-      evidence: { signals: outdated }
+      evidence: { signals: [signal] }
     });
   }
 
@@ -315,6 +408,7 @@ export function analyseText({ text, domainKey, docType, org = {} }) {
     domainKey,
     domainName: domainName(domainKey),
     docType,
+    language,
     statistics: {
       characters: text.length,
       words: text.split(/\s+/).filter(Boolean).length,

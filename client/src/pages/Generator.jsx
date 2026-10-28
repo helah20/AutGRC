@@ -108,6 +108,12 @@ export default function Generator() {
     Boolean(preview)
   ][step];
 
+  // Only the values the reader changed are decisions. Sending every value
+  // shown would send this interface's wording of the defaults, which is not
+  // the wording of a package generated in the other language.
+  const changedOverrides = () => Object.fromEntries(Object.entries(overrides)
+    .filter(([name, value]) => value !== domainDetail?.parameters.find((p) => p.name === name)?.value));
+
   const toggle = (list, setList, value) =>
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
 
@@ -115,7 +121,7 @@ export default function Generator() {
     setBusy(true);
     try {
       const res = await api.post('/generator/preview', {
-        domainKey, docTypes, parameterOverrides: overrides, classification,
+        domainKey, docTypes, parameterOverrides: changedOverrides(), classification,
         language: docLanguage
       });
       setPreview(res);
@@ -132,7 +138,7 @@ export default function Generator() {
     setBusy(true);
     try {
       const res = await api.post('/generator/generate', {
-        domainKey, docTypes, parameterOverrides: overrides,
+        domainKey, docTypes, parameterOverrides: changedOverrides(),
         classification, ownerId: ownerId || null, approverId: approverId || null,
         language: docLanguage
       });
@@ -314,6 +320,16 @@ export default function Generator() {
               <Link className="tiny" to="/settings">{t('generator.changeSources')}</Link>
             </div>
           </Card>
+
+          {/* Generating again for a domain that already has documents adds a
+              second set beside the first; the reader should know before,
+              not discover it in the register. */}
+          {(options.domains.find((d) => d.key === domainKey)?.existingDocuments || 0) > 0 && (
+            <div className="callout" data-callout="warning">
+              <strong>{t('generatorUi.existingWarnTitle')}</strong>
+              <p>{t('generatorUi.existingWarnBody', { count: options.domains.find((d) => d.key === domainKey).existingDocuments })}</p>
+            </div>
+          )}
 
           {preview.assumptions.length > 0 && (
             <Card title={t('generatorUi.assumptionsTitle')}

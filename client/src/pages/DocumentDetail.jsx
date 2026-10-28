@@ -107,6 +107,14 @@ export default function DocumentDetail() {
     }
   }
 
+  // A button names the action, not the status it leads to: "Submit for
+  // review", not "Under review".
+  const transitionLabel = (tr) => {
+    const key = `documentDetailUi.transitionAction.${tr.to}`;
+    const label = t(key);
+    return label && label !== key && !label.endsWith(tr.to) ? label : labels.status(tr.to, tr.label);
+  };
+
   // Every file comes out in the interface's language: the download carries it.
   async function exportAs(format) {
     try {
@@ -215,7 +223,7 @@ export default function DocumentDetail() {
           {transitions.filter((tr) => tr.allowed).map((tr) => (
             <button key={tr.to} className={`btn ${tr.to === 'published' || tr.to === 'approved' ? 'btn-primary' : ''}`}
               onClick={() => setTransitionTarget(tr)}>
-              {tr.to === 'approved' ? <IconCheck /> : null}{tr.label === 'Draft' ? t('documentDetailUi.returnToDraft') : labels.status(tr.to, tr.label)}
+              {tr.to === 'approved' ? <IconCheck /> : null}{tr.to === 'draft' ? t('documentDetailUi.returnToDraft') : transitionLabel(tr)}
             </button>
           ))}
         </div>

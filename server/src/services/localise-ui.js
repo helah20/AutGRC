@@ -8,6 +8,35 @@ import { SOURCE_NOTE } from '../knowledge/frameworks.js';
 import { DECISION_CATEGORY, DECISION_CATEGORY_AR } from './decision-categories.js';
 
 export const UI_PHRASES_AR = {
+  // The analysis of an uploaded document (services/import.js).
+  'Consolidate rather than maintaining two statements of the same requirement in separate documents.': 'وحّد الصياغة بدل الإبقاء على بندين للمتطلب نفسه في وثيقتين منفصلتين.',
+  'Replace each with a stated frequency, threshold or deadline.': 'استبدل كلاً منها بدورية أو حد أو موعد محدد.',
+  'No document owner identified': 'لم يُحدَّد مالك للوثيقة',
+  'The document does not name an owner, so no one is accountable for keeping it current.': 'لا تسمّي الوثيقة مالكاً، فلا أحد مساءل عن إبقائها محدّثة.',
+  'Add a document control table recording the owner, approver, version and review date.': 'أضف جدول ضبط للوثيقة يسجّل المالك والمعتمِد والإصدار وتاريخ المراجعة.',
+  'No approval recorded': 'لم يُسجَّل اعتماد',
+  'The document does not record who approved it or when.': 'لا تسجّل الوثيقة من اعتمدها ولا متى.',
+  'Add an approval table with name, role and date.': 'أضف جدول اعتماد بالاسم والدور والتاريخ.',
+  'No version identifier': 'لا يوجد رقم إصدار',
+  'Without a version, it is impossible to establish which issue is in force.': 'دون رقم إصدار يتعذّر تحديد النسخة السارية.',
+  'Add a version number and change history.': 'أضف رقم إصدار وسجلاً للتغييرات.',
+  'No review date or review cycle': 'لا تاريخ مراجعة ولا دورية مراجعة',
+  'The document does not state when it must next be reviewed.': 'لا تحدد الوثيقة موعد مراجعتها القادمة.',
+  'State the review cycle and record the next review date.': 'حدّد دورية المراجعة وسجّل تاريخ المراجعة القادمة.',
+  'No information classification': 'لا تصنيف للمعلومات',
+  'The document does not carry a classification marking.': 'لا تحمل الوثيقة علامة تصنيف.',
+  'Apply the organisation classification marking to the cover and page headers.': 'ضع علامة التصنيف المعتمدة في المنشأة على الغلاف وترويسة الصفحات.',
+  'No evidence requirements stated': 'لم تُحدَّد متطلبات الأدلة',
+  'The document states obligations but does not identify the records that demonstrate they were met, so compliance cannot be tested.': 'تنص الوثيقة على التزامات دون تحديد السجلات التي تثبت الوفاء بها، فلا يمكن اختبار الالتزام.',
+  'Add a records and evidence section naming each artefact, its source system and its retention period.': 'أضف قسماً للسجلات والأدلة يسمّي كل سجل ونظامه المصدر ومدة الاحتفاظ به.',
+  'Content appears outdated': 'يبدو أن المحتوى قديم',
+  'Update references to current framework editions and reissue the document.': 'حدّث المراجع إلى الإصدارات الحالية من الأطر وأعد إصدار الوثيقة.',
+  'References ISO/IEC 27001:2013 or earlier; the current edition is 2022.': 'تشير إلى ISO/IEC 27001:2013 أو أقدم؛ والإصدار الحالي 2022.',
+  'References NIST CSF 1.x; version 2.0 was published in 2024.': 'تشير إلى NIST CSF 1.x؛ وصدر الإصدار 2.0 عام 2024.',
+  'References a CIS Controls version earlier than v8.': 'تشير إلى إصدار من ضوابط CIS أقدم من v8.',
+  'References ECC-1:2018; the current edition is ECC-2:2024, in which industrial control systems moved to the OTCC.': 'تشير إلى ECC-1:2018؛ والإصدار الحالي ECC-2:2024، وفيه انتقلت أنظمة التحكم الصناعي إلى ضوابط OTCC.',
+  'References CCC-1:2020; the current edition is CCC-2:2024.': 'تشير إلى CCC-1:2020؛ والإصدار الحالي CCC-2:2024.',
+
   'This document has no process flow to export.': 'لا يتضمن هذا المستند مخطط سير لتصديره.',
 
   // Gap check for uploaded procedures (procedure-check.js).

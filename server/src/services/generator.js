@@ -15,7 +15,7 @@ import { db, q, nowIso, toJson, fromJson } from '../db/index.js';
 import { id, padNumber } from '../utils/ids.js';
 import {
   DOMAIN_MODELS, localisedModel, FRAMEWORKS, ROLE_LIBRARY, ROLE_INDEX,
-  buildParameterSet, resolveText, domainShort, roleName, roleShort, localisedRoles
+  buildParameterSet, resolveText, domainShort, roleName, roleShort, localisedRoles, arParameterLabel
 } from '../knowledge/index.js';
 import {
   buildPolicy, buildStandard, buildProcedureDoc, buildGuideline,
@@ -89,22 +89,51 @@ function addMonths(date, months) {
  */
 function collectAssumptions(org, model, params) {
   const out = [];
-  const add = (field, assumption, impact) => out.push({ field, assumption, impact, provenance: PROVENANCE.AI });
-
-  if (!org?.org_type) add('Organisation type', 'Treated as a general commercial organisation.', 'Sector-specific obligations may add requirements not reflected here.');
-  if (!org?.industry) add('Industry', 'No sector-specific regulatory overlay applied.', 'Sector regulators may impose additional or stricter requirements.');
-  if (!org?.size) add('Organisation size', 'Assumed to have a dedicated cybersecurity function with separate GRC and operations roles.', 'Smaller organisations may need to combine roles, which affects segregation of duties.');
-  if (!org?.operating_model) add('Cybersecurity operating model', 'Assumed centralised cybersecurity function with federated system ownership.', 'A devolved or outsourced model changes the RACI assignments materially.');
-  if (!org?.risk_appetite) add('Risk appetite', 'Assumed moderate risk appetite; parameter values follow common regulated-sector practice.', 'A lower appetite would tighten frequencies and thresholds in the Standard.');
-  if (!Array.isArray(org?.technology_env) || !org.technology_env.length) {
-    add('Technology environment', 'Assumed a mixed on-premises and cloud estate.', 'Platform-specific requirements may not apply, or may be missing.');
-  }
-  out.push({
-    field: 'Parameter values',
-    assumption: `Numeric commitments (for example ${Object.keys(model.parameters).slice(0, 3).join(', ')}) are set to common regulated-sector practice.`,
-    impact: 'These are organisational decisions. Review and adjust them in the Standard before approval.',
+  const ar = model.language === 'ar';
+  // Each assumption in the language of the package it describes.
+  const add = (field, assumption, impact) => out.push({
+    field: ar ? field[1] : field[0], assumption: ar ? assumption[1] : assumption[0], impact: ar ? impact[1] : impact[0],
     provenance: PROVENANCE.AI
   });
+
+  if (!org?.org_type) {
+    add(['Organisation type', 'نوع المنشأة'],
+      ['Treated as a general commercial organisation.', 'عوملت كمنشأة تجارية عامة.'],
+      ['Sector-specific obligations may add requirements not reflected here.', 'قد تضيف التزامات القطاع متطلبات لا تظهر هنا.']);
+  }
+  if (!org?.industry) {
+    add(['Industry', 'القطاع'],
+      ['No sector-specific regulatory overlay applied.', 'لم تُطبَّق متطلبات تنظيمية خاصة بقطاع.'],
+      ['Sector regulators may impose additional or stricter requirements.', 'قد تفرض جهات تنظيم القطاع متطلبات إضافية أو أشد.']);
+  }
+  if (!org?.size) {
+    add(['Organisation size', 'حجم المنشأة'],
+      ['Assumed to have a dedicated cybersecurity function with separate GRC and operations roles.', 'افتُرض وجود وظيفة أمن سيبراني مستقلة بأدوار منفصلة للحوكمة والتشغيل.'],
+      ['Smaller organisations may need to combine roles, which affects segregation of duties.', 'قد تحتاج المنشآت الأصغر إلى دمج أدوار، وهذا يؤثر في فصل المهام.']);
+  }
+  if (!org?.operating_model) {
+    add(['Cybersecurity operating model', 'نموذج تشغيل الأمن السيبراني'],
+      ['Assumed centralised cybersecurity function with federated system ownership.', 'افتُرضت وظيفة أمن سيبراني مركزية مع ملكية موزعة للأنظمة.'],
+      ['A devolved or outsourced model changes the RACI assignments materially.', 'النموذج اللامركزي أو المُسنَد لطرف خارجي يغيّر توزيع المسؤوليات في مصفوفة RACI جوهرياً.']);
+  }
+  if (!org?.risk_appetite) {
+    add(['Risk appetite', 'مستوى تقبّل المخاطر'],
+      ['Assumed moderate risk appetite; parameter values follow common regulated-sector practice.', 'افتُرض تقبّل متوسط للمخاطر؛ والقيم المعتمدة تتبع الممارسة الشائعة في القطاعات المنظَّمة.'],
+      ['A lower appetite would tighten frequencies and thresholds in the Standard.', 'التقبّل الأقل يشدّد الدوريات والحدود في المعيار.']);
+  }
+  if (!Array.isArray(org?.technology_env) || !org.technology_env.length) {
+    add(['Technology environment', 'البيئة التقنية'],
+      ['Assumed a mixed on-premises and cloud estate.', 'افتُرضت بيئة مختلطة بين الأنظمة الداخلية والسحابية.'],
+      ['Platform-specific requirements may not apply, or may be missing.', 'قد لا تنطبق متطلبات خاصة بمنصات معينة، أو قد تكون ناقصة.']);
+  }
+  // Named by their labels, not their internal keys.
+  const examples = Object.keys(model.parameters).slice(0, 3)
+    .map((name) => (ar && arParameterLabel(name)) || name.replace(/([A-Z])/g, ' $1').toLowerCase().trim());
+  add(['Parameter values', 'القيم المعتمدة'],
+    [`Numeric commitments (for example ${examples.join(', ')}) are set to common regulated-sector practice.`,
+      `ضُبطت الالتزامات الرقمية (مثل ${examples.join('، ')}) على الممارسة الشائعة في القطاعات المنظَّمة.`],
+    ['These are organisational decisions. Review and adjust them in the Standard before approval.',
+      'هذه قرارات تتخذها المنشأة. راجعها وعدّلها في المعيار قبل الاعتماد.']);
   return out;
 }
 

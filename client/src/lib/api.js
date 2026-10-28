@@ -115,7 +115,9 @@ export const api = {
     const send = async () => fetch(`/api${path}`, {
       method: 'POST',
       credentials: 'include',
-      headers: accessToken ? { authorization: `Bearer ${accessToken}` } : {},
+      // The reply (an import analysis, a catalogue preview) is read in the
+      // reader's language like every other response.
+      headers: { 'x-language': requestLanguage, ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}) },
       body: formData
     });
     let res = await send();

@@ -436,7 +436,33 @@ export default {
     loadingArtefacts: 'Loading artefacts…'
   },
 
+  riskScale: {
+    likelihood: { 1: 'Rare', 2: 'Unlikely', 3: 'Possible', 4: 'Likely', 5: 'Almost certain' },
+    impact: { 1: 'Insignificant', 2: 'Minor', 3: 'Moderate', 4: 'Major', 5: 'Severe' },
+    treatmentHelp: {
+      mitigate: 'Reduce the risk by applying or strengthening controls.',
+      accept: 'Take the risk knowingly, with a named accountable owner and an expiry.',
+      transfer: 'Share the consequence with a third party, by insurance or contract.',
+      avoid: 'Stop or change the activity that gives rise to the risk.'
+    }
+  },
   risks: {
+    add: 'New risk',
+    addTitle: 'Record a risk',
+    addIt: 'Add to register',
+    addedToast: 'Risk added to the register',
+    addFailed: 'Could not add the risk',
+    fieldTitle: 'Risk',
+    fieldTitleHint: 'State the event and its consequence, for example: Customer data is disclosed through an unpatched internet-facing server.',
+    category: 'Category',
+    threat: 'Threat',
+    vulnerability: 'Vulnerability',
+    asset: 'Affected asset',
+    description: 'Description',
+    likelihood: 'Inherent likelihood',
+    impact: 'Inherent impact',
+    scaleHint: '1 (rare / minimal) to 5 (almost certain / severe)',
+    inherentScore: 'Inherent score',
     title: 'Risk Register',
     subtitle: 'Built from the same canonical requirement model as the policies, so a risk and the controls that treat it come from one source rather than two that drift apart.',
     searchPlaceholder: 'Search risks…',
@@ -1687,6 +1713,8 @@ export default {
       other: '{count} activities'
     },
     existingCount: '{count} existing',
+    existingWarnTitle: 'This domain already has documents',
+    existingWarnBody: '{count} document(s) already exist for this domain. Generating creates a new set beside them with new references; it does not replace them. To change an existing document, open it and edit it, or open it for revision.',
     noMatchingDomain: 'No matching domain',
     clearFilterHint: 'Clear the filter to see all 28 domains.',
     orgTitle: 'Organisation context',
@@ -1778,6 +1806,7 @@ export default {
     approverLine: 'Approver {name}',
     reviewDueLine: 'Review due {date}',
     returnToDraft: 'Return to draft',
+    transitionAction: { under_review: 'Submit for review', approved: 'Approve', published: 'Publish', retired: 'Retire', under_revision: 'Open for revision' },
     overdueDays: {
       one: '1 day',
       other: '{count} days'

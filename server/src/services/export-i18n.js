@@ -136,7 +136,7 @@ export function cellText(value, lang) {
  */
 export function attachment(filename) {
   const clean = String(filename).replace(/[\\/:*?"<>|\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
-  const ascii = clean.replace(/[^\w.\- ]/g, '').replace(/\s+/g, ' ').trim();
+  const ascii = clean.replace(/[^\w.\- ]/g, '').replace(/\s+/g, ' ').replace(/ (?=\.[a-z0-9]+$)/i, '').trim();
   const ext = (clean.match(/\.[a-z0-9]+$/i) || [''])[0];
   const fallback = ascii && ascii !== ext ? ascii : `export${ext}`;
   return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(clean)}`;
