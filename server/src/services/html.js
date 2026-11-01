@@ -143,13 +143,16 @@ export const h = {
           .map((i) => `<li><span class="clause-ref">${escapeHtml(i.ref)}</span> ${escapeHtml(i.text)}</li>`)
           .join('')}</ol>`
       : '',
-  table: (headers, rows, caption) => {
+  // `widths`: column percentages, written as <col class="w-NN"> for the
+  // exporters (html-to-blocks reads them).
+  table: (headers, rows, caption, widths) => {
     if (!rows?.length) return '';
+    const cols = widths?.length ? `<colgroup>${widths.map((w) => `<col class="w-${Math.round(w)}">`).join('')}</colgroup>` : '';
     const head = `<thead><tr>${headers.map((x) => `<th scope="col">${escapeHtml(x)}</th>`).join('')}</tr></thead>`;
     const body = `<tbody>${rows
       .map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`)
       .join('')}</tbody>`;
-    return `<table>${caption ? `<caption>${escapeHtml(caption)}</caption>` : ''}${head}${body}</table>`;
+    return `<table>${caption ? `<caption>${escapeHtml(caption)}</caption>` : ''}${cols}${head}${body}</table>`;
   },
   callout: (kind, title, text) =>
     `<div class="callout" data-callout="${escapeHtml(kind)}"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></div>`,

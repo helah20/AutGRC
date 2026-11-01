@@ -113,13 +113,21 @@ export function buildPdf(data) {
       // The shaper lays an Arabic word out right to left, digits included, so
       // a number joined to a word ("و205") would read backwards. Such a word
       // is drawn in pieces from the right: letters shaped, numbers as written.
-      const pieces = unit.split(/(\d+(?:[.,:/-]\d+)*%?)/).filter(Boolean);
-      if (pieces.length === 1) { pdf.text(unit, x, y, { lineBreak: false }); return; }
+      // Arabic-Indic digits (١٢) are numbers too, and read left to right.
+      const NUMBER = /^[\d٠-٩]+(?:[.,:/٫-][\d٠-٩]+)*[%٪]?$/;
+      const pieces = unit.split(/([\d٠-٩]+(?:[.,:/٫-][\d٠-٩]+)*[%٪]?)/).filter(Boolean);
+      if (pieces.length === 1 && !NUMBER.test(unit)) { pdf.text(unit, x, y, { lineBreak: false }); return; }
       let right = x + pdf.widthOfString(unit);
       for (const piece of pieces) {
         const w = pdf.widthOfString(piece);
         right -= w;
-        pdf.text(piece, right, y, { lineBreak: false });
+        if (NUMBER.test(piece)) {
+          // A character at a time, so the shaper cannot reverse the digits.
+          let cursor = right;
+          for (const ch of piece) { pdf.text(ch, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(ch); }
+        } else {
+          pdf.text(piece, right, y, { lineBreak: false });
+        }
       }
       return;
     }
@@ -129,7 +137,7 @@ export function buildPdf(data) {
       // Punctuation after a number ("1.", "2026-10-27.") falls where Word puts
       // it in a right-to-left line: on the side the sentence continues.
       // Only a number standing alone: inside a run of English it stays as written.
-      const stop = /[A-Za-z]/.test(unit) ? null : word.match(/^(.*\d)([.:،؛,]+)$/);
+      const stop = /[A-Za-z]/.test(unit) ? null : word.match(/^(.*[\d٠-٩])([.:،؛,]+)$/);
       if (stop) word = stop[2] + stop[1];
       if (/[A-Za-z]/.test(word)) { pdf.text(word, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(word); }
       else for (const ch of word) { pdf.text(ch, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(ch); }
@@ -181,7 +189,17 @@ export function buildPdf(data) {
     return rtl ? MARGIN + contentWidth - before - widths[i] : MARGIN + before;
   };
 
+  // The parts around the content, as the organisation or this export chose
+  // them (services/export-layout.js). Every part is on unless turned off.
+  const layout = { cover: true, control: true, approvals: true, versions: true, contents: true, numbering: true, ...data.layout };
+  const number = (i) => (layout.numbering ? `${i + 1}. ` : '');
+  // The first page PDFKit opens is used by whatever comes first.
+  let blank = true;
+  const startPage = () => { if (!blank) pdf.addPage(); blank = false; };
+
   // ------------------------------------------------------------- cover ----
+  if (layout.cover) {
+  blank = false;
   if (brand.logo) {
     const size = fitWithin(brand.logo, 170, 85);
     pdf.image(brand.logo.buffer, (pdf.page.width - size.width) / 2, pdf.y + 20, { width: size.width, height: size.height });
@@ -208,9 +226,11 @@ export function buildPdf(data) {
   pdf.moveDown(6);
   write(`${L.effective} ${doc.effective_date || L.onApproval}   ·   ${L.nextReview} ${doc.review_date || L.toBeSet}`,
     MARGIN, pdf.y, contentWidth, { align: 'center', size: 9, color: '#8A97A6' });
+  }
 
   // --------------------------------------------------- document control ---
-  pdf.addPage();
+  if (layout.control || layout.approvals || layout.versions) startPage();
+  if (layout.control) {
   sectionTitle(L.documentControl);
   keyValueTable([
     [L.title, doc.title],
@@ -230,8 +250,10 @@ export function buildPdf(data) {
     [L.nextReview, doc.review_date || L.toBeSet],
     [L.issuer, org?.org_name || '—']
   ]);
-
   pdf.moveDown(1);
+  }
+
+  if (layout.approvals) {
   sectionTitle(L.approval);
   dataTable([L.action, L.name, L.role, L.date],
     approvals.length
@@ -240,29 +262,34 @@ export function buildPdf(data) {
          [L.reviewed, '', '', ''],
          [L.approved, approver?.name || '', approver?.job_title || L.approverRole, '']],
     [0.18, 0.28, 0.34, 0.2]);
-
   pdf.moveDown(1);
+  }
+
+  if (layout.versions) {
   sectionTitle(L.versionHistory);
   dataTable([L.version, L.date, L.author, L.change],
     versions.length
       ? versions.map((v) => [v.version, (v.created_at || '').slice(0, 10), v.author_name || '—', L.changeLabel[v.change_type] || v.change_note || '—'])
       : [[doc.version, (doc.created_at || '').slice(0, 10), owner?.name || L.documentOwner, L.initialIssue]],
     [0.12, 0.16, 0.24, 0.48]);
+  }
 
   // ------------------------------------------------------------ contents --
-  pdf.addPage();
-  sectionTitle(L.contents);
-  sections.forEach((s, i) => {
-    ensureSpace(18);
-    write(`${i + 1}.  ${s.heading}`, MARGIN + 6, pdf.y, contentWidth - 12, { size: 10 });
-    pdf.moveDown(0.35);
-  });
+  if (layout.contents) {
+    startPage();
+    sectionTitle(L.contents);
+    sections.forEach((s, i) => {
+      ensureSpace(18);
+      write(`${number(i)} ${s.heading}`.trim(), MARGIN + 6, pdf.y, contentWidth - 12, { size: 10 });
+      pdf.moveDown(0.35);
+    });
+  }
 
   // ---------------------------------------------------------------- body --
-  pdf.addPage();
+  startPage();
   sections.forEach((s, i) => {
     if (i > 0) { ensureSpace(80); pdf.moveDown(1); }
-    sectionTitle(`${i + 1}. ${s.heading}`);
+    sectionTitle(`${number(i)}${s.heading}`);
     renderBlocks(htmlToBlocks(s.body));
   });
 
@@ -277,7 +304,8 @@ export function buildPdf(data) {
     pdf.page.margins.bottom = 0;
     const startX = rtl ? MARGIN + contentWidth * 0.3 : MARGIN;
     const endX = rtl ? MARGIN : MARGIN + contentWidth * 0.7;
-    if (i !== range.start) {
+    // The cover carries no running header; without a cover every page does.
+    if (i !== range.start || !layout.cover) {
       write(`${org?.org_name || L.organisation}  |  ${doc.title}`, startX, MARGIN - 12, contentWidth * 0.7, { size: 7.5, color: MUTED });
       write(classification, endX, MARGIN - 12, contentWidth * 0.3, { align: 'end', face: 'bold', size: 7.5, color: BRAND });
       pdf.moveTo(MARGIN, MARGIN - 2).lineTo(pdf.page.width - MARGIN, MARGIN - 2).strokeColor(LINE).lineWidth(0.5).stroke();

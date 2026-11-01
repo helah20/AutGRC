@@ -10,11 +10,13 @@ import {
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import FlowDiagram, { DecisionList } from '../components/FlowDiagram.jsx';
 import FindingCard from '../components/FindingCard.jsx';
+import { ExportDialog, layoutQuery } from '../components/ExportLayout.jsx';
 import { Scorecard, AssessmentPanel } from '../components/Scorecard.jsx';
 import { formatDate, relativeTime, titleCase, daysUntil } from '../lib/format.js';
 import {
   IconDownload, IconEdit, IconSparkles, IconHistory, IconComment, IconCheck, IconAlert,
-  IconTrash, IconFlow, IconShield, IconLink, IconChevronRight, IconRefresh, IconX, IconInfo
+  IconTrash, IconFlow, IconShield, IconLink, IconChevronRight, IconRefresh, IconX, IconInfo,
+  IconPlus, IconArrowDown, IconEye
 } from '../components/Icons.jsx';
 import { useLabels } from '../i18n/labels.js';
 import { useI18n } from '../i18n/index.jsx';
@@ -53,6 +55,13 @@ export default function DocumentDetail() {
   const [comment, setComment] = useState('');
   const [compare, setCompare] = useState(null);
   const [aiBusy, setAiBusy] = useState(false);
+  // The document's structure: a section being added (after which section),
+  // renamed, or removed.
+  const [adding, setAdding] = useState(null);
+  const [newHeading, setNewHeading] = useState('');
+  const [renaming, setRenaming] = useState(null);
+  const [removing, setRemoving] = useState(null);
+  const [exportFormat, setExportFormat] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -75,6 +84,47 @@ export default function DocumentDetail() {
       throw err;
     }
   }, [id, reload, toast, t]);
+
+  // Structure changes: each one is a request, then the document reloads.
+  const changeStructure = useCallback(async (work, done) => {
+    try {
+      const result = await work();
+      if (done) toast.success(done);
+      reload();
+      return result;
+    } catch (err) {
+      toast.error(t('documentDetailUi.couldNotSave'), err.message);
+      return null;
+    }
+  }, [reload, toast, t]);
+
+  async function addSection() {
+    const heading = newHeading.trim();
+    if (!heading) return;
+    const res = await changeStructure(() => api.post(`/documents/${id}/sections`, {
+      section_key: `custom_${Date.now().toString(36)}`, heading, body: '',
+      ...(adding && adding !== 'start' ? { after: adding } : { position: 0 })
+    }), t('documentDetailUi.sectionAdded'));
+    setAdding(null);
+    setNewHeading('');
+    // A new section opens for writing straight away.
+    if (res?.section) setEditing(res.section.id);
+  }
+
+  function moveSection(index, step) {
+    const order = data.sections.map((x) => x.id);
+    const target = index + step;
+    if (target < 0 || target >= order.length) return;
+    [order[index], order[target]] = [order[target], order[index]];
+    changeStructure(() => api.post(`/documents/${id}/sections/reorder`, { order }));
+  }
+
+  async function saveHeading() {
+    const heading = renaming?.heading.trim();
+    if (!heading) return;
+    await changeStructure(() => api.put(`/documents/${id}/sections/${renaming.id}`, { heading }), t('documentDetailUi.sectionSaved'));
+    setRenaming(null);
+  }
 
   const runReview = useCallback(async () => {
     setReviewBusy(true);
@@ -116,9 +166,9 @@ export default function DocumentDetail() {
   };
 
   // Every file comes out in the interface's language: the download carries it.
-  async function exportAs(format) {
+  async function exportAs(format, layout) {
     try {
-      const name = await api.download(`/export/documents/${id}.${format}`);
+      const name = await api.download(`/export/documents/${id}.${format}${layout ? `?${layoutQuery(layout)}` : ''}`);
       toast.success(t('documents.exportReady'), name);
     } catch (err) {
       toast.error(t('common.exportFailed'), err.message);
@@ -204,14 +254,19 @@ export default function DocumentDetail() {
         </div>
         <div className="page-actions">
           <div className="btn-group">
-            <button className="btn" onClick={() => exportAs('docx')}><IconDownload />{t('documentDetail.word')}</button>
+            <button className="btn" onClick={() => setExportFormat('docx')}><IconDownload />{t('documentDetail.word')}</button>
             {data.flow && (
               <button className="btn" onClick={() => exportAs('pptx')}
                 title={t('documentDetail.powerpointHint')}>
                 <IconDownload />{t('documentDetail.powerpoint')}
               </button>
             )}
-            <button className="btn" onClick={() => exportAs('pdf')}>PDF</button>
+            <button className="btn" onClick={() => setExportFormat('pdf')}>PDF</button>
+            {doc.generation_meta?.kind === 'mbss' && (
+              <button className="btn" title={t('mbss.checklist')} onClick={async () => {
+                try { await api.download(`/export/mbss/${id}.xlsx`); } catch (err) { toast.error(t('common.exportFailed'), err.message); }
+              }}>Excel</button>
+            )}
           </div>
           {can('ai:use') && (
             <button className="btn" onClick={runReview} disabled={reviewBusy}>
@@ -275,16 +330,44 @@ export default function DocumentDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 208px', gap: 20, padding: 18 }}>
             <div className="doc-surface" style={{ padding: 0, border: 'none', background: 'none' }}>
               {data.sections.map((section, i) => (
-                <section key={section.id} id={`section-${section.section_key}`} className="doc-section">
+                <section key={section.id} id={`section-${section.section_key}`}
+                  className={`doc-section ${section.exported === 0 ? 'doc-section-hidden' : ''}`}>
                   <div className="doc-section-head">
                     <span className="doc-section-num">{i + 1}</span>
-                    <h3>{section.heading}</h3>
+                    {renaming?.id === section.id ? (
+                      <span className="row-tight" style={{ flex: 1 }}>
+                        <input className="input" autoFocus value={renaming.heading} aria-label={t('documentDetailUi.sectionHeading')}
+                          onChange={(e) => setRenaming({ ...renaming, heading: e.target.value })}
+                          onKeyDown={(e) => { if (e.key === 'Enter') saveHeading(); if (e.key === 'Escape') setRenaming(null); }} />
+                        <button className="btn btn-primary btn-sm" onClick={saveHeading}><IconCheck width={13} height={13} /></button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setRenaming(null)}><IconX width={13} height={13} /></button>
+                      </span>
+                    ) : <h3>{section.heading}</h3>}
+                    {section.exported === 0 && <Badge tone="neutral">{t('documentDetailUi.hiddenFromFile')}</Badge>}
                     <ProvenanceTag provenance={section.provenance} />
-                    {editable && editing !== section.id && (
+                    {editable && editing !== section.id && renaming?.id !== section.id && (
                       <span className="doc-section-tools">
                         <button className="btn btn-ghost btn-sm" onClick={() => setEditing(section.id)}>
                           <IconEdit width={13} height={13} />{t('documentDetailUi.edit')}
                         </button>
+                        <button className="btn btn-ghost btn-sm btn-icon" title={t('documentDetailUi.renameSection')} aria-label={t('documentDetailUi.renameSection')}
+                          onClick={() => setRenaming({ id: section.id, heading: section.heading })}>Aa</button>
+                        <button className="btn btn-ghost btn-sm btn-icon" disabled={i === 0} title={t('documentDetailUi.moveUp')} aria-label={t('documentDetailUi.moveUp')}
+                          onClick={() => moveSection(i, -1)}><IconArrowDown width={13} height={13} style={{ transform: 'rotate(180deg)' }} /></button>
+                        <button className="btn btn-ghost btn-sm btn-icon" disabled={i === data.sections.length - 1} title={t('documentDetailUi.moveDown')} aria-label={t('documentDetailUi.moveDown')}
+                          onClick={() => moveSection(i, 1)}><IconArrowDown width={13} height={13} /></button>
+                        <button className="btn btn-ghost btn-sm btn-icon"
+                          title={section.exported === 0 ? t('documentDetailUi.showInFile') : t('documentDetailUi.hideFromFile')}
+                          aria-label={section.exported === 0 ? t('documentDetailUi.showInFile') : t('documentDetailUi.hideFromFile')}
+                          aria-pressed={section.exported === 0}
+                          onClick={() => changeStructure(() => api.put(`/documents/${id}/sections/${section.id}`, { exported: section.exported === 0 }),
+                            section.exported === 0 ? t('documentDetailUi.shownInFileToast') : t('documentDetailUi.hiddenFromFileToast'))}>
+                          <IconEye width={13} height={13} />
+                        </button>
+                        {!section.locked && (
+                          <button className="btn btn-ghost btn-sm btn-icon" title={t('documentDetailUi.removeSection')} aria-label={t('documentDetailUi.removeSection')}
+                            onClick={() => setRemoving(section)}><IconTrash width={13} height={13} /></button>
+                        )}
                       </span>
                     )}
                   </div>
@@ -321,8 +404,16 @@ export default function DocumentDetail() {
                       )}
                     </>
                   )}
+                  {editable && (
+                    <AddSectionRow open={adding === section.id} heading={newHeading} onHeading={setNewHeading}
+                      onOpen={() => { setAdding(section.id); setNewHeading(''); }} onCancel={() => setAdding(null)} onAdd={addSection} />
+                  )}
                 </section>
               ))}
+              {editable && !data.sections.length && (
+                <AddSectionRow open={adding === 'start'} heading={newHeading} onHeading={setNewHeading}
+                  onOpen={() => { setAdding('start'); setNewHeading(''); }} onCancel={() => setAdding(null)} onAdd={addSection} />
+              )}
             </div>
 
             <nav className="doc-toc" aria-label={t('documentDetail.sectionNavigation')}>
@@ -618,6 +709,17 @@ export default function DocumentDetail() {
         directory={directory || []} onSaved={() => { setPropsOpen(false); reload(); }}
         onDelete={() => { setPropsOpen(false); setConfirmDelete(true); }} canDelete={can('document:delete')} />
 
+      <ExportDialog format={exportFormat} onClose={() => setExportFormat(null)} onExport={exportAs}
+        hiddenSections={data.sections.filter((x) => x.exported === 0).length} />
+
+      <ConfirmDialog open={Boolean(removing)} onClose={() => setRemoving(null)} danger
+        title={t('documentDetailUi.removeSectionTitle')} confirmLabel={t('documentDetailUi.removeSection')}
+        message={t('documentDetailUi.removeSectionMessage', { heading: removing?.heading || '' })}
+        onConfirm={async () => {
+          await changeStructure(() => api.del(`/documents/${id}/sections/${removing.id}`), t('documentDetailUi.sectionRemoved'));
+          setRemoving(null);
+        }} />
+
       <ConfirmDialog open={confirmDelete} onClose={() => setConfirmDelete(false)} danger
         title={t('documentDetailUi.deleteTitle')} confirmLabel={t('documentDetailUi.delete')}
         message={t('documentDetailUi.deleteMessage', { reference: doc.reference })}
@@ -734,5 +836,27 @@ function PropertiesModal({ open, onClose, doc, directory, onSaved, onDelete, can
         </Field>
       </div>
     </Modal>
+  );
+}
+
+/** Between sections: a quiet "add a section here" that opens to a heading field. */
+function AddSectionRow({ open, heading, onHeading, onOpen, onCancel, onAdd }) {
+  const { t } = useI18n();
+  if (!open) {
+    return (
+      <div className="doc-section-add">
+        <button className="btn btn-ghost btn-sm" onClick={onOpen}><IconPlus width={12} height={12} />{t('documentDetailUi.addSectionHere')}</button>
+      </div>
+    );
+  }
+  return (
+    <div className="doc-section-add open row-tight">
+      <input className="input" autoFocus placeholder={t('documentDetailUi.newSectionHeading')} value={heading}
+        aria-label={t('documentDetailUi.newSectionHeading')}
+        onChange={(e) => onHeading(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') onAdd(); if (e.key === 'Escape') onCancel(); }} />
+      <button className="btn btn-primary btn-sm" disabled={!heading.trim()} onClick={onAdd}><IconPlus width={12} height={12} />{t('documentDetailUi.addSection')}</button>
+      <button className="btn btn-ghost btn-sm" onClick={onCancel}>{t('common.cancel')}</button>
+    </div>
   );
 }

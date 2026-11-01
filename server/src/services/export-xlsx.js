@@ -524,3 +524,87 @@ export async function buildRiskTreatmentWorkbook({ risks, orgName, lang }) {
 
   return wb.xlsx.writeBuffer();
 }
+
+/**
+ * The verification workbook for a Minimum Baseline Security Standard: one
+ * row per item for an engineer to mark against one asset, with the status
+ * list, a summary that counts itself, and an exception register.
+ */
+export async function buildMbssWorkbook({ document, checklist, orgName, lang }) {
+  const ar = lang === 'ar';
+  const tx = (en, arabic) => (ar ? arabic : en);
+  const wb = newWorkbook(orgName, lang);
+  const { tech, meta } = checklist;
+  coverSheet(wb, {
+    orgName,
+    title: document.title,
+    subtitle: `${document.reference} · ${tx('Version', 'الإصدار')} ${document.version}`,
+    note: tx(
+      `Based on the ${tech.benchmark}${meta.benchmarkVersion ? ` (${meta.benchmarkVersion})` : ''}, © Center for Internet Security, licensed CC BY-NC-SA 4.0 (creativecommons.org/licenses/by-nc-sa/4.0). Items marked Organisation are the organisation's own additions. Verify each recommendation against the benchmark version applied.`,
+      `مبني على ${tech.benchmark}${meta.benchmarkVersion ? ` (${meta.benchmarkVersion})` : ''}، © Center for Internet Security، بترخيص CC BY-NC-SA 4.0 (creativecommons.org/licenses/by-nc-sa/4.0). البنود المعلَّمة «المنشأة» إضافات المنشأة نفسها. تحقق من كل توصية مقابل إصدار المعيار المرجعي المطبق.`)
+  });
+  const cover = wb.getWorksheet(1);
+  // The asset this copy of the workbook assesses, filled in by the assessor.
+  const start = cover.rowCount + 2;
+  [[tx('Asset / host name', 'الأصل / اسم المضيف')], [tx('Environment', 'البيئة')], [tx('Assessed by', 'المقيِّم')], [tx('Assessment date', 'تاريخ التقييم')]]
+    .forEach(([label], i) => {
+      const cell = cover.getCell(`A${start + i}`);
+      cell.value = label;
+      cell.font = { bold: true };
+      cover.getCell(`B${start + i}`).border = { bottom: { style: 'thin', color: { argb: 'FF9AA8B6' } } };
+    });
+
+  const STATUS = ar ? ['ملتزم', 'غير ملتزم', 'غير منطبق', 'استثناء'] : ['Compliant', 'Non-compliant', 'N/A', 'Exception'];
+  const sheetName = tx('Checklist', 'قائمة التحقق');
+  const headers = [
+    tx('MBSS ID', 'رقم البند'), tx('Category', 'الفئة'), tx('Requirement', 'المتطلب'), tx('Verification', 'التحقق'),
+    tx('Profile', 'المستوى'), tx('Criticality', 'الأهمية'), tx('Source', 'المصدر'), tx('CIS recommendation', 'توصية CIS'),
+    'NCA ECC', 'ISO 27001:2022', 'CIS Controls v8', tx('Status', 'الحالة'), tx('Evidence', 'الدليل'),
+    tx('Owner', 'المسؤول'), tx('Notes', 'ملاحظات')
+  ];
+  const sheet = wb.addWorksheet(sheetName);
+  styleSheet(sheet, headers, [13, 22, 54, 44, 9, 11, 13, 16, 12, 16, 12, 15, 30, 18, 30]);
+  checklist.rows.forEach((r) => {
+    const row = sheet.addRow([
+      r.id, r.area, r.requirement, r.verification, r.profile, r.criticality, r.source,
+      // The benchmark's own number for the item, recorded against the version applied.
+      r.source === 'CIS' ? tx('To verify', 'للتحقق') : '—',
+      r.ecc, r.iso, r.cis, '', '', '', ''
+    ]);
+    row.getCell(12).dataValidation = { type: 'list', allowBlank: true, formulae: [`"${STATUS.join(',')}"`] };
+    if (r.criticality === tx('High', 'عالية')) tint(sheet, row.number, 6, RISK_FILL.high);
+  });
+  finishSheet(sheet, headers.length);
+  const last = checklist.rows.length + 1;
+  // The status column takes its colour from what the assessor chooses.
+  sheet.addConditionalFormatting({
+    ref: `L2:L${last}`,
+    rules: [
+      { type: 'containsText', operator: 'containsText', text: STATUS[0], style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: STATUS_FILL.compliant } } } },
+      { type: 'containsText', operator: 'containsText', text: STATUS[1], style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: STATUS_FILL.non_compliant } } } },
+      { type: 'containsText', operator: 'containsText', text: STATUS[3], style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: STATUS_FILL.partially_compliant } } } }
+    ]
+  });
+
+  const ref = `'${sheetName}'!L2:L${last}`;
+  const s = wb.addWorksheet(tx('Summary', 'الملخص'));
+  styleSheet(s, [tx('Measure', 'المقياس'), tx('Count', 'العدد')], [44, 14]);
+  const summaryRows = [
+    [tx('Items in the baseline', 'بنود خط الأساس'), checklist.rows.length],
+    ...STATUS.map((label) => [label, { formula: `COUNTIF(${ref},"${label}")` }]),
+    [tx('Not yet assessed', 'لم تُقيَّم بعد'), { formula: `COUNTBLANK(${ref})` }],
+    [tx('Compliance (excluding N/A)', 'نسبة الالتزام (دون غير المنطبق)'),
+      { formula: `IFERROR(COUNTIF(${ref},"${STATUS[0]}")/(COUNTA(${ref})-COUNTIF(${ref},"${STATUS[2]}")),0)` }]
+  ];
+  summaryRows.forEach((r) => s.addRow(r));
+  s.getCell(`B${summaryRows.length + 1}`).numFmt = '0%';
+  finishSheet(s, 2);
+
+  const e = wb.addWorksheet(tx('Exceptions', 'الاستثناءات'));
+  const exHeaders = [tx('MBSS ID', 'رقم البند'), tx('Reason', 'السبب'), tx('Compensating control', 'الضابط التعويضي'),
+    tx('Residual risk', 'الخطر المتبقي'), tx('Risk owner', 'مالك الخطر'), tx('Approved by', 'المعتمِد'), tx('Expiry date', 'تاريخ الانتهاء')];
+  styleSheet(e, exHeaders, [13, 40, 40, 14, 22, 22, 14]);
+  finishSheet(e, exHeaders.length);
+
+  return wb.xlsx.writeBuffer();
+}

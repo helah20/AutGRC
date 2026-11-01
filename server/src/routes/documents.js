@@ -264,8 +264,20 @@ router.delete('/:id', requirePermission('document:delete'), asyncHandler(async (
 const sectionSchema = z.object({
   heading: z.string().min(1).max(200).optional(),
   body: z.string().max(400000).optional(),
-  provenance: z.string().max(60).optional()
+  provenance: z.string().max(60).optional(),
+  // Kept in the platform but left out of exported files.
+  exported: z.boolean().optional()
 });
+
+/**
+ * The structure of a published document is as fixed as its wording: a
+ * section is added, removed or moved only once it is open for revision.
+ */
+function assertStructureEditable(doc) {
+  if (doc.status === 'published' || doc.status === 'retired') {
+    throw new HttpError(409, 'Move the document to Under Revision before changing its sections.');
+  }
+}
 
 router.put('/:id/sections/:sectionId', requirePermission('document:update'), validate(sectionSchema), asyncHandler(async (req, res) => {
   const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
@@ -281,9 +293,10 @@ router.put('/:id/sections/:sectionId', requirePermission('document:update'), val
   const provenance = req.body.provenance
     ?? (req.body.body !== undefined && section.provenance === 'ai_recommendation' ? 'user_input' : section.provenance);
 
+  const exported = req.body.exported === undefined ? section.exported : (req.body.exported ? 1 : 0);
   q.run(
-    'UPDATE document_sections SET heading = ?, body = ?, provenance = ?, updated_at = ? WHERE id = ?',
-    heading, body, provenance, nowIso(), section.id
+    'UPDATE document_sections SET heading = ?, body = ?, provenance = ?, exported = ?, updated_at = ? WHERE id = ?',
+    heading, body, provenance, exported, nowIso(), section.id
   );
   q.run('UPDATE documents SET updated_at = ? WHERE id = ?', nowIso(), doc.id);
   indexDocument(doc, loadSections(doc.id));
@@ -296,19 +309,33 @@ router.post('/:id/sections', requirePermission('document:update'), validate(z.ob
   section_key: z.string().min(1).max(60),
   heading: z.string().min(1).max(200),
   body: z.string().max(400000).default(''),
-  position: z.number().int().optional()
+  position: z.number().int().optional(),
+  // Insert directly after this section; without it the section goes last.
+  after: z.string().optional()
 })), asyncHandler(async (req, res) => {
   const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
   if (!doc) throw notFound('Document');
+  assertStructureEditable(doc);
   const max = q.get('SELECT COALESCE(MAX(position), -1) AS p FROM document_sections WHERE document_id = ? AND position < 900', doc.id).p;
+  let position = req.body.position ?? max + 1;
+  if (req.body.after) {
+    const anchor = q.get('SELECT position FROM document_sections WHERE id = ? AND document_id = ?', req.body.after, doc.id);
+    if (!anchor) throw notFound('Section');
+    position = anchor.position + 1;
+  }
   const at = nowIso();
   const sectionId = id('sec');
-  q.run(
-    `INSERT INTO document_sections (id, document_id, section_key, heading, body, position, provenance, source_refs, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?)`,
-    sectionId, doc.id, req.body.section_key, req.body.heading, sanitiseHtml(req.body.body),
-    req.body.position ?? max + 1, 'user_input', toJson([]), at, at
-  );
+  db.transaction(() => {
+    // Everything from the new position down moves one place to make room.
+    q.run('UPDATE document_sections SET position = position + 1 WHERE document_id = ? AND position >= ? AND position < 900',
+      doc.id, position);
+    q.run(
+      `INSERT INTO document_sections (id, document_id, section_key, heading, body, position, provenance, source_refs, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      sectionId, doc.id, req.body.section_key, req.body.heading, sanitiseHtml(req.body.body),
+      position, 'user_input', toJson([]), at, at
+    );
+  })();
   q.run('UPDATE documents SET updated_at = ? WHERE id = ?', at, doc.id);
   indexDocument(doc, loadSections(doc.id));
   audit(req, { action: 'section:create', entityType: 'document', entityId: doc.id, summary: `Added section "${req.body.heading}" to ${doc.reference}` });
@@ -319,8 +346,10 @@ router.delete('/:id/sections/:sectionId', requirePermission('document:update'), 
   const section = q.get('SELECT * FROM document_sections WHERE id = ? AND document_id = ?', req.params.sectionId, req.params.id);
   if (!section) throw notFound('Section');
   if (section.locked) throw new HttpError(409, 'This section is locked and cannot be removed.');
-  q.run('DELETE FROM document_sections WHERE id = ?', section.id);
   const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
+  assertStructureEditable(doc);
+  q.run('DELETE FROM document_sections WHERE id = ?', section.id);
+  q.run('UPDATE documents SET updated_at = ? WHERE id = ?', nowIso(), doc.id);
   indexDocument(doc, loadSections(doc.id));
   audit(req, { action: 'section:delete', entityType: 'document', entityId: doc.id, summary: `Removed section "${section.heading}" from ${doc.reference}` });
   res.json({ ok: true });
@@ -329,6 +358,7 @@ router.delete('/:id/sections/:sectionId', requirePermission('document:update'), 
 router.post('/:id/sections/reorder', requirePermission('document:update'), validate(z.object({ order: z.array(z.string()) })), asyncHandler(async (req, res) => {
   const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
   if (!doc) throw notFound('Document');
+  assertStructureEditable(doc);
   db.transaction(() => {
     req.body.order.forEach((sectionId, i) => {
       q.run('UPDATE document_sections SET position = ? WHERE id = ? AND document_id = ?', i, sectionId, doc.id);

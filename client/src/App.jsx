@@ -30,6 +30,7 @@ import Reports from './pages/Reports.jsx';
 import ManagementReviews from './pages/ManagementReviews.jsx';
 import SearchPage from './pages/SearchPage.jsx';
 import Docs from './pages/Docs.jsx';
+import Mbss from './pages/Mbss.jsx';
 import Settings from './pages/Settings.jsx';
 import Setup from './pages/Setup.jsx';
 
@@ -82,6 +83,7 @@ export default function App() {
         <Route path="/documents/:id" element={<DocumentDetail />} />
         <Route path="/policies" element={<Documents fixedType="policy" />} />
         <Route path="/standards" element={<Documents fixedType="standard" />} />
+        <Route path="/mbss" element={<Mbss />} />
         <Route path="/procedures" element={<Documents fixedType="procedure" />} />
         <Route path="/roles" element={<Roles />} />
         <Route path="/roles/:id" element={<RoleDetail />} />

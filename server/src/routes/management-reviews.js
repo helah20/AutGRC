@@ -20,6 +20,7 @@ import { reviewDecisions, reviewMinutesPayload, DECISION_CATEGORY } from '../ser
 import { buildDocx } from '../services/export-docx.js';
 import { buildPdf } from '../services/export-pdf.js';
 import { exportLanguage, attachment } from '../services/export-i18n.js';
+import { layoutFor } from '../services/export-layout.js';
 import { requestLanguage } from '../services/localise.js';
 import { getOrgProfile } from './_shared.js';
 
@@ -169,7 +170,7 @@ router.get('/:id/minutes.:format(docx|pdf)', requirePermission('export:run'), as
   if (!payload) throw notFound('Management review');
   const org = getOrgProfile();
   const docx = req.params.format === 'docx';
-  const buffer = docx ? await buildDocx({ ...payload, org }) : await buildPdf({ ...payload, org });
+  const buffer = docx ? await buildDocx({ ...payload, org, layout: layoutFor(req) }) : await buildPdf({ ...payload, org, layout: layoutFor(req) });
   audit(req, { action: `export:${req.params.format}`, entityType: 'management_review', entityId: req.params.id,
     summary: `Exported the minutes of ${payload.document.reference}` });
   res.setHeader('Content-Type', docx

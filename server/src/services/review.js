@@ -18,6 +18,9 @@ import { scorecard } from './scorecard.js';
 
 // ------------------------------------------------------- required sections --
 
+/** The sections a minimum baseline security standard carries (services/mbss.js). */
+export const MBSS_SECTIONS = ['purpose', 'scope', 'sources', 'roles', 'golive', 'verification', 'exceptions', 'review'];
+
 export const REQUIRED_SECTIONS = {
   policy: ['purpose', 'scope', 'objectives', 'statements', 'roles', 'governance', 'compliance', 'exceptions', 'monitoring', 'review', 'enforcement', 'references'],
   // A Standard's generic security properties and a Procedure's separate
@@ -543,7 +546,9 @@ function finding(partial) {
 
 export function checkCompleteness({ doc, sections }) {
   const out = [];
-  const required = REQUIRED_SECTIONS[doc.doc_type] || [];
+  // A minimum baseline security standard is a Standard of its own shape.
+  const meta = typeof doc.generation_meta === 'string' ? (() => { try { return JSON.parse(doc.generation_meta); } catch { return {}; } })() : (doc.generation_meta || {});
+  const required = meta?.kind === 'mbss' ? MBSS_SECTIONS : (REQUIRED_SECTIONS[doc.doc_type] || []);
   const present = new Set(sections.map((s) => s.section_key));
 
   for (const key of required) {

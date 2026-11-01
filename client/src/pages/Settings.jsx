@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, qs } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import FrameworkPicker from '../components/FrameworkPicker.jsx';
+import { LayoutSettings } from '../components/ExportLayout.jsx';
 import BrandSettings from '../components/BrandSettings.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import {
@@ -60,7 +61,12 @@ export default function Settings() {
         <Tabs tabs={tabs} active={tab} onChange={setTab} />
         <div style={{ padding: 18 }}>
           {tab === 'organisation' && <OrgSettings canEdit={can('settings:write')} />}
-          {tab === 'brand' && <BrandSettings canEdit={can('settings:write')} orgName={org?.org_name || ''} />}
+          {tab === 'brand' && (
+            <>
+              <BrandSettings canEdit={can('settings:write')} orgName={org?.org_name || ''} />
+              <LayoutSettings canEdit={can('settings:write')} toast={toast} />
+            </>
+          )}
           {tab === 'users' && <UserSettings />}
           {tab === 'account' && <AccountSettings user={user} />}
           {tab === 'audit' && <AuditLog />}

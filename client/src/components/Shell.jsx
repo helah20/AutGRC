@@ -30,6 +30,7 @@ const NAV = [
       { to: '/policies', labelKey: 'nav.policies', icon: IconBook, countKey: 'policies' },
       { to: '/standards', labelKey: 'nav.standards', icon: IconLayers, countKey: 'standards' },
       { to: '/procedures', labelKey: 'nav.procedures', icon: IconGrid, countKey: 'procedures' },
+      { to: '/mbss', labelKey: 'nav.mbss', icon: IconShield },
       { to: '/hierarchy', labelKey: 'nav.hierarchy', icon: IconLink }
     ]
   },

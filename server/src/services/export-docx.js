@@ -396,9 +396,15 @@ export async function buildDocx(data) {
     ? (CLASSIFICATION_AR[doc.classification] || CLASSIFICATION_AR.internal)
     : (CLASSIFICATION_LABEL[doc.classification] || 'INTERNAL');
 
-  const body = [
-    ...coverPage({ doc, org, classification, rtl, L }),
+  // The parts around the content, as the organisation or this export chose
+  // them (services/export-layout.js). Every part is on unless turned off.
+  const layout = { cover: true, control: true, approvals: true, versions: true, contents: true, numbering: true, ...data.layout };
+  const number = (i) => (layout.numbering ? `${i + 1}. ` : '');
 
+  const body = [
+    ...(layout.cover ? coverPage({ doc, org, classification, rtl, L }) : []),
+
+    ...(layout.control ? [
     new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.documentControl, color: BRAND, rightToLeft: rtl })] }),
     infoTable([
       [L.title, doc.title],
@@ -416,8 +422,9 @@ export async function buildDocx(data) {
       [L.nextReview, doc.review_date || L.toBeSet],
       [L.issuer, org?.org_name || '—']
     ]),
-    new Paragraph({ spacing: { after: 300 }, children: [] }),
+    new Paragraph({ spacing: { after: 300 }, children: [] })] : []),
 
+    ...(layout.approvals ? [
     new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.approval, color: BRAND, rightToLeft: rtl })] }),
     gridTable(
       [[[{ text: L.action }], [{ text: L.name }], [{ text: L.role }], [{ text: L.date }]]],
@@ -427,8 +434,9 @@ export async function buildDocx(data) {
            [L.reviewed, '', '', ''],
            [L.approved, approver?.name || '', approver?.job_title || L.approverRole, '']]
     ),
-    new Paragraph({ spacing: { after: 300 }, children: [] }),
+    new Paragraph({ spacing: { after: 300 }, children: [] })] : []),
 
+    ...(layout.versions ? [
     new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.versionHistory, color: BRAND, rightToLeft: rtl })] }),
     gridTable(
       [[[{ text: L.version }], [{ text: L.date }], [{ text: L.author }], [{ text: L.change }]]],
@@ -437,24 +445,29 @@ export async function buildDocx(data) {
             L.changeLabel[v.change_type] || v.change_note || '—'])
         : [[doc.version, (doc.created_at || '').slice(0, 10), owner?.name || L.documentOwner, L.initialIssue]]
     ),
-    new Paragraph({ spacing: { after: 300 }, children: [] }),
+    new Paragraph({ spacing: { after: 300 }, children: [] })] : []),
 
     // The contents as a numbered list of the sections, written out rather than
     // as a Word field: a field is empty until the reader updates it, and Word
     // asks about updating fields every time the file is opened.
+    ...(layout.contents ? [
     new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.contents, color: BRAND, rightToLeft: rtl })] }),
     ...sections.map((s, i) => new Paragraph({
       spacing: { after: 60 }, bidirectional: rtl,
-      children: [new TextRun({ text: `${i + 1}.  ${s.heading}`, color: '1C2733', rightToLeft: rtl })]
-    })),
-    new Paragraph({ children: [new PageBreak()] })
+      children: [new TextRun({ text: `${number(i)} ${s.heading}`.trim(), color: '1C2733', rightToLeft: rtl })]
+    }))] : [])
   ];
+  // The content starts on a page of its own after any front matter; the
+  // cover ends with its own page break.
+  if (layout.control || layout.approvals || layout.versions || layout.contents) {
+    body.push(new Paragraph({ children: [new PageBreak()] }));
+  }
 
   sections.forEach((s, i) => {
     body.push(new Paragraph({
       heading: HeadingLevel.HEADING_1,
       spacing: { before: i === 0 ? 0 : 360, after: 160 },
-      children: [new TextRun({ text: `${i + 1}. ${s.heading}`, color: BRAND })]
+      children: [new TextRun({ text: `${number(i)}${s.heading}`, color: BRAND })]
     }));
     body.push(...blocksToDocx(htmlToBlocks(s.body)));
   });

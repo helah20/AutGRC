@@ -1,6 +1,7 @@
 /** User administration, organisation profile and audit log. */
 
 import express from 'express';
+import { LAYOUT_PARTS, defaultLayout, normaliseLayout } from '../services/export-layout.js';
 import { z } from 'zod';
 import crypto from 'node:crypto';
 import { q, nowIso, toJson } from '../db/index.js';
@@ -258,7 +259,10 @@ function brandSettings() {
     logo: row.logo_data_url || null,
     palettes: PALETTES,
     fonts: FONTS,
-    defaults: DEFAULT_BRAND
+    defaults: DEFAULT_BRAND,
+    // The parts exported documents carry around their content.
+    layout: defaultLayout(),
+    layoutParts: LAYOUT_PARTS
   };
 }
 
@@ -295,6 +299,23 @@ router.put('/org/brand', requirePermission('settings:write'), validate(z.object(
   audit(req, {
     action: 'settings:brand', entityType: 'org_profile',
     summary: `Updated the document identity: ${b.palette} palette, ${b.font} fonts${b.logo === null ? ', logo removed' : b.logo ? ', new logo' : ''}`
+  });
+  res.json(brandSettings());
+}));
+
+/** The organisation's default for what exported documents carry. */
+router.put('/org/export-layout', requirePermission('settings:write'), validate(z.object(
+  Object.fromEntries(LAYOUT_PARTS.map((part) => [part, z.boolean()]))
+)), asyncHandler(async (req, res) => {
+  if (!q.get('SELECT id FROM org_profile WHERE id = 1')) {
+    throw new HttpError(409, 'Set the organisation profile before its export layout.');
+  }
+  const layout = normaliseLayout(req.body);
+  q.run('UPDATE org_profile SET export_layout = ?, updated_at = ? WHERE id = 1', JSON.stringify(layout), nowIso());
+  const off = LAYOUT_PARTS.filter((part) => !layout[part]);
+  audit(req, {
+    action: 'settings:export_layout', entityType: 'org_profile',
+    summary: off.length ? `Exported documents now leave out: ${off.join(', ')}` : 'Exported documents carry every part'
   });
   res.json(brandSettings());
 }));
