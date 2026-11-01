@@ -141,7 +141,7 @@ function statusFor(band) {
  */
 export function scorecard(findings, { documents = 1 } = {}) {
   const divisor = Math.max(1, Number(documents) || 1);
-  const perCriterion = new Map(CRITERIA.map((c) => [c.key, { penalty: 0, findings: 0 }]));
+  const perCriterion = new Map(CRITERIA.map((c) => [c.key, { penalty: 0, findings: 0, items: [] }]));
   const unmapped = new Map();
 
   for (const f of findings) {
@@ -157,12 +157,23 @@ export function scorecard(findings, { documents = 1 } = {}) {
     const acc = perCriterion.get(key);
     acc.penalty += weight;
     acc.findings += 1;
+    // What the reader fixes: each finding with the points it costs and, where
+    // the check knows it, the document and section to fix it in.
+    const evidence = typeof f.evidence === 'string' ? (() => { try { return JSON.parse(f.evidence); } catch { return null; } })() : f.evidence;
+    acc.items.push({
+      id: f.id || null, title: f.title, severity: f.severity, category: f.category,
+      location: f.location || '', recommendation: f.recommendation || '',
+      weight, target: evidence?.target || null
+    });
   }
 
   const criteria = CRITERIA.map((c) => {
     const acc = perCriterion.get(c.key);
     const perDocument = Math.round((acc.penalty / divisor) * 100) / 100;
     const band = bandFor(perDocument);
+    // How many points have to go for the next band up, in findings' weights.
+    const next = BANDS.find((x) => x.band === band + 1);
+    const toNextBand = next ? Math.max(0, Math.ceil((perDocument - next.upTo) * divisor)) : 0;
     return {
       key: c.key,
       short: c.short,
@@ -175,7 +186,9 @@ export function scorecard(findings, { documents = 1 } = {}) {
       // figure the band is read from, and the 0-100 score is the domain total.
       penaltyPerDocument: perDocument,
       band,
-      status: statusFor(band)
+      status: statusFor(band),
+      toNextBand,
+      items: acc.items.sort((x, y) => y.weight - x.weight).slice(0, 60)
     };
   });
 

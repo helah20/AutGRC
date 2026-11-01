@@ -542,6 +542,15 @@ function finding(partial) {
   };
 }
 
+/**
+ * Where a finding is fixed: the document, the section, and what to do there.
+ * Carried in the evidence so it survives storage, and read by the screens to
+ * take the reader straight to the place, after which the score is recomputed.
+ */
+function fixAt(doc, action, extra = {}, evidence = null) {
+  return { ...(evidence || {}), target: { documentId: doc.id, reference: doc.reference, action, ...extra } };
+}
+
 // ------------------------------------------------------------- checks ------
 
 export function checkCompleteness({ doc, sections }) {
@@ -558,7 +567,14 @@ export function checkCompleteness({ doc, sections }) {
         title: `Missing required section: ${SECTION_LABEL[key] || key}`,
         detail: `A ${doc.doc_type.replace('_', ' ')} is expected to contain a "${SECTION_LABEL[key] || key}" section. It is absent from ${doc.reference}.`,
         location: `${doc.reference}`,
-        recommendation: `Add a "${SECTION_LABEL[key] || key}" section before submitting this document for approval.`
+        recommendation: `Add a "${SECTION_LABEL[key] || key}" section before submitting this document for approval.`,
+        // It goes back where the document's shape puts it: after the nearest
+        // required section before it that the document still has.
+        evidence: fixAt(doc, 'add_section', {
+          sectionKey: key, heading: SECTION_LABEL[key] || key,
+          after: [...required.slice(0, required.indexOf(key))].reverse()
+            .map((k) => sections.find((x) => x.section_key === k)?.id).find(Boolean) || null
+        })
       }));
     }
   }
@@ -573,7 +589,8 @@ export function checkCompleteness({ doc, sections }) {
           ? `The section contains no content.`
           : `The section contains only ${text.length} characters, which is unlikely to state a complete requirement.`,
         location: `${doc.reference} — ${s.heading}`,
-        recommendation: 'Complete the section or remove it if it does not apply to this document.'
+        recommendation: 'Complete the section or remove it if it does not apply to this document.',
+        evidence: fixAt(doc, 'edit_section', { sectionKey: s.section_key, heading: s.heading })
       }));
     }
   }
@@ -584,7 +601,8 @@ export function checkCompleteness({ doc, sections }) {
       title: 'Document has no assigned owner',
       detail: `${doc.reference} has no Document Owner. An unowned document cannot be maintained or approved.`,
       location: doc.reference,
-      recommendation: 'Assign a Document Owner accountable for the content and its review cycle.'
+      recommendation: 'Assign a Document Owner accountable for the content and its review cycle.',
+      evidence: fixAt(doc, 'properties', { field: 'owner' })
     }));
   }
   if (!doc.approver_id && ['under_review', 'approved', 'published'].includes(doc.status)) {
@@ -593,7 +611,8 @@ export function checkCompleteness({ doc, sections }) {
       title: 'Document has no approver',
       detail: `${doc.reference} is at status "${doc.status}" but no Approver is recorded.`,
       location: doc.reference,
-      recommendation: 'Record the approving authority before the document proceeds.'
+      recommendation: 'Record the approving authority before the document proceeds.',
+      evidence: fixAt(doc, 'properties', { field: 'approver' })
     }));
   }
   if (!doc.review_date) {
@@ -602,7 +621,8 @@ export function checkCompleteness({ doc, sections }) {
       title: 'No review date set',
       detail: `${doc.reference} does not carry a review date, so it cannot be reported as overdue.`,
       location: doc.reference,
-      recommendation: 'Set a review date, normally 12 months from the effective date.'
+      recommendation: 'Set a review date, normally 12 months from the effective date.',
+      evidence: fixAt(doc, 'properties', { field: 'review_date' })
     }));
   } else if (new Date(doc.review_date) < new Date() && doc.status === 'published') {
     out.push(finding({
@@ -610,7 +630,8 @@ export function checkCompleteness({ doc, sections }) {
       title: 'Document is overdue for review',
       detail: `${doc.reference} was due for review on ${doc.review_date} and remains published.`,
       location: doc.reference,
-      recommendation: 'Review and reissue the document, or move it to Under Revision.'
+      recommendation: 'Review and reissue the document, or move it to Under Revision.',
+      evidence: fixAt(doc, 'revise')
     }));
   }
   return out;
@@ -635,7 +656,7 @@ export function checkAmbiguity({ doc, sections }) {
             : `The statement uses "${term}" without a measurable value, so compliance cannot be objectively assessed or audited.`,
           location: `${doc.reference} — ${s.heading}`,
           recommendation: `Replace "${term}": ${suggest}.`,
-          evidence: { statement: sentence.slice(0, 400) }
+          evidence: fixAt(doc, 'edit_section', { sectionKey: s.section_key, heading: s.heading }, { statement: sentence.slice(0, 400) })
         }));
         break; // one finding per sentence is enough
       }
@@ -916,12 +937,12 @@ export function checkConsistency(domainKey) {
             detail: `${bad.doc.reference} states "${bad.freqs.join(', ')}" where the agreed organisational value is "${expectedFreq.join(', ')}"${good ? ` and ${good.doc.reference} states it correctly` : ''}. Documents in the same domain must state the same commitment.`,
             location: `${bad.doc.reference} — ${bad.section.heading}`,
             recommendation: `Reconcile to the value recorded in the Standard (${value}), or change the Standard and propagate the change to every document in this domain.`,
-            evidence: {
+            evidence: fixAt(bad.doc, 'edit_section', { sectionKey: bad.section.section_key, heading: bad.section.heading }, {
               parameter: paramName,
               agreedValue: value,
               conflicting: { document: bad.doc.reference, section: bad.section.heading, statement: bad.sentence },
               agreeing: good ? { document: good.doc.reference, section: good.section.heading, statement: good.sentence } : null
-            }
+            })
           }));
         }
       }
@@ -942,11 +963,11 @@ export function checkConsistency(domainKey) {
           detail: `${obs.doc.reference} states "${sameUnit.map((d) => d.text).join(', ')}" where the agreed organisational value is "${expected.text}".`,
           location: `${obs.doc.reference} — ${obs.section.heading}`,
           recommendation: `Reconcile to the value recorded in the Standard (${value}).`,
-          evidence: {
+          evidence: fixAt(obs.doc, 'edit_section', { sectionKey: obs.section.section_key, heading: obs.section.heading }, {
             parameter: paramName,
             agreedValue: value,
             conflicting: { document: obs.doc.reference, section: obs.section.heading, statement: obs.sentence }
-          }
+          })
         }));
       }
     }

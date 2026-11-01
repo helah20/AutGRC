@@ -196,3 +196,30 @@ test('reviewer assessment', async (t) => {
     assert.equal(typeof cmp.reviewerOverall, 'number');
   });
 });
+
+test('each criterion lists what it loses points to, and where each is fixed', () => {
+  // Take the Scope section out and empty another, as a reader might.
+  const scope = q.get("SELECT * FROM document_sections WHERE document_id = ? AND section_key = 'scope'", policy.id);
+  const objectives = q.get("SELECT * FROM document_sections WHERE document_id = ? AND section_key = 'objectives'", policy.id);
+  q.run('DELETE FROM document_sections WHERE id = ?', scope.id);
+  q.run("UPDATE document_sections SET body = '' WHERE id = ?", objectives.id);
+
+  const cc = reviewDocument(policy.id).scorecard.criteria.find((c) => c.key === 'control_completeness');
+  const missing = cc.items.find((i) => i.target?.action === 'add_section');
+  assert.equal(missing.target.sectionKey, 'scope');
+  assert.equal(missing.target.documentId, policy.id);
+  const purpose = q.get("SELECT id FROM document_sections WHERE document_id = ? AND section_key = 'purpose'", policy.id);
+  assert.equal(missing.target.after, purpose.id, 'the section goes back after the one before it');
+  const empty = cc.items.find((i) => i.target?.action === 'edit_section');
+  assert.equal(empty.target.sectionKey, 'objectives');
+  assert.ok(cc.items[0].weight >= cc.items.at(-1).weight, 'the costliest first');
+  assert.ok(cc.toNextBand > 0, 'it says how many points stand between this band and the next');
+
+  // Put them back: the criterion recovers with nothing else touched.
+  q.run(`INSERT INTO document_sections (id, document_id, section_key, heading, body, position, provenance, source_refs, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`, scope.id, policy.id, 'scope', scope.heading, scope.body, scope.position, scope.provenance, scope.source_refs, scope.created_at, scope.updated_at);
+  q.run('UPDATE document_sections SET body = ? WHERE id = ?', objectives.body, objectives.id);
+  const after = reviewDocument(policy.id).scorecard.criteria.find((c) => c.key === 'control_completeness');
+  assert.ok(after.band > cc.band);
+  assert.ok(!after.items.some((i) => ['add_section', 'edit_section'].includes(i.target?.action)));
+});

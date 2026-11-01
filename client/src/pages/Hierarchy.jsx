@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
@@ -36,6 +36,13 @@ export default function Hierarchy() {
   const { data: options } = useFetch('/generator/options');
   const [domain, setDomain] = useState('iam');
   const [review, setReview] = useState(null);
+  // The domain's score as its documents stand now; each finding links to the
+  // place it is fixed, and coming back here recomputes it.
+  const [quality, setQuality] = useState(null);
+  useEffect(() => {
+    setQuality(null);
+    api.get(`/ai/quality/domain/${domain}`).then(setQuality).catch(() => {});
+  }, [domain]);
   const [busy, setBusy] = useState(false);
 
   const domains = useMemo(() => {
@@ -162,14 +169,16 @@ export default function Hierarchy() {
         </div>
       </Card>
 
+      {quality?.scorecard && (
+        <Card title={t('scorecard.title')} className="card-gap"
+          subtitle={t('scorecard.liveDomainSubtitle', { score: quality.score.score, documents: quality.documents })}>
+          <Scorecard scorecard={quality.scorecard} live />
+        </Card>
+      )}
+
       {review && (
         <Card title={t('hierarchyUi.findingsTitle')} style={{ marginTop: 14 }}
           subtitle={t('hierarchyUi.findingsSubtitle', { score: review.score.score, documents: review.documents })}>
-          {review.scorecard && (
-            <div style={{ marginBottom: 14 }}>
-              <Scorecard scorecard={review.scorecard} />
-            </div>
-          )}
           {review.findings.length ? (
             <div className="stack-sm">
               {review.findings.map((f, i) => (
