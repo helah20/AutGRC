@@ -113,13 +113,21 @@ export function buildPdf(data) {
       // The shaper lays an Arabic word out right to left, digits included, so
       // a number joined to a word ("و205") would read backwards. Such a word
       // is drawn in pieces from the right: letters shaped, numbers as written.
-      const pieces = unit.split(/(\d+(?:[.,:/-]\d+)*%?)/).filter(Boolean);
-      if (pieces.length === 1) { pdf.text(unit, x, y, { lineBreak: false }); return; }
+      // Arabic-Indic digits (١٢) are numbers too, and read left to right.
+      const NUMBER = /^[\d٠-٩]+(?:[.,:/٫-][\d٠-٩]+)*[%٪]?$/;
+      const pieces = unit.split(/([\d٠-٩]+(?:[.,:/٫-][\d٠-٩]+)*[%٪]?)/).filter(Boolean);
+      if (pieces.length === 1 && !NUMBER.test(unit)) { pdf.text(unit, x, y, { lineBreak: false }); return; }
       let right = x + pdf.widthOfString(unit);
       for (const piece of pieces) {
         const w = pdf.widthOfString(piece);
         right -= w;
-        pdf.text(piece, right, y, { lineBreak: false });
+        if (NUMBER.test(piece)) {
+          // A character at a time, so the shaper cannot reverse the digits.
+          let cursor = right;
+          for (const ch of piece) { pdf.text(ch, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(ch); }
+        } else {
+          pdf.text(piece, right, y, { lineBreak: false });
+        }
       }
       return;
     }
@@ -129,7 +137,7 @@ export function buildPdf(data) {
       // Punctuation after a number ("1.", "2026-10-27.") falls where Word puts
       // it in a right-to-left line: on the side the sentence continues.
       // Only a number standing alone: inside a run of English it stays as written.
-      const stop = /[A-Za-z]/.test(unit) ? null : word.match(/^(.*\d)([.:،؛,]+)$/);
+      const stop = /[A-Za-z]/.test(unit) ? null : word.match(/^(.*[\d٠-٩])([.:،؛,]+)$/);
       if (stop) word = stop[2] + stop[1];
       if (/[A-Za-z]/.test(word)) { pdf.text(word, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(word); }
       else for (const ch of word) { pdf.text(ch, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(ch); }

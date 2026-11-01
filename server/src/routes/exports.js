@@ -8,11 +8,13 @@ import { buildDocx } from '../services/export-docx.js';
 import { buildPdf } from '../services/export-pdf.js';
 import { buildSwimlanePptx } from '../services/export-pptx.js';
 import { previewPackage } from '../services/generator.js';
+import { mbssChecklist, buildMbss } from '../services/mbss.js';
+import { mbssTechnology, customTechnology } from '../knowledge/mbss/index.js';
 import { layoutFor, sectionsForExport } from '../services/export-layout.js';
 import { exportLanguage, sheetText, cellText, attachment } from '../services/export-i18n.js';
 import {
   buildControlWorkbook, buildRaciWorkbook, buildMappingWorkbook,
-  buildGapWorkbook, buildRegisterWorkbook, buildSoaWorkbook, buildRiskTreatmentWorkbook
+  buildGapWorkbook, buildRegisterWorkbook, buildSoaWorkbook, buildRiskTreatmentWorkbook, buildMbssWorkbook
 } from '../services/export-xlsx.js';
 import { evaluateApplicability } from '../services/applicability.js';
 import { auditReportPayload } from '../services/assurance-records.js';
@@ -104,7 +106,13 @@ function documentInLanguage(doc, lang) {
   const meta = fromJson(doc.generation_meta, {});
   if (!meta.domain && !doc.domain_key) return own(doc);
   let built = null;
-  try {
+  // A baseline is rebuilt from the MBSS catalogue, not from a domain package.
+  if (meta.kind === 'mbss') {
+    const tech = meta.custom ? customTechnology(meta.custom) : mbssTechnology(meta.technology);
+    if (!tech) return own(doc);
+    const rebuilt = buildMbss({ tech, language: lang, org: getOrgProfile(), level: meta.level, benchmarkVersion: meta.benchmarkVersion || '' });
+    built = { title: rebuilt.title, sections: rebuilt.sections };
+  } else try {
     const preview = previewPackage({
       domainKey: doc.domain_key, docTypes: [doc.doc_type], frameworkCodes: meta.frameworks || [],
       org: getOrgProfile(), parameterOverrides: meta.parameterOverrides || {}, language: lang
@@ -199,6 +207,17 @@ router.get('/documents/:id.pdf', asyncHandler(async (req, res) => {
     summary: `Exported ${payload.document.reference} to PDF${lang === 'ar' ? ' (Arabic)' : ''}`
   });
   send(res, buffer, `${payload.document.reference} ${payload.document.title}.pdf`, MIME.pdf);
+}));
+
+/** The verification workbook of a Minimum Baseline Security Standard. */
+router.get('/mbss/:id.xlsx', asyncHandler(async (req, res) => {
+  const document = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
+  if (!document) throw notFound('Document');
+  const checklist = mbssChecklist(document);
+  if (!checklist) throw new HttpError(400, 'This document is not a minimum baseline security standard.');
+  const buffer = await buildMbssWorkbook({ document, checklist, orgName: getOrgProfile().org_name, lang: checklist.language });
+  audit(req, { action: 'export:xlsx', entityType: 'document', entityId: document.id, summary: `Exported the verification workbook of ${document.reference}` });
+  send(res, buffer, `${document.reference} ${checklist.language === 'ar' ? 'قائمة التحقق' : 'checklist'}.xlsx`, MIME.xlsx);
 }));
 
 router.get('/controls.xlsx', asyncHandler(async (req, res) => {

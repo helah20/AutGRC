@@ -262,6 +262,11 @@ export default function DocumentDetail() {
               </button>
             )}
             <button className="btn" onClick={() => setExportFormat('pdf')}>PDF</button>
+            {doc.generation_meta?.kind === 'mbss' && (
+              <button className="btn" title={t('mbss.checklist')} onClick={async () => {
+                try { await api.download(`/export/mbss/${id}.xlsx`); } catch (err) { toast.error(t('common.exportFailed'), err.message); }
+              }}>Excel</button>
+            )}
           </div>
           {can('ai:use') && (
             <button className="btn" onClick={runReview} disabled={reviewBusy}>

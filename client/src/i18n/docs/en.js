@@ -103,6 +103,22 @@ export default {
       ]
     },
     {
+      slug: 'mbss', group: 'documents', title: 'Minimum baseline security standards (MBSS)',
+      summary: 'Hardening baselines per technology, built on the CIS Benchmarks.',
+      blocks: [
+        { p: 'Baselines (MBSS) holds a catalogue of technologies: server and workstation operating systems, Active Directory, routers and firewalls, databases, web servers, virtualisation and containers, cloud platforms and Microsoft 365, and mobile devices. The technologies named in the organisation profile are ticked to start with.' },
+        { ul: [
+          'Each item states the setting, how to verify it, its profile (CIS level 1 or 2), its criticality and its source: CIS for items following the CIS Benchmark, Organisation for additions regulators expect (an inventory entry, central logging, a key rotation).',
+          'Each item cites NCA ECC, CIS Controls v8 and ISO/IEC 27001, and uses the values agreed in the domain Standards (password length, lockout, log retention, patch windows), so a baseline never states a different number.',
+          'Record the benchmark version you apply when generating; verify each recommendation against it before approval.',
+          'A technology outside the catalogue (a product a project brings in) gets the general baseline, to complete from its CIS Benchmark or vendor guide.'
+        ] },
+        { p: 'Each baseline is created as a draft Standard (MBS-…) and goes through review, approval and export like any document. It says that a new system goes live only once the baseline is applied and verified. The Excel button on the baseline gives the verification workbook: one row per item with a status list, a summary that counts itself, and an exception register.' },
+        { note: 'CIS Benchmarks are © Center for Internet Security, licensed CC BY-NC-SA 4.0. The baselines state the settings in the organisation’s own words; using them in paid consulting work may need a CIS SecureSuite membership.' },
+        { go: { to: '/mbss', label: 'Open Baselines (MBSS)' } }
+      ]
+    },
+    {
       slug: 'document-structure', group: 'documents', title: 'What the documents contain',
       summary: 'What each document type holds, and how it links to the requirements.',
       blocks: [
