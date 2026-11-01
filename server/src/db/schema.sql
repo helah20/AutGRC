@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS org_profile (
   brand_primary         TEXT,
   brand_accent          TEXT,
   brand_font            TEXT,
+  export_layout         TEXT,     -- JSON: the parts exported documents carry (services/export-layout.js)
   updated_at            TEXT NOT NULL
 );
 
@@ -195,6 +196,7 @@ CREATE TABLE IF NOT EXISTS document_sections (
   provenance   TEXT NOT NULL DEFAULT 'ai_recommendation',
   source_refs  TEXT,                       -- JSON array of source pointers
   locked       INTEGER NOT NULL DEFAULT 0,
+  exported     INTEGER NOT NULL DEFAULT 1,   -- 0: kept in the platform, left out of exported files
   created_at   TEXT NOT NULL,
   updated_at   TEXT NOT NULL
 );

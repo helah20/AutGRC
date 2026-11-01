@@ -64,7 +64,11 @@ const ADDED_COLUMNS = [
   ['corrective_actions', 'root_cause', 'TEXT'],
   // The publisher's own Arabic wording of a control, when the organisation
   // imports it, so an Arabic policy quotes the Arabic text.
-  ['framework_requirements', 'statement_ar', 'TEXT']
+  ['framework_requirements', 'statement_ar', 'TEXT'],
+  // Which parts an exported document carries around its content
+  // (services/export-layout.js), and whether a section appears in the file.
+  ['org_profile', 'export_layout', 'TEXT'],
+  ['document_sections', 'exported', 'INTEGER NOT NULL DEFAULT 1']
 ];
 
 function applyColumnMigrations() {

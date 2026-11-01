@@ -124,6 +124,13 @@ export default {
           'Comments: reviewers\' notes.',
           'Process flow (procedures): the lanes and decision points.'
         ] },
+        { h: 'The document’s sections' },
+        { ul: [
+          'Add a section: “Add a section here” appears below each section; the new section opens for writing.',
+          'Rename, move up or down, or remove a section from the buttons beside its heading.',
+          'Hide a section from exported files with the eye button: it stays in the platform, marked “Hidden from file”, and is left out of Word and PDF. Clause numbers in the file follow the sections that remain.',
+          'A published document’s sections change only once it is opened for revision.'
+        ] },
         { h: 'Editing' },
         { p: 'Each section is edited with the Edit button beside it. A section that was an automated recommendation is labelled user input once edited, so it stays clear what a person has reviewed. A published document cannot be edited until it is opened for revision.' }
       ]
@@ -306,6 +313,8 @@ export default {
         { h: 'Language of files' },
         { p: 'Every file comes out in the language the interface is set to. Switch the interface to Arabic and the next export is Arabic throughout: headings, labels, column headers, sheet names and the knowledge-base wording; Excel sheets open right to left.' },
         { p: 'A document exports in the other language from its translation when one exists; otherwise the platform builds that language from the same domain, frameworks and parameters, keeping any section a person wrote as written.' },
+        { h: 'What a file carries' },
+        { p: 'Word and PDF ask before exporting which parts the file carries around the content: cover page, document control table, approval record, version history, contents and section numbering. The organisation’s default is set under Settings → Document identity → Exported document layout.' },
         { h: 'Document identity' },
         { p: 'Under Settings → Document identity:' },
         { ul: [

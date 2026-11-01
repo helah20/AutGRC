@@ -8,6 +8,7 @@ import { buildDocx } from '../services/export-docx.js';
 import { buildPdf } from '../services/export-pdf.js';
 import { buildSwimlanePptx } from '../services/export-pptx.js';
 import { previewPackage } from '../services/generator.js';
+import { layoutFor, sectionsForExport } from '../services/export-layout.js';
 import { exportLanguage, sheetText, cellText, attachment } from '../services/export-i18n.js';
 import {
   buildControlWorkbook, buildRaciWorkbook, buildMappingWorkbook,
@@ -112,12 +113,18 @@ function documentInLanguage(doc, lang) {
   } catch { built = null; }
   if (!built) return own(doc);
 
+  // The rebuilt version follows the document as it now stands: its sections
+  // in its order, without the ones removed and with the ones added; each
+  // generated section in the other language, each written one as written,
+  // and each hidden from the file still hidden.
   const original = own(doc);
-  const written = new Map(original.sections.filter((x) => x.provenance === 'user_input').map((x) => [x.section_key, x]));
+  const rebuilt = new Map(built.sections.map((x) => [x.key, x]));
   return {
     doc: { ...doc, title: built.title, language: lang },
-    sections: built.sections.map((x, i) => written.get(x.key)
-      || { section_key: x.key, heading: x.heading, body: x.body, provenance: x.provenance, position: i }),
+    sections: original.sections.map((x) => {
+      const other = x.provenance === 'user_input' ? null : rebuilt.get(x.section_key);
+      return other ? { ...x, heading: other.heading, body: other.body } : x;
+    }),
     flow: built.flow || original.flow
   };
 }
@@ -133,7 +140,8 @@ function documentPayload(documentId, lang = 'en') {
     : [];
   return {
     document: doc,
-    sections,
+    // Hidden sections stay in the platform and out of the file.
+    sections: sectionsForExport(sections),
     flow,
     lang,
     org: getOrgProfile(),
@@ -155,7 +163,7 @@ function documentPayload(documentId, lang = 'en') {
 router.get('/documents/:id.docx', asyncHandler(async (req, res) => {
   const lang = exportLanguage(req);
   const payload = documentPayload(req.params.id, lang);
-  const buffer = await buildDocx(payload);
+  const buffer = await buildDocx({ ...payload, layout: layoutFor(req) });
   audit(req, {
     action: 'export:docx', entityType: 'document', entityId: req.params.id,
     summary: `Exported ${payload.document.reference} to Word${lang === 'ar' ? ' (Arabic)' : ''}`
@@ -185,7 +193,7 @@ router.get('/documents/:id.pptx', asyncHandler(async (req, res) => {
 router.get('/documents/:id.pdf', asyncHandler(async (req, res) => {
   const lang = exportLanguage(req);
   const payload = documentPayload(req.params.id, lang);
-  const buffer = await buildPdf(payload);
+  const buffer = await buildPdf({ ...payload, layout: layoutFor(req) });
   audit(req, {
     action: 'export:pdf', entityType: 'document', entityId: req.params.id,
     summary: `Exported ${payload.document.reference} to PDF${lang === 'ar' ? ' (Arabic)' : ''}`
@@ -310,7 +318,7 @@ router.get('/audit-report/:id.:format(docx|pdf)', asyncHandler(async (req, res) 
   if (!payload) throw notFound('Assessment');
   const org = getOrgProfile();
   const docx = req.params.format === 'docx';
-  const buffer = docx ? await buildDocx({ ...payload, org }) : await buildPdf({ ...payload, org });
+  const buffer = docx ? await buildDocx({ ...payload, org, layout: layoutFor(req) }) : await buildPdf({ ...payload, org, layout: layoutFor(req) });
   audit(req, { action: `export:${req.params.format}`, entityType: 'assessment', entityId: req.params.id,
     summary: `Exported the internal audit report for ${payload.document.title.split(' — ').slice(1).join(' — ')}${lang === 'ar' ? ' (Arabic)' : ''}` });
   send(res, buffer, `${payload.document.title}.${req.params.format}`, docx ? MIME.docx : MIME.pdf);

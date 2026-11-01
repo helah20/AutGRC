@@ -26,6 +26,13 @@
 .doc-section-head h3 { flex: 1; font-size: 16px; }
 .doc-section-tools { display: flex; gap: 4px; opacity: 0; transition: opacity .12s; }
 .doc-section:hover .doc-section-tools, .doc-section-tools:focus-within { opacity: 1; }
+/* A section kept in the platform but left out of exported files. */
+.doc-section-hidden > :not(.doc-section-head) { opacity: .55; }
+/* Adding a section between two: quiet until the pointer is near. */
+.doc-section-add { margin: 6px 0 -6px; opacity: 0; transition: opacity .12s; }
+.doc-section:hover .doc-section-add, .doc-section-add:focus-within, .doc-section-add.open { opacity: 1; }
+.doc-section-add.open .input { max-width: 420px; }
+@media (hover: none) { .doc-section-tools, .doc-section-add { opacity: 1; } }
 
 /* Rendered section body — shared by the viewer and the editor surface. */
 .prose { font-size: 13.5px; line-height: 1.68; color: var(--text); }
@@ -734,3 +741,8 @@ a.worklist-title:hover { color: var(--accent); }
 .docs-toc { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .docs-toc a { color: var(--text-muted); text-decoration: none; padding: 3px 0; border-inline-start: 2px solid var(--border); padding-inline-start: 10px; }
 .docs-toc a:hover { color: var(--accent); border-inline-start-color: var(--accent); }
+
+/* The parts of an exported document, one checkbox each. */
+.layout-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px 18px; }
+.check-row { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.check-row input { margin-top: 3px; }
