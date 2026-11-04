@@ -14,11 +14,11 @@ export const OPERATE_DOMAINS = {
       assetReturnSla: 'the last working day',
       disposalStandard: 'NIST SP 800-88 purge or destroy',
       unauthorisedAssetSla: '48 hours'
-    , assetRequirementReview: 'annually, covering the inventory scope, the classification scheme applied to assets, and the disposal standard', criticalAssetBaseline: 'an enhanced baseline covering hardened configuration, monitoring coverage, backup inclusion and named ownership at both business and system level', licenceReconciliation: 'quarterly against entitlements, covering installed software and subscription services', endOfLifeHorizon: '12 months before vendor support ends, so replacement is planned rather than forced'},
+    , assetRequirementReview: 'annually, covering the scope of the asset register, the classification scheme applied to assets, and the disposal standard', criticalAssetBaseline: 'an enhanced baseline covering hardened configuration, monitoring coverage, backup inclusion and named ownership at both business and system level', licenceReconciliation: 'quarterly against entitlements, covering installed software and subscription services', endOfLifeHorizon: '12 months before vendor support ends, so replacement is planned rather than forced'},
     requirements: [
       { key: 'asset_inventory', title: 'Asset inventory',
         policy: 'A complete inventory of information and technology assets shall be established and maintained for all assets that store, process or transmit {{orgName}} information.',
-        standard: 'The inventory shall record the asset identifier, type, location, network address where applicable, business service supported, owner, custodian, classification and lifecycle status. Automated discovery shall run {{discoveryFrequency}} and the inventory shall be reconciled and attested {{inventoryReviewFrequency}} to an accuracy of at least {{inventoryAccuracyTarget}}.',
+        standard: 'The inventory shall record the asset identifier, type, location, network address (for networked assets), business service supported, owner, custodian, classification and lifecycle status. Automated discovery shall run {{discoveryFrequency}} and the inventory shall be reconciled and attested {{inventoryReviewFrequency}} to an accuracy of at least {{inventoryAccuracyTarget}}.',
         clauseOwners: ['it_manager', 'asset_owner'],
         guidance: 'Reconcile at least three independent sources — network discovery, endpoint agent and procurement records — because each alone has a predictable blind spot.',
         controlName: 'Information and technology asset inventory', controlType: 'detective', controlNature: 'hybrid',
@@ -41,7 +41,7 @@ export const OPERATE_DOMAINS = {
         refs: { 'NCA-ECC': ['2-1-1'], 'ISO-27001': ['A.5.9'], 'NIST-CSF': ['ID.AM-05'] } },
       { key: 'asset_classification', title: 'Asset classification and labelling',
         policy: 'Assets shall be classified according to the {{orgName}} classification scheme and handled in line with the classification assigned.',
-        standard: 'Classification shall be assigned at acquisition or creation, reviewed on significant change, and re-reviewed on the cycle set by the Data Protection Standard rather than on the inventory cycle. Labelling shall be applied physically for media and equipment and through metadata for information assets. Handling requirements per classification level shall be defined in the Data Protection Standard.',
+        standard: 'Classification shall be assigned at acquisition or creation, reviewed when its content, use or audience changes, and re-reviewed on the cycle set by the Data Protection Standard rather than on the inventory cycle. Labelling shall be applied physically for media and equipment and through metadata for information assets. Handling requirements per classification level shall be defined in the Data Protection Standard.',
         clauseOwners: ['asset_owner', 'it_manager', 'grc_manager'],
         guidance: 'Classify the business service first and inherit to its supporting assets, rather than classifying thousands of endpoints individually.',
         controlName: 'Asset classification and labelling', controlType: 'directive', controlNature: 'administrative',
@@ -96,7 +96,7 @@ export const OPERATE_DOMAINS = {
         refs: { 'CIS-V8': ['1', '2'], 'ISO-27001': ['A.5.9', 'A.8.19'], 'NCA-ECC': ['2-1-2'], 'NIST-800-53': ['CM-8'] } },
       { key: 'asset_requirement_review', title: 'Periodic review of asset management requirements',
         policy: 'The asset management requirements themselves shall be reviewed, not only the inventory they govern.',
-        standard: 'Review shall occur {{assetRequirementReview}} and shall assess whether the inventory scope still covers what the organisation operates, whether the classification scheme is being applied consistently, and whether the disposal standard remains adequate for the media in use. Findings shall be recorded as improvement actions with owners. The review shall include a sample test of inventory accuracy performed independently of the team that maintains it, since self-attested accuracy is the figure most often overstated.',
+        standard: 'Review shall occur {{assetRequirementReview}} and shall assess whether the scope of the asset register still covers what the organisation operates, whether the classification scheme is being applied consistently, and whether the disposal standard still covers every type of media in use. Findings shall be recorded as improvement actions with owners. The review shall include a sample test of inventory accuracy performed independently of the team that maintains it, since self-attested accuracy is the figure most often overstated.',
         clauseOwners: ['grc_manager', 'grc_manager', 'internal_auditor'],
         guidance: 'Sample independently. An owner attesting that their own register is accurate produces a number that is right about as often as it is convenient.',
         controlName: 'Periodic review of asset management requirements', controlType: 'detective', controlNature: 'administrative',
@@ -189,7 +189,7 @@ export const OPERATE_DOMAINS = {
         evidence: ['Approved incident response plan with version and date', 'Exercise report and participant list', 'Post-exercise improvement actions with closure status'],
         refs: { 'NCA-ECC': ['2-13-1', '2-13-3'], 'ISO-27001': ['A.5.24', 'A.5.26'], 'NIST-CSF': ['RS.MA-01'], 'NIST-800-53': ['IR-4'], 'CIS-V8': ['17'], 'SAMA-CSF': ['3.15'], 'NCA-TCC': ['2-12'], 'NCA-CCC': ['2-12'], 'NCA-OTCC': ['2-12'], 'NCA-OSMACC': ['2-7'] } },
       { key: 'event_reporting', title: 'Event detection and reporting',
-        policy: 'All personnel and third parties shall report suspected cybersecurity events promptly through the published reporting channels.',
+        policy: 'All personnel and third parties shall report suspected cybersecurity events through the published reporting channels on the day they are noticed.',
         standard: 'Reporting channels shall be published, available at all times, and shall not require the reporter to determine whether the event is genuine. Events detected by security tooling shall be raised automatically into the incident queue. Reporters shall receive acknowledgement, and good-faith reports shall not attract sanction.',
         clauseOwners: ['grc_manager', 'soc_analyst', 'ciso'],
         guidance: 'Measure reporting volume as a positive indicator; a falling report count usually signals disengagement rather than improving security.',
@@ -292,7 +292,7 @@ export const OPERATE_DOMAINS = {
         { name: 'Notify', actor: 'CISO / Legal', detail: 'Issue regulatory and stakeholder notifications within {{regulatoryNotificationSla}}, recording recipient, content, approver and timestamp.' },
         { name: 'Close and review', actor: 'Cybersecurity GRC Manager', detail: 'Close the incident, and complete the post-incident review within {{lessonsLearnedSla}} with assigned improvement actions tracked to closure within {{postIncidentActionSla}}.' }
       ],
-      outputs: ['Contained and recovered services', 'Complete incident timeline and evidence package', 'Regulatory notifications where applicable', 'Post-incident review report and improvement actions'],
+      outputs: ['Contained and recovered services', 'Complete incident timeline and evidence package', 'Regulatory notifications, where the compliance register requires one', 'Post-incident review report and improvement actions'],
       escalation: ['Severity 1 incidents escalate immediately to the CISO and Executive Management.', 'Containment not achieved within {{p1ContainmentSla}} escalates to Executive Management for additional authority and resources.', 'Suspected regulatory reportability escalates to Legal and the CISO without waiting for investigation to conclude.', 'Suspected insider involvement escalates to the CISO and Human Resources under a restricted-distribution handling protocol.'],
       records: ['Incident record and timeline (retained {{evidenceRetention}})', 'Evidence and chain of custody (retained {{evidenceRetention}})', 'Notification register (retained 7 years)', 'Post-incident review and action closure evidence (retained 3 years)'],
       kpis: [{ name: 'Severity 1 triage timeliness', target: '95% within {{p1TriageSla}}' }, { name: 'Severity 1 containment timeliness', target: '90% within {{p1ContainmentSla}}' }, { name: 'Regulatory notification compliance', target: '100% within the applicable deadline' }, { name: 'Post-incident action closure', target: '85% within {{postIncidentActionSla}}' }, { name: 'Mean time to detect', target: 'Trending down quarter on quarter' }]
@@ -327,7 +327,7 @@ export const OPERATE_DOMAINS = {
       internalScanFrequency: 'weekly',
       externalScanFrequency: 'weekly',
       authenticatedScanFrequency: 'monthly',
-      pentestFrequency: 'annually and after significant change',
+      pentestFrequency: 'annually and after a major change to an internet-facing service',
       scanCoverageTarget: '98% of the authorised asset inventory',
       // Stated here as well as in Risk Management because a vulnerability
       // exception is a risk acceptance, and the two Standards must expire it
@@ -393,7 +393,7 @@ export const OPERATE_DOMAINS = {
         refs: { 'NCA-ECC': ['2-3-3', '2-10-3'], 'ISO-27001': ['A.8.8'], 'NIST-800-53': ['SI-2'], 'CIS-V8': ['7'], 'NCA-CCC': ['2-9'] } },
       { key: 'penetration_testing', title: 'Penetration testing',
         policy: 'Penetration testing shall be performed on internet-facing and critical internal systems to identify weaknesses that automated scanning does not detect.',
-        standard: 'Penetration testing shall be conducted {{pentestFrequency}} by qualified, independent testers under an approved rules-of-engagement document. Findings shall be entered into the vulnerability register and remediated under the standard service levels, with retesting to confirm closure. Scope shall be set from the asset inventory rather than from what was tested last time, stating which internet-facing services, internal segments and applications are in and out of scope, with every exclusion justified. Testers shall be rotated or the provider changed periodically, and findings from the previous engagement shall be re-tested in the next one, so that a blind spot is not re-inherited each cycle.',
+        standard: 'Penetration testing shall be conducted {{pentestFrequency}} by qualified, independent testers under an approved rules-of-engagement document. Findings shall be entered into the vulnerability register and remediated under the standard service levels, with retesting to confirm closure. Scope shall be set from the asset inventory rather than from what was tested last time, stating which internet-facing services, internal segments and applications are in and out of scope, with every exclusion justified. Testers shall be rotated or the provider changed at least every three years, and findings from the previous engagement shall be re-tested in the next one, so that a blind spot is not re-inherited each cycle.',
         clauseOwners: ['ciso', 'vuln_specialist', 'ciso', 'grc_manager'],
         guidance: 'Require retest evidence as part of the engagement scope; a report without retest leaves closure unverified.',
         controlName: 'Independent penetration testing', controlType: 'detective', controlNature: 'administrative',

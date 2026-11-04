@@ -317,7 +317,7 @@ export function seedInconsistency() {
   // which is not the inconsistency this demonstration is meant to show.
   const edited = section.body.replace(
     /Recertify the entitlement during the quarterly access review cycle, or quarterly where the entitlement is privileged\./,
-    'Recertify the entitlement during the annually access review cycle.'
+    'Recertify the entitlement annually during the access review cycle.'
   );
   if (edited === section.body) return false;
 

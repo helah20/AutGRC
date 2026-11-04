@@ -10,7 +10,7 @@ export const ACCESS_DOMAINS = {
     objectives: [
       'Ensure that every identity operating in the environment is uniquely attributable to an accountable person, service or device.',
       'Ensure that access is granted on the basis of Need-to-Know, Need-to-Use, Least Privilege and Segregation of Duties.',
-      'Ensure that access rights are authorised before provisioning, reviewed on a defined cycle and revoked promptly when no longer required.',
+      'Ensure that access rights are authorised before provisioning, reviewed on a defined cycle and revoked when no longer required, within the period the Identity and Access Management Standard sets.',
       'Ensure that authentication strength is commensurate with the classification of the information and the risk of the access path.'
     ],
     parameters: {
@@ -139,7 +139,7 @@ export const ACCESS_DOMAINS = {
       {
         key: 'joiner_mover_leaver',
         title: 'Joiner, mover and leaver processing',
-        policy: 'Access rights shall be created, amended and revoked in line with changes to employment or engagement status. Access shall be revoked promptly upon termination or transfer.',
+        policy: 'Access rights shall be created, amended and revoked in line with changes to employment or engagement status. On termination or transfer, access shall be revoked within {{revocationSla}}.',
         standard: 'On termination or transfer, all access shall be disabled within {{revocationSla}}. Movers shall have entitlements from the previous role removed at the same time new entitlements are granted; additive-only transfers are prohibited. Leaver processing shall cover the directory, business applications, privileged vaults, remote access, cloud tenancies and physical access.',
         clauseOwners: ['iam_specialist', 'iam_specialist', 'it_manager'],
         guidance: 'Drive revocation from the HR termination event rather than a manager-raised ticket. Run a weekly exception report comparing terminated employees against still-enabled accounts.',
@@ -306,7 +306,7 @@ export const ACCESS_DOMAINS = {
         { name: 'Verify', actor: 'IAM Specialist', detail: 'Confirm that the entitlement granted matches the entitlement approved, that no additional permissions were applied, and that the account is subject to the approved authentication policy.', decision: { question: 'Does the granted access match the approval?', yes: 'Notify the requester and close', no: 'Remediate the discrepancy and record a control exception' } },
         { name: 'Review', actor: 'Business Owner / System Owner', detail: 'Recertify the entitlement during the {{accessReviewFrequency}} access review cycle, or {{privAccessReviewFrequency}} where the entitlement is privileged. Certify, modify or revoke each entitlement held.' },
         { name: 'Revoke', actor: 'IAM Specialist', detail: 'Remove access upon revocation decision, engagement completion, transfer or termination, within {{revocationSla}}. Confirm removal across the directory, business applications, privileged vault, remote access and cloud tenancies.' },
-        { name: 'Close', actor: 'Cybersecurity GRC Manager', detail: 'Confirm that the request record, approval, provisioning evidence and (where applicable) revocation evidence are complete and retained for audit.' }
+        { name: 'Close', actor: 'Cybersecurity GRC Manager', detail: 'Confirm that the request record, approval, provisioning evidence and, for access that has been removed, the revocation evidence are complete and retained for audit.' }
       ],
       outputs: [
         'Provisioned or revoked access rights matching the approved entitlement',
@@ -575,7 +575,7 @@ export const ACCESS_DOMAINS = {
       ],
       steps: [
         { name: 'Request elevation', actor: 'Administrator', detail: 'Submit an elevation request recording the task, the target system, the change or incident reference and the required duration, which shall not exceed {{jitMaxDuration}}.' },
-        { name: 'Validate justification', actor: 'IAM Specialist', detail: 'Confirm the referenced change or incident is valid and in an approved state, and that the requested privilege level is the minimum sufficient for the task.', decision: { question: 'Is a valid change or incident reference present?', yes: 'Continue to Approval', no: 'Reject and return to the requester for a change record' } },
+        { name: 'Validate justification', actor: 'IAM Specialist', detail: 'Confirm the referenced change or incident is valid and in an approved state, and that the requested privilege level is the lowest that lets the task be done.', decision: { question: 'Is a valid change or incident reference present?', yes: 'Continue to Approval', no: 'Reject and return to the requester for a change record' } },
         { name: 'Approve', actor: 'CISO / Cybersecurity GRC Manager', detail: 'Approve or reject the elevation. Elevation on critical systems and any request exceeding {{jitMaxDuration}} requires CISO approval.', decision: { question: 'Is the elevation approved?', yes: 'Continue to Elevation', no: 'Close with recorded rejection reason' } },
         { name: 'Elevate', actor: 'Privileged Access Management platform', detail: 'Activate the privileged role for the approved duration and check out the vaulted credential. Establish the session through the session broker with recording enabled.' },
         { name: 'Perform and record', actor: 'Administrator', detail: 'Perform the administrative task within the approved scope. All activity is recorded and retained for {{sessionRecordingRetention}}.' },

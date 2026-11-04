@@ -270,7 +270,7 @@ export const ROLE_LIBRARY = [
   },
   {
     code: 'iam_specialist', name: 'IAM Specialist', shortName: 'IAM Specialist', category: 'Operations',
-    purpose: 'To operate the identity and access management lifecycle so that access is provisioned only on documented authorisation, is least-privileged, and is revoked promptly when no longer required.',
+    purpose: 'To operate the identity and access management lifecycle so that access is provisioned only on documented authorisation, is least-privileged, and is revoked within the period the Identity and Access Management Standard sets when no longer required.',
     reportingLine: 'Reports to the IT Manager, with a functional reporting line to the Chief Information Security Officer.',
     authority: 'Authorised to provision and revoke access following documented approval, to reject requests lacking valid authorisation, and to disable accounts presenting immediate risk pending investigation.',
     competencies: ['Directory and identity provider administration', 'Role-based access control design', 'Privileged access management platforms', 'Access certification campaign operation', 'Segregation-of-duties analysis'],

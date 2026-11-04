@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from './lib/auth.jsx';
 import { useI18n } from './i18n/index.jsx';
 import { Loading } from './components/ui.jsx';
@@ -33,6 +33,16 @@ import Docs from './pages/Docs.jsx';
 import Mbss from './pages/Mbss.jsx';
 import Settings from './pages/Settings.jsx';
 import Setup from './pages/Setup.jsx';
+
+/**
+ * A document page starts afresh for each document: going from one document to
+ * another (a link in the scorecard, a backlink) must not carry the first
+ * one's status, transitions or open editor into the second.
+ */
+function DocumentPage() {
+  const { id } = useParams();
+  return <DocumentDetail key={id} />;
+}
 
 /**
  * A page whose navigation link is hidden for want of a permission is not
@@ -80,7 +90,7 @@ export default function App() {
         <Route path="/my-work" element={<MyWork />} />
         <Route path="/generator" element={<Permitted permission="generate:run"><Generator /></Permitted>} />
         <Route path="/documents" element={<Documents />} />
-        <Route path="/documents/:id" element={<DocumentDetail />} />
+        <Route path="/documents/:id" element={<DocumentPage />} />
         <Route path="/policies" element={<Documents fixedType="policy" />} />
         <Route path="/standards" element={<Documents fixedType="standard" />} />
         <Route path="/mbss" element={<Mbss />} />

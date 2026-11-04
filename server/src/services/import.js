@@ -19,6 +19,7 @@ import { q } from '../db/index.js';
 import { DOMAIN_MODELS, DOMAIN_META, domainName, resolveText, buildParameterSet, localisedModel, arDomainName } from '../knowledge/index.js';
 import { htmlToText, sanitiseHtml } from './html.js';
 import { localise } from './localise.js';
+import { segmentImported } from './import-sections.js';
 
 // ------------------------------------------------------------ extraction ---
 
@@ -27,7 +28,9 @@ export async function extractText(filePath, mime, originalName = '') {
 
   if (ext === 'docx' || mime?.includes('wordprocessingml')) {
     const { value } = await mammoth.extractRawText({ path: filePath });
-    return { text: value, format: 'docx' };
+    // The structure (headings, lists, tables) is read as HTML for the draft.
+    const { value: html } = await mammoth.convertToHtml({ path: filePath });
+    return { text: value, html, format: 'docx' };
   }
 
   if (ext === 'pdf' || mime === 'application/pdf') {
@@ -433,34 +436,7 @@ function severityRank(s) {
  * Split extracted text into candidate document sections so an import can be
  * promoted into the document library with a usable structure.
  */
-export function segmentSections(text) {
-  const lines = String(text).split(/\n+/).map((l) => l.trim()).filter(Boolean);
-  const sections = [];
-  let current = { heading: 'Introduction', lines: [] };
-
-  const isHeading = (line) =>
-    line.length < 90 &&
-    !/[.;]$/.test(line) &&
-    (/^\d+(\.\d+)*\.?\s+\S/.test(line) ||
-     /^(purpose|scope|objectives?|policy statements?|roles? and responsibilit|governance|compliance|exceptions?|monitoring|review|enforcement|references?|definitions?|introduction|background|requirements?|procedure|process|escalation|records?|evidence|kpis?|appendix)/i.test(line) ||
-     (line === line.toUpperCase() && line.length > 4 && /[A-Z]{3}/.test(line)));
-
-  for (const line of lines) {
-    if (isHeading(line)) {
-      if (current.lines.length) sections.push(current);
-      current = { heading: line.replace(/^\d+(\.\d+)*\.?\s*/, '').trim() || line, lines: [] };
-    } else {
-      current.lines.push(line);
-    }
-  }
-  if (current.lines.length) sections.push(current);
-
-  return sections
-    .filter((s) => s.lines.join(' ').length > 30)
-    .map((s, i) => ({
-      key: `imported_${i + 1}`,
-      heading: s.heading.slice(0, 120),
-      body: sanitiseHtml(s.lines.map((l) => `<p>${l.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</p>`).join('')),
-      position: i
-    }));
+/** The sections of an imported document (services/import-sections.js). */
+export function segmentSections(text, html = '') {
+  return segmentImported({ text, html, language: textLanguage(text) });
 }

@@ -18,7 +18,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
 import { htmlToBlocks, runsToText } from './html-to-blocks.js';
+import { exportHeading } from './export-layout.js';
 import { lastReviewed, FURNITURE, CLASSIFICATION_AR, CLASSIFICATION_LABEL } from './export-docx.js';
+import { bidiRuns, visualOrder, mirrorBrackets, paragraphDirection } from './bidi.js';
 import { currentBrand, fitWithin } from './brand.js';
 import { arDomainName } from '../knowledge/index.js';
 
@@ -36,19 +38,6 @@ const MARGIN = 56;
 
 const ARABIC = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
 const STRONG_LTR = /[A-Za-z0-9]/;
-
-/** A line's words grouped for drawing: each Arabic word alone, Latin and number runs together. */
-export function rtlUnits(words) {
-  const out = [];
-  let ltr = [];
-  const flush = () => { if (ltr.length) { out.push(ltr.join(' ')); ltr = []; } };
-  for (const w of words) {
-    if (!ARABIC.test(w) && STRONG_LTR.test(w)) ltr.push(w);
-    else { flush(); out.push(w); }
-  }
-  flush();
-  return out;
-}
 
 export function buildPdf(data) {
   const { document: doc, sections, org, owner, approver, versions = [], approvals = [] } = data;
@@ -94,10 +83,25 @@ export function buildPdf(data) {
   const style = (face = 'regular', size = 9.5, color = INK) => pdf.font(FACE[face]).fontSize(size).fillColor(color);
   const lineHeight = () => pdf.currentLineHeight(true) * (rtl ? 1.45 : 1.15);
 
+  function fitWord(word, width) {
+    if (pdf.widthOfString(word) <= width) return [word];
+    const pieces = [];
+    let piece = '';
+    for (const part of word.split(/(?<=-)/)) {
+      for (const ch of pdf.widthOfString(part) <= width ? [part] : [...part]) {
+        if (piece && pdf.widthOfString(piece + ch) > width) { pieces.push(piece); piece = ch; } else piece += ch;
+      }
+    }
+    if (piece) pieces.push(piece);
+    return pieces;
+  }
+
   function wrap(text, width) {
     const lines = [];
     for (const para of String(text ?? '').split('\n')) {
-      const words = para.split(/\s+/).filter(Boolean);
+      // A word wider than the box (a long command or path) is broken at its
+      // hyphens, then by character, rather than run into the next column.
+      const words = para.split(/\s+/).filter(Boolean).flatMap((w) => fitWord(w, width));
       let line = [];
       for (const w of words) {
         if (line.length && pdf.widthOfString([...line, w].join(' ')) > width) { lines.push(line); line = [w]; } else line.push(w);
@@ -107,59 +111,49 @@ export function buildPdf(data) {
     return lines;
   }
 
-  /** Text that holds no letters of its own is drawn a character at a time, left to right. */
-  function drawUnit(unit, x, y) {
-    if (ARABIC.test(unit)) {
-      // The shaper lays an Arabic word out right to left, digits included, so
-      // a number joined to a word ("و205") would read backwards. Such a word
-      // is drawn in pieces from the right: letters shaped, numbers as written.
-      // Arabic-Indic digits (١٢) are numbers too, and read left to right.
-      const NUMBER = /^[\d٠-٩]+(?:[.,:/٫-][\d٠-٩]+)*[%٪]?$/;
-      const pieces = unit.split(/([\d٠-٩]+(?:[.,:/٫-][\d٠-٩]+)*[%٪]?)/).filter(Boolean);
-      if (pieces.length === 1 && !NUMBER.test(unit)) { pdf.text(unit, x, y, { lineBreak: false }); return; }
-      let right = x + pdf.widthOfString(unit);
-      for (const piece of pieces) {
-        const w = pdf.widthOfString(piece);
-        right -= w;
-        if (NUMBER.test(piece)) {
-          // A character at a time, so the shaper cannot reverse the digits.
-          let cursor = right;
-          for (const ch of piece) { pdf.text(ch, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(ch); }
-        } else {
-          pdf.text(piece, right, y, { lineBreak: false });
+  /**
+   * One line of an Arabic document, laid out by the bidirectional algorithm
+   * (services/bidi.js) in the paragraph's direction `base`: runs put in
+   * visual order and drawn from the left; a right-to-left run word by word,
+   * its brackets mirrored; a left-to-right run (English, numbers) as written.
+   * `align` is the layout's: start is the right edge.
+   */
+  function drawLine(words, x, y, width, align, base = 'rtl') {
+    const runs = visualOrder(bidiRuns(words.join(' '), base));
+    const widths = runs.map((r) => pdf.widthOfString(r.text));
+    const total = widths.reduce((a, b) => a + b, 0);
+    let cursor = align === 'center' ? x + (width - total) / 2 : align === 'end' ? x : x + width - total;
+    runs.forEach((run, i) => {
+      if (run.rtl) {
+        // Word by word, the last word leftmost. The shaper reverses a word
+        // holding Arabic letters itself; one without (")." after an English
+        // term) is reversed here.
+        let at = cursor;
+        for (const token of mirrorBrackets(run.text).split(/(\s+)/).filter(Boolean).reverse()) {
+          const w = pdf.widthOfString(token);
+          if (token.trim()) pdf.text(/[\u0590-\u08FF\uFB1D-\uFEFF]/.test(token) ? token : [...token].reverse().join(''), at, y, { lineBreak: false });
+          at += w;
         }
+      } else if (/[A-Za-z]/.test(run.text)) {
+        pdf.text(run.text, cursor, y, { lineBreak: false });
+      } else {
+        // Digits a character at a time, so no shaper can reverse them.
+        let at = cursor;
+        for (const ch of run.text) { pdf.text(ch, at, y, { lineBreak: false }); at += pdf.widthOfString(ch); }
       }
-      return;
-    }
-    const space = pdf.widthOfString(' ');
-    let cursor = x;
-    for (let word of unit.split(' ')) {
-      // Punctuation after a number ("1.", "2026-10-27.") falls where Word puts
-      // it in a right-to-left line: on the side the sentence continues.
-      // Only a number standing alone: inside a run of English it stays as written.
-      const stop = /[A-Za-z]/.test(unit) ? null : word.match(/^(.*[\d٠-٩])([.:،؛,]+)$/);
-      if (stop) word = stop[2] + stop[1];
-      if (/[A-Za-z]/.test(word)) { pdf.text(word, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(word); }
-      else for (const ch of word) { pdf.text(ch, cursor, y, { lineBreak: false }); cursor += pdf.widthOfString(ch); }
-      cursor += space;
-    }
-  }
-
-  function drawRtlLine(words, x, y, width, align) {
-    const units = rtlUnits(words);
-    const space = pdf.widthOfString(' ');
-    const widths = units.map((u) => pdf.widthOfString(u));
-    const total = widths.reduce((a, b) => a + b, 0) + space * Math.max(units.length - 1, 0);
-    let cursor = align === 'center' ? x + (width + total) / 2 : align === 'end' ? x + total : x + width;
-    units.forEach((u, i) => { cursor -= widths[i]; drawUnit(u, cursor, y); cursor -= space; });
+      cursor += widths[i];
+    });
   }
 
   /**
    * Write text in a box and return the y below it. `align` is logical: start
    * is the reading start (right in Arabic), end the other side.
    */
-  function write(text, x, y, width, { align = 'start', face, size, color, flow = false } = {}) {
+  function write(raw, x, y, width, { align = 'start', face, size, color, flow = false, dir } = {}) {
     style(face, size, color);
+    // The decision mark ◆ is in neither font: Helvetica's encoding would
+    // print it as "%Æ" and the Arabic font as an empty box.
+    const text = String(raw ?? '').replace(/\u25C6/g, rtl ? '\u25CA' : '\u2022');
     if (!rtl) {
       const a = align === 'start' ? 'left' : align === 'end' ? 'right' : align;
       pdf.text(String(text ?? ''), x, y, { width, align: a });
@@ -167,10 +161,15 @@ export function buildPdf(data) {
     }
     const lh = lineHeight();
     let yy = y;
+    // An English paragraph in an Arabic document reads left to right, as Word
+    // and the browser read it; its alignment stays the layout's.
+    // A line the layout composes (a running header, a reference) can say
+    // its direction rather than take it from its first letter.
+    const base = dir || paragraphDirection(text);
     for (const line of wrap(text, width)) {
       // Running text may cross a page; text in a table cell is measured first.
       if (flow && yy + lh > bottomLimit()) { pdf.addPage(); yy = pdf.page.margins.top; style(face, size, color); }
-      drawRtlLine(line, x, yy, width, align);
+      drawLine(line, x, yy, width, align, base);
       yy += lh;
     }
     pdf.y = yy;
@@ -219,7 +218,7 @@ export function buildPdf(data) {
   write(doc.title, MARGIN, pdf.y, contentWidth, { align: 'center', face: 'bold', size: 26, color: BRAND });
   pdf.moveDown(0.8);
   write(`${doc.reference}   ·   ${L.version} ${doc.version}   ·   ${statusLabel(doc.status)}`, MARGIN, pdf.y, contentWidth,
-    { align: 'center', size: 11, color: MUTED });
+    { align: 'center', size: 11, color: MUTED, dir: rtl ? 'rtl' : undefined });
   pdf.moveDown(2);
   write(`${rtl ? L.classification : L.classification.toUpperCase()}: ${classification}`, MARGIN, pdf.y, contentWidth,
     { align: 'center', face: 'bold', size: 10, color: BRAND });
@@ -280,7 +279,7 @@ export function buildPdf(data) {
     sectionTitle(L.contents);
     sections.forEach((s, i) => {
       ensureSpace(18);
-      write(`${number(i)} ${s.heading}`.trim(), MARGIN + 6, pdf.y, contentWidth - 12, { size: 10 });
+      write(`${number(i)}${exportHeading(s.heading, layout.numbering)}`.trim(), MARGIN + 6, pdf.y, contentWidth - 12, { size: 10 });
       pdf.moveDown(0.35);
     });
   }
@@ -289,7 +288,7 @@ export function buildPdf(data) {
   startPage();
   sections.forEach((s, i) => {
     if (i > 0) { ensureSpace(80); pdf.moveDown(1); }
-    sectionTitle(`${number(i)}${s.heading}`);
+    sectionTitle(`${number(i)}${exportHeading(s.heading, layout.numbering)}`);
     renderBlocks(htmlToBlocks(s.body));
   });
 
@@ -306,13 +305,13 @@ export function buildPdf(data) {
     const endX = rtl ? MARGIN : MARGIN + contentWidth * 0.7;
     // The cover carries no running header; without a cover every page does.
     if (i !== range.start || !layout.cover) {
-      write(`${org?.org_name || L.organisation}  |  ${doc.title}`, startX, MARGIN - 12, contentWidth * 0.7, { size: 7.5, color: MUTED });
+      write(`${org?.org_name || L.organisation}  |  ${doc.title}`, startX, MARGIN - 12, contentWidth * 0.7, { size: 7.5, color: MUTED, dir: rtl ? 'rtl' : undefined });
       write(classification, endX, MARGIN - 12, contentWidth * 0.3, { align: 'end', face: 'bold', size: 7.5, color: BRAND });
       pdf.moveTo(MARGIN, MARGIN - 2).lineTo(pdf.page.width - MARGIN, MARGIN - 2).strokeColor(LINE).lineWidth(0.5).stroke();
     }
     const footY = pdf.page.height - MARGIN - 8;
     pdf.moveTo(MARGIN, footY - 8).lineTo(pdf.page.width - MARGIN, footY - 8).strokeColor(LINE).lineWidth(0.5).stroke();
-    write(`${doc.reference}  ·  ${L.version} ${doc.version}`, startX, footY, contentWidth * 0.7, { size: 7.5, color: MUTED });
+    write(`${doc.reference}  ·  ${L.version} ${doc.version}`, startX, footY, contentWidth * 0.7, { size: 7.5, color: MUTED, dir: rtl ? 'rtl' : undefined });
     write(rtl ? `صفحة ${i - range.start + 1} من ${range.count}` : `Page ${i - range.start + 1} of ${range.count}`,
       endX, footY, contentWidth * 0.3, { align: 'end', size: 7.5, color: MUTED });
     pdf.page.margins.top = savedMargins.top;

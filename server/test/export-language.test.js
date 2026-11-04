@@ -20,7 +20,8 @@ const { q } = await import('../src/db/index.js');
 const { runSeed } = await import('../src/db/seed.js');
 const { exportLanguage, cellText, sheetText, attachment } = await import('../src/services/export-i18n.js');
 const { buildGenericWorkbook, buildRegisterWorkbook } = await import('../src/services/export-xlsx.js');
-const { buildPdf, rtlUnits } = await import('../src/services/export-pdf.js');
+const { buildPdf } = await import('../src/services/export-pdf.js');
+const { bidiRuns, mirrorBrackets } = await import('../src/services/bidi.js');
 const { auditReportPayload } = await import('../src/services/assurance-records.js');
 const { managementReviewInputs, internalAuditPlan } = await import('../src/services/management-reports.js');
 
@@ -95,6 +96,15 @@ test('the internal audit report is produced in Arabic, as a PDF in an Arabic fac
   assert.equal(english.sections[0].heading, 'Audit Objective and Scope');
 });
 
-test('Arabic lines keep Latin and number runs together and each Arabic word apart', () => {
-  assert.deepEqual(rtlUnits(['يشترط', 'ISO/IEC', '27001', 'البند']), ['يشترط', 'ISO/IEC 27001', 'البند']);
+test('an Arabic line is cut into runs as the bidirectional algorithm reads it', () => {
+  const runs = (text) => bidiRuns(text).map((r) => `${r.rtl ? 'R' : 'L'}:${r.text}`);
+  // English and its number stay one left-to-right run; the brackets around
+  // them belong to the Arabic and are mirrored with it.
+  assert.deepEqual(runs('و(NCA-ECC 2-2) نهاية'), ['R:و(', 'L:NCA-ECC 2-2', 'R:) نهاية']);
+  assert.deepEqual(runs('يشترط ISO/IEC 27001 البند'), ['R:يشترط ', 'L:ISO/IEC 27001', 'R: البند']);
+  // A control number is one number, not four.
+  assert.deepEqual(runs('الضابط 2-2-3-1 مطلوب'), ['R:الضابط ', 'L:2-2-3-1', 'R: مطلوب']);
+  assert.deepEqual(runs('آخر ١٢ كلمة'), ['R:آخر ', 'L:١٢', 'R: كلمة']);
+  assert.deepEqual(runs('بنسبة 50% فقط'), ['R:بنسبة ', 'L:50%', 'R: فقط']);
+  assert.equal(mirrorBrackets('(كلمة) [مرجع]'), ')كلمة( ]مرجع[');
 });

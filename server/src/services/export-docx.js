@@ -12,8 +12,10 @@ import {
   Header, Footer, PageNumber, PageBreak, convertInchesToTwip, ImageRun
 } from 'docx';
 import { htmlToBlocks, runsToText } from './html-to-blocks.js';
+import { exportHeading } from './export-layout.js';
 import { currentBrand, fitWithin } from './brand.js';
 import { arDomainName } from '../knowledge/index.js';
+import { paragraphDirection } from './bidi.js';
 
 // The organisation's colours, set at the start of each build from its brand
 // (services/brand.js) and used for that build only, like the direction flag.
@@ -186,6 +188,20 @@ export function fixDigitHyphens(text) {
   return String(text).replace(/(\d)\u2011(?=\d)/g, '$1-');
 }
 
+/**
+ * Paragraph and run properties for text in this document: an English
+ * paragraph in an Arabic document is laid out left to right (its first
+ * letter decides, as `dir="auto"` does), so a quoted regulatory sentence does
+ * not read "(.The department … (annually 4.2.1".
+ */
+function directionOf(text) {
+  if (!activeRtl) return { paragraph: {}, run: {} };
+  return paragraphDirection(text) === 'ltr'
+    ? { paragraph: { bidirectional: false }, run: { rightToLeft: false } }
+    : { paragraph: {}, run: {} };
+}
+const runsText = (runs) => (runs || []).map((r) => r.text).join('');
+
 function textRuns(runs, extra = {}) {
   if (!runs?.length) return [new TextRun({ text: '', ...extra })];
   return runs.flatMap((r) =>
@@ -208,6 +224,8 @@ function textRuns(runs, extra = {}) {
  * setting it and using it.
  */
 let activeRtl = false;
+// Numbered lists so far in the document being written, one numbering instance each.
+let listInstance = 0;
 
 // Width of the text block: A4 (11906) less the one-inch margins either side.
 // Column widths are given in these units as well as in percent, because a
@@ -225,9 +243,10 @@ function cell(content, { header = false, width, bold = false } = {}) {
     children: [
       new Paragraph({
         spacing: { before: 20, after: 20 },
+        ...directionOf(Array.isArray(content) ? runsText(content) : content).paragraph,
         children: Array.isArray(content)
-          ? textRuns(content, header || bold ? { bold: true, color: header ? BRAND : undefined } : {})
-          : [new TextRun({ text: String(content ?? ''), bold: header || bold, color: header ? BRAND : undefined })]
+          ? textRuns(content, { ...(header || bold ? { bold: true, color: header ? BRAND : undefined } : {}), ...directionOf(runsText(content)).run })
+          : [new TextRun({ text: String(content ?? ''), bold: header || bold, color: header ? BRAND : undefined, ...directionOf(content).run })]
       })
     ]
   });
@@ -277,21 +296,28 @@ function blocksToDocx(blocks) {
         children: textRuns(b.runs, { color: BRAND })
       }));
     } else if (b.type === 'paragraph') {
-      out.push(new Paragraph({ spacing: { after: 120, line: 276 }, alignment: AlignmentType.JUSTIFIED, children: textRuns(b.runs) }));
+      const dir = directionOf(runsText(b.runs));
+      out.push(new Paragraph({ spacing: { after: 120, line: 276 }, alignment: AlignmentType.JUSTIFIED, ...dir.paragraph, children: textRuns(b.runs, dir.run) }));
     } else if (b.type === 'list') {
+      // Each numbered list counts from 1: one shared numbering would carry
+      // the count from one list into the next across the whole document.
+      const instance = b.ordered ? (listInstance += 1) : undefined;
       for (const item of b.items) {
+        const dir = directionOf(runsText(item.runs));
         out.push(b.plain
           ? new Paragraph({
             indent: item.level ? { start: 480 * item.level } : undefined,
             spacing: { after: 100, line: 276 },
             alignment: AlignmentType.JUSTIFIED,
-            children: textRuns(item.runs)
+            ...dir.paragraph,
+            children: textRuns(item.runs, dir.run)
           })
           : new Paragraph({
-            numbering: b.ordered ? { reference: 'ordered-list', level: Math.min(item.level, 2) } : undefined,
+            numbering: b.ordered ? { reference: 'ordered-list', level: Math.min(item.level, 2), instance } : undefined,
             bullet: b.ordered ? undefined : { level: Math.min(item.level, 2) },
             spacing: { after: 80 },
-            children: textRuns(item.runs)
+            ...dir.paragraph,
+            children: textRuns(item.runs, dir.run)
           }));
       }
     } else if (b.type === 'table') {
@@ -389,6 +415,7 @@ export async function buildDocx(data) {
   const lang = data.lang === 'ar' ? 'ar' : 'en';
   const rtl = lang === 'ar';
   activeRtl = rtl;
+  listInstance = 0;
   const brand = data.brand || currentBrand();
   applyBrand(brand);
   const L = FURNITURE[lang];
@@ -454,7 +481,7 @@ export async function buildDocx(data) {
     new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: L.contents, color: BRAND, rightToLeft: rtl })] }),
     ...sections.map((s, i) => new Paragraph({
       spacing: { after: 60 }, bidirectional: rtl,
-      children: [new TextRun({ text: `${number(i)} ${s.heading}`.trim(), color: '1C2733', rightToLeft: rtl })]
+      children: [new TextRun({ text: `${number(i)}${exportHeading(s.heading, layout.numbering)}`.trim(), color: '1C2733', rightToLeft: rtl })]
     }))] : [])
   ];
   // The content starts on a page of its own after any front matter; the
@@ -467,7 +494,7 @@ export async function buildDocx(data) {
     body.push(new Paragraph({
       heading: HeadingLevel.HEADING_1,
       spacing: { before: i === 0 ? 0 : 360, after: 160 },
-      children: [new TextRun({ text: `${number(i)}${s.heading}`, color: BRAND })]
+      children: [new TextRun({ text: `${number(i)}${exportHeading(s.heading, layout.numbering)}`, color: BRAND })]
     }));
     body.push(...blocksToDocx(htmlToBlocks(s.body)));
   });

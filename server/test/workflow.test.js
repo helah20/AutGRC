@@ -1047,10 +1047,18 @@ test('AutGRC end-to-end governance workflow', {
     const directory = await api('GET', '/api/admin/directory');
     const analyst = directory.body.find((u) => u.email === 'analyst@autgrc.demo');
 
-    const findings = await api('GET', '/api/findings?limit=5');
-    const findingRows = findings.body.items || findings.body;
-    const finding = (Array.isArray(findingRows) ? findingRows : []).find((f) => f.status === 'open');
-    assert.ok(finding, 'the seed leaves open findings');
+    // A finding raised by hand, as an auditor raises one: the generated
+    // documents pass their own review, so the engine leaves none open.
+    const raised = await api('POST', '/api/findings', {
+      body: {
+        scope_type: 'document', scope_id: state.docs.policy.id, category: 'auditability', severity: 'medium',
+        title: 'Access review evidence is not retained', location: 'Policy — Compliance',
+        recommendation: 'Retain the signed review record for each cycle.'
+      }
+    });
+    assert.equal(raised.status, 201);
+    const finding = raised.body.finding;
+    assert.equal(finding.status, 'open');
 
     const missingOwner = await api('POST', '/api/actions', {
       body: { title: 'An action with nobody accountable', due_date: '2099-01-01', owner_id: 'usr_nobody' }

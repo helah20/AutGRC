@@ -761,4 +761,5 @@ a.worklist-title:hover { color: var(--accent); }
 .scorecard-items ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .scorecard-item { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .scorecard-item-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.scorecard-quote { display: block; padding-inline-start: 8px; border-inline-start: 2px solid var(--border); color: var(--text-muted, inherit); quotes: none; }
 .scorecard-item-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }

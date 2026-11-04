@@ -10,7 +10,7 @@ import { db, q, nowIso, toJson, fromJson } from '../db/index.js';
 import { id, padNumber } from '../utils/ids.js';
 import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound, HttpError } from '../middleware/errors.js';
-import { extractText, analyseText, detectDomain, detectDocType, segmentSections, sha256File } from '../services/import.js';
+import { extractText, analyseText, detectDomain, detectDocType, segmentSections, sha256File, textLanguage } from '../services/import.js';
 import { indexDocument } from '../services/search.js';
 import { domainName, domainShort, DOMAIN_META } from '../knowledge/index.js';
 import { DOC_TYPE_PREFIX } from '../services/generator.js';
@@ -96,11 +96,12 @@ router.post('/', requirePermission('import:write'), upload.single('file'), async
   analysis.detection = { domain: detected, docType, format: extracted.format };
 
   q.run(
-    `INSERT INTO uploads (id, filename, stored_name, mime, size_bytes, sha256, kind, domain_key, status, extracted_text, analysis, uploaded_by, created_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO uploads (id, filename, stored_name, mime, size_bytes, sha256, kind, domain_key, status, extracted_text, extracted_html, analysis, uploaded_by, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     uploadId, req.file.originalname.slice(0, 255), path.basename(req.file.path),
     req.file.mimetype, req.file.size, await sha256File(req.file.path),
-    docType, domainKey, 'analyzed', extracted.text.slice(0, 2_000_000), toJson(analysis), req.user.id, at
+    docType, domainKey, 'analyzed', extracted.text.slice(0, 2_000_000), extracted.html ? extracted.html.slice(0, 4_000_000) : null,
+    toJson(analysis), req.user.id, at
   );
 
   audit(req, {
@@ -109,7 +110,7 @@ router.post('/', requirePermission('import:write'), upload.single('file'), async
     detail: { domain: domainKey, docType, findings: analysis.findings.length, coverage: analysis.statistics.coverage }
   });
 
-  res.status(201).json({ uploadId, analysis, sections: segmentSections(extracted.text).length });
+  res.status(201).json({ uploadId, analysis, sections: segmentSections(extracted.text, extracted.html).length });
 }));
 
 /** Re-run the analysis against a different domain or document type. */
@@ -138,7 +139,9 @@ router.post('/:id/promote', requirePermission('document:create'), validate(z.obj
   if (!row) throw notFound('Upload');
   if (row.status === 'imported') throw new HttpError(409, 'This upload has already been imported.');
 
-  const sections = segmentSections(row.extracted_text);
+  const sections = segmentSections(row.extracted_text, row.extracted_html || '');
+  // The draft is in the language the file is written in.
+  const language = textLanguage(row.extracted_text);
   if (!sections.length) throw new HttpError(422, 'No sections could be identified in the uploaded document.');
 
   const prefix = `${DOC_TYPE_PREFIX[req.body.docType]}-${domainShort(req.body.domainKey)}-`;
@@ -152,14 +155,16 @@ router.post('/:id/promote', requirePermission('document:create'), validate(z.obj
   db.transaction(() => {
     q.run(
       `INSERT INTO documents (id, reference, title, doc_type, domain_key, status, classification, version,
-         owner_id, summary, review_date, generation_meta, provenance, created_by, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         owner_id, summary, review_date, generation_meta, provenance, created_by, created_at, updated_at, language)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       docId, reference, req.body.title, req.body.docType, req.body.domainKey, 'draft',
       req.body.classification, '0.1', req.user.id,
-      `Imported from "${row.filename}". Analysis reported ${analysis.findings?.length || 0} finding(s) and ${analysis.statistics?.coverage ?? 0}% requirement coverage.`,
+      language === 'ar'
+        ? `مستوردة من الملف «${row.filename}». أظهر التحليل ${analysis.findings?.length || 0} ملاحظة وتغطية للمتطلبات بنسبة ${analysis.statistics?.coverage ?? 0}%.`
+        : `Imported from "${row.filename}". Analysis reported ${analysis.findings?.length || 0} finding(s) and ${analysis.statistics?.coverage ?? 0}% requirement coverage.`,
       new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10),
       toJson({ provider: 'import', uploadId: row.id, filename: row.filename, analysedAt: at, frameworks: [] }),
-      'uploaded_source', req.user.id, at, at
+      'uploaded_source', req.user.id, at, at, language
     );
     sections.forEach((s, i) => {
       q.run(

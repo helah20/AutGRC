@@ -68,7 +68,9 @@ const ADDED_COLUMNS = [
   // Which parts an exported document carries around its content
   // (services/export-layout.js), and whether a section appears in the file.
   ['org_profile', 'export_layout', 'TEXT'],
-  ['document_sections', 'exported', 'INTEGER NOT NULL DEFAULT 1']
+  ['document_sections', 'exported', 'INTEGER NOT NULL DEFAULT 1'],
+  // A Word upload read as HTML, so its headings, lists and tables survive the import.
+  ['uploads', 'extracted_html', 'TEXT']
 ];
 
 function applyColumnMigrations() {

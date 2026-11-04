@@ -105,6 +105,9 @@ function documentInLanguage(doc, lang) {
 
   const meta = fromJson(doc.generation_meta, {});
   if (!meta.domain && !doc.domain_key) return own(doc);
+  // An imported document is the organisation's own text: there is no model
+  // to rebuild it from in another language, and its title is its own.
+  if (meta.provider === 'import' || doc.provenance === 'uploaded_source') return own(doc);
   let built = null;
   // A baseline is rebuilt from the MBSS catalogue, not from a domain package.
   if (meta.kind === 'mbss') {
