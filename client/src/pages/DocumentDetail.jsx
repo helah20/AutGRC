@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -62,6 +62,10 @@ export default function DocumentDetail() {
   const [renaming, setRenaming] = useState(null);
   const [removing, setRemoving] = useState(null);
   const [exportFormat, setExportFormat] = useState(null);
+  // The platform's checks as the document stands now, recomputed after every
+  // change, so a fix shows in the score without re-running the review.
+  const [quality, setQuality] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     if (!id) return;
@@ -84,6 +88,54 @@ export default function DocumentDetail() {
       throw err;
     }
   }, [id, reload, toast, t]);
+
+  useEffect(() => {
+    if (!data?.document) return;
+    api.get(`/ai/quality/document/${id}`).then(setQuality).catch(() => {});
+  }, [data, id]);
+
+  /** Take the reader to where a finding is fixed. */
+  const fixFinding = useCallback(async (target) => {
+    if (!data) return;
+    const goTo = (key) => setTimeout(() => document.getElementById(`section-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    if (target.action === 'properties') { setPropsOpen(true); return; }
+    if (target.action === 'revise') {
+      const revise = transitions.find((x) => x.to === 'under_revision' && x.allowed);
+      if (revise) setTransitionTarget(revise); else toast.info(t('scorecard.reviseHint'));
+      return;
+    }
+    if (!editable) { toast.info(t('scorecard.notEditableHint')); return; }
+    setTab('content');
+    if (target.action === 'edit_section') {
+      const section = data.sections.find((x) => x.section_key === target.sectionKey);
+      if (section) { setEditing(section.id); goTo(section.section_key); }
+      return;
+    }
+    if (target.action === 'add_section') {
+      try {
+        const res = await api.post(`/documents/${id}/sections`, {
+          section_key: target.sectionKey, heading: target.heading || target.sectionKey, body: '',
+          ...(target.after ? { after: target.after } : { position: 0 })
+        });
+        toast.success(t('documentDetailUi.sectionAdded'));
+        reload();
+        setEditing(res.section.id);
+        goTo(target.sectionKey);
+      } catch (err) { toast.error(t('documentDetailUi.couldNotSave'), err.message); }
+    }
+  }, [data, editable, id, reload, t, toast, transitions]);
+
+  // Arriving from a scorecard elsewhere (?fix=…): go straight to the place.
+  useEffect(() => {
+    const action = searchParams.get('fix');
+    if (!action || !data?.document) return;
+    const target = {
+      action, sectionKey: searchParams.get('section') || undefined, heading: searchParams.get('heading') || undefined,
+      field: searchParams.get('field') || undefined, after: searchParams.get('after') || undefined
+    };
+    setSearchParams({}, { replace: true });
+    fixFinding(target);
+  }, [searchParams, data, fixFinding, setSearchParams]);
 
   // Structure changes: each one is a request, then the document reloads.
   const changeStructure = useCallback(async (work, done) => {
@@ -449,6 +501,11 @@ export default function DocumentDetail() {
 
         {tab === 'review' && (
           <div style={{ padding: 18 }}>
+            {quality?.scorecard && (
+              <Card title={t('scorecard.title')} subtitle={t('scorecard.liveSubtitle', { score: quality.score.score })} className="card-gap-b">
+                <Scorecard scorecard={quality.scorecard} onFix={fixFinding} live />
+              </Card>
+            )}
             {!review && !openFindings.length && (
               <Empty icon={IconSparkles} title={t('documentDetailUi.noReviewTitle')}
                 action={can('ai:use') ? <button className="btn btn-primary" onClick={runReview} disabled={reviewBusy}><IconSparkles />{t('documentDetail.reviewWithAi')}</button> : null}>
@@ -479,7 +536,6 @@ export default function DocumentDetail() {
                   </div>
                 )}
 
-                {review?.scorecard && <Scorecard scorecard={review.scorecard} />}
 
                 {openFindings.length === 0 ? (
                   <Empty icon={IconCheck} title={t('documentDetailUi.noFindingsTitle')} >{t('documentDetailUi.noFindingsBody')}</Empty>
@@ -502,7 +558,7 @@ export default function DocumentDetail() {
             )}
 
             <div style={{ marginTop: 18 }}>
-              <AssessmentPanel documentId={id} showEngine={!review?.scorecard} />
+              <AssessmentPanel documentId={id} showEngine={false} />
             </div>
           </div>
         )}

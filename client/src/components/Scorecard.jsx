@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import { Card, Badge, Empty, Field, Loading, ErrorNote, useToast } from './ui.jsx';
@@ -22,6 +23,16 @@ import { useI18n } from '../i18n/index.jsx';
 
 const TONE = { ok: 'ok', attention: 'warn', breach: 'danger' };
 const METER = { ok: 'ok', attention: 'warn', breach: 'danger' };
+
+/** The question under each criterion, in the reader's language. */
+function useQuestion() {
+  const { t } = useI18n();
+  return (criterion) => {
+    const key = `scorecard.question${criterion.short}`;
+    const translated = t(key);
+    return translated === key.split('.').pop() || translated === key ? criterion.question : translated;
+  };
+}
 
 /** The criterion labels live in the dictionaries, keyed by the short code. */
 function useCriterionLabel() {
@@ -35,15 +46,64 @@ function useCriterionLabel() {
   };
 }
 
-function BandRow({ label, question, band, status, findings, meta }) {
+const SEVERITY_TONE = { critical: 'critical', high: 'danger', medium: 'warn', low: 'neutral', info: 'neutral' };
+
+/**
+ * What a criterion is losing points to: each finding, the points it costs and
+ * a way to the place it is fixed. `onFix` handles a target on the page the
+ * reader is on; without it, the item links to the document.
+ */
+function CriterionItems({ items, toNextBand, band, onFix }) {
   const { t, formatNumber } = useI18n();
+  const fixLabel = (target) => t(`scorecard.fix_${target.action}`);
   return (
+    <div className="scorecard-items">
+      {band < 5 && toNextBand > 0 && (
+        <p className="tiny muted" style={{ margin: '0 0 6px' }}>
+          {t('scorecard.toNextBand', { band: formatNumber(band + 1), points: formatNumber(toNextBand) })}
+        </p>
+      )}
+      <ul>
+        {items.map((item, i) => (
+          <li key={item.id || i} className="scorecard-item">
+            <span className="scorecard-item-main">
+              <span className="row-tight" style={{ flexWrap: 'wrap' }}>
+                <Badge tone={SEVERITY_TONE[item.severity] || 'neutral'}>{t(`rating.${item.severity}`)}</Badge>
+                <span className="strong small">{item.title}</span>
+              </span>
+              {item.location && <span className="tiny muted">{item.location}</span>}
+              {item.recommendation && <span className="tiny">{item.recommendation}</span>}
+            </span>
+            <span className="scorecard-item-side">
+              {item.weight > 0 && <span className="tiny muted nowrap">{t('scorecard.points', { points: formatNumber(item.weight) })}</span>}
+              {item.target && (onFix
+                ? <button className="btn btn-sm" onClick={() => onFix(item.target)}>{fixLabel(item.target)}</button>
+                : (
+                  <Link className="btn btn-sm" to={`/documents/${item.target.documentId}?${new URLSearchParams({
+                    fix: item.target.action, ...(item.target.sectionKey ? { section: item.target.sectionKey } : {}),
+                    ...(item.target.heading ? { heading: item.target.heading } : {}), ...(item.target.field ? { field: item.target.field } : {}),
+                    ...(item.target.after ? { after: item.target.after } : {})
+                  })}`}>{fixLabel(item.target)}</Link>
+                ))}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function BandRow({ label, question, band, status, findings, meta, items, toNextBand, onFix }) {
+  const { t, formatNumber } = useI18n();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="scorecard-row-wrap">
     <div className="scorecard-row">
       <div className="scorecard-row-main">
         <div className="between" style={{ gap: 8, alignItems: 'baseline' }}>
           <span className="strong">{label}</span>
           <span className="tiny muted nowrap">
-            {t('scorecard.outOfFive', { score: formatNumber(band) })}
+            {t('scorecard.outOfFive', { score: formatNumber(band), max: formatNumber(5) })}
           </span>
         </div>
         <div className={`meter ${METER[status] || ''}`} style={{ marginTop: 6 }}>
@@ -53,22 +113,34 @@ function BandRow({ label, question, band, status, findings, meta }) {
       </div>
       <div className="scorecard-row-side">
         <Badge tone={TONE[status] || 'neutral'}>{t(`scorecard.status${status.charAt(0).toUpperCase()}${status.slice(1)}`)}</Badge>
-        {meta || (
-          <span className="tiny muted">
-            {findings
-              ? t('scorecard.findingCount', { count: formatNumber(findings) })
-              : t('scorecard.noFindings')}
-          </span>
-        )}
+        {meta || (findings && items?.length
+          ? (
+            <button className="btn btn-ghost btn-sm" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+              {open ? t('scorecard.hideWhat') : t('scorecard.showWhat', { count: formatNumber(findings) })}
+            </button>
+          )
+          : (
+            <span className="tiny muted">
+              {findings
+                ? t('scorecard.findingCount', { count: formatNumber(findings) })
+                : t('scorecard.noFindings')}
+            </span>
+          ))}
       </div>
+    </div>
+    {open && items?.length > 0 && <CriterionItems items={items} toNextBand={toNextBand} band={band} onFix={onFix} />}
     </div>
   );
 }
 
-/** The engine's profile. `compact` drops the framing text for inline use. */
-export function Scorecard({ scorecard, compact = false }) {
+/**
+ * The engine's profile. `compact` drops the framing text for inline use;
+ * `onFix` takes the reader to a finding's place on the current page.
+ */
+export function Scorecard({ scorecard, compact = false, onFix, live = false }) {
   const { t, formatNumber } = useI18n();
   const labelOf = useCriterionLabel();
+  const questionOf = useQuestion();
   if (!scorecard) return null;
 
   return (
@@ -76,14 +148,15 @@ export function Scorecard({ scorecard, compact = false }) {
       {!compact && <p className="small muted" style={{ marginBottom: 0 }}>{t('scorecard.subtitle')}</p>}
       <div className="scorecard">
         {scorecard.criteria.map((c) => (
-          <BandRow key={c.key} label={labelOf(c)} question={compact ? null : c.question}
-            band={c.band} status={c.status} findings={c.findings} />
+          <BandRow key={c.key} label={labelOf(c)} question={compact ? null : questionOf(c)}
+            band={c.band} status={c.status} findings={c.findings}
+            items={c.items} toNextBand={c.toNextBand} onFix={onFix} />
         ))}
       </div>
       <div className="between">
-        <span className="tiny muted">{t('scorecard.derived')}</span>
+        <span className="tiny muted">{live ? t('scorecard.liveNote') : t('scorecard.derived')}</span>
         <span className="small strong nowrap">
-          {t('scorecard.overall')} {t('scorecard.outOfFive', { score: formatNumber(scorecard.overall) })}
+          {t('scorecard.overall')} {t('scorecard.outOfFive', { score: formatNumber(scorecard.overall), max: formatNumber(5) })}
         </span>
       </div>
       {scorecard.unmapped?.length > 0 && (

@@ -755,3 +755,10 @@ a.worklist-title:hover { color: var(--accent); }
 .mbss-card.selected { border-color: var(--accent); background: var(--accent-soft); }
 .mbss-card input[type=checkbox] { margin-top: 3px; }
 .mbss-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+
+/* What a scorecard criterion is losing points to. */
+.scorecard-items { padding: 4px 14px 12px; border-top: 1px dashed var(--border); }
+.scorecard-items ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.scorecard-item { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.scorecard-item-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.scorecard-item-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }

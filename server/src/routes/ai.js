@@ -66,6 +66,21 @@ function persistFindings(scopeType, scopeId, findings, actor) {
 }
 
 /** Full quality review of a document: engine checks plus the AI provider's. */
+/**
+ * The platform's own checks, without the AI and without storing anything:
+ * the score as the document or domain stands now, recomputed after every
+ * change so a fix shows in the score at once.
+ */
+router.get('/quality/document/:id', requirePermission('document:read'), asyncHandler(async (req, res) => {
+  const engine = reviewDocument(req.params.id);
+  res.json({ score: engine.score, scorecard: engine.scorecard, findings: engine.findings.length });
+}));
+
+router.get('/quality/domain/:key', requirePermission('document:read'), asyncHandler(async (req, res) => {
+  const result = reviewDomain(req.params.key);
+  res.json({ score: result.score, scorecard: result.scorecard, documents: result.documents, findings: result.findings.length });
+}));
+
 router.post('/review/document/:id', requirePermission('ai:use'), asyncHandler(async (req, res) => {
   const started = Date.now();
   const engine = reviewDocument(req.params.id);
