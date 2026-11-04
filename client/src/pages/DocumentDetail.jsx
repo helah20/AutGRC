@@ -46,7 +46,10 @@ export default function DocumentDetail() {
   const [tab, setTab] = useState('content');
   const [editing, setEditing] = useState(null);
   const [transitions, setTransitions] = useState([]);
+  const [transitionsLoaded, setTransitionsLoaded] = useState(false);
   const [transitionTarget, setTransitionTarget] = useState(null);
+  // A fix asked for on a published document waits for it to be opened for revision.
+  const [pendingFix, setPendingFix] = useState(null);
   const [transitionNote, setTransitionNote] = useState('');
   const [review, setReview] = useState(null);
   const [reviewBusy, setReviewBusy] = useState(false);
@@ -69,7 +72,7 @@ export default function DocumentDetail() {
 
   useEffect(() => {
     if (!id) return;
-    api.get(`/documents/${id}/transitions`).then(setTransitions).catch(() => {});
+    api.get(`/documents/${id}/transitions`).then(setTransitions).catch(() => {}).finally(() => setTransitionsLoaded(true));
   }, [id, data?.document?.status]);
 
   const doc = data?.document;
@@ -104,7 +107,12 @@ export default function DocumentDetail() {
       if (revise) setTransitionTarget(revise); else toast.info(t('scorecard.reviseHint'));
       return;
     }
-    if (!editable) { toast.info(t('scorecard.notEditableHint')); return; }
+    if (!editable) {
+      // A published document is opened for revision first, then the fix goes on.
+      const revise = transitions.find((x) => x.to === 'under_revision' && x.allowed);
+      if (revise) { setPendingFix(target); setTransitionTarget(revise); toast.info(t('scorecard.reviseFirst')); } else toast.info(t('scorecard.notEditableHint'));
+      return;
+    }
     setTab('content');
     if (target.action === 'edit_section') {
       const section = data.sections.find((x) => x.section_key === target.sectionKey);
@@ -125,17 +133,28 @@ export default function DocumentDetail() {
     }
   }, [data, editable, id, reload, t, toast, transitions]);
 
+  // The document is open for revision now: carry on with the fix that asked for it.
+  useEffect(() => {
+    if (pendingFix && editable && !transitionTarget) {
+      const target = pendingFix;
+      setPendingFix(null);
+      fixFinding(target);
+    }
+  }, [pendingFix, editable, transitionTarget, fixFinding]);
+
   // Arriving from a scorecard elsewhere (?fix=…): go straight to the place.
   useEffect(() => {
     const action = searchParams.get('fix');
     if (!action || !data?.document) return;
+    // A published document needs its transitions to offer the revision.
+    if (!editable && !transitionsLoaded) return;
     const target = {
       action, sectionKey: searchParams.get('section') || undefined, heading: searchParams.get('heading') || undefined,
       field: searchParams.get('field') || undefined, after: searchParams.get('after') || undefined
     };
     setSearchParams({}, { replace: true });
     fixFinding(target);
-  }, [searchParams, data, fixFinding, setSearchParams]);
+  }, [searchParams, data, fixFinding, setSearchParams, editable, transitionsLoaded]);
 
   // Structure changes: each one is a request, then the document reloads.
   const changeStructure = useCallback(async (work, done) => {
@@ -503,7 +522,7 @@ export default function DocumentDetail() {
           <div style={{ padding: 18 }}>
             {quality?.scorecard && (
               <Card title={t('scorecard.title')} subtitle={t('scorecard.liveSubtitle', { score: quality.score.score })} className="card-gap-b">
-                <Scorecard scorecard={quality.scorecard} onFix={fixFinding} live />
+                <Scorecard scorecard={quality.scorecard} onFix={fixFinding} live documentId={id} />
               </Card>
             )}
             {!review && !openFindings.length && (
@@ -740,11 +759,11 @@ export default function DocumentDetail() {
 
       {/* ------------------------------------------------------ dialogs -- */}
 
-      <Modal open={Boolean(transitionTarget)} onClose={() => setTransitionTarget(null)}
+      <Modal open={Boolean(transitionTarget)} onClose={() => { setTransitionTarget(null); setPendingFix(null); }}
         title={t('documentDetailUi.moveTo', { status: transitionTarget?.label ? labels.status(transitionTarget.to, transitionTarget.label) : '' })}
         footer={
           <>
-            <button className="btn" onClick={() => setTransitionTarget(null)}>{t('documentDetailUi.cancel')}</button>
+            <button className="btn" onClick={() => { setTransitionTarget(null); setPendingFix(null); }}>{t('documentDetailUi.cancel')}</button>
             <button className="btn btn-primary" onClick={applyTransition}>{t('documentDetailUi.confirm')}</button>
           </>
         }>

@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
-import { Modal } from './ui.jsx';
+import { Modal, useToast } from './ui.jsx';
 import { IconDownload } from './Icons.jsx';
 import { useI18n } from '../i18n/index.jsx';
 
@@ -79,8 +79,9 @@ export function ExportDialog({ format, onClose, onExport, hiddenSections = 0 }) 
 }
 
 /** Settings: the organisation's default for what exported documents carry. */
-export function LayoutSettings({ canEdit, toast }) {
+export function LayoutSettings({ canEdit }) {
   const { t } = useI18n();
+  const toast = useToast();
   const [layout, setLayout] = useState(null);
   const [saving, setSaving] = useState(false);
 

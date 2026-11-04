@@ -56,3 +56,15 @@ export function sectionsForExport(sections) {
       body: String(s.body || '').replace(/(<span class="clause-ref">)\d+((?:\.\d+)+<\/span>)/g, `$1${i + 1}$2`)
     }));
 }
+
+const HEADING_NUMBER = /^\s*[0-9\u0660-\u0669\u06F0-\u06F9]+(?:[.\u066B][0-9\u0660-\u0669\u06F0-\u06F9]+)*\s*[.)\-\u2013:]?\s+(?=\S)/;
+
+/**
+ * A section heading as the file shows it. When the export numbers headings,
+ * a number the heading already carries ("1. الغرض", typed in or imported)
+ * is dropped, or the file would read "1. 1. الغرض".
+ */
+export function exportHeading(heading, numbered) {
+  const text = String(heading || '');
+  return numbered ? text.replace(HEADING_NUMBER, '') || text : text;
+}

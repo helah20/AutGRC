@@ -163,6 +163,8 @@ export function scorecard(findings, { documents = 1 } = {}) {
     acc.items.push({
       id: f.id || null, title: f.title, severity: f.severity, category: f.category,
       location: f.location || '', recommendation: f.recommendation || '',
+      // The words to change, so the reader finds them in a long section.
+      statement: evidence?.conflicting?.statement || evidence?.statement || '',
       weight, target: evidence?.target || null
     });
   }

@@ -53,7 +53,7 @@ const SEVERITY_TONE = { critical: 'critical', high: 'danger', medium: 'warn', lo
  * a way to the place it is fixed. `onFix` handles a target on the page the
  * reader is on; without it, the item links to the document.
  */
-function CriterionItems({ items, toNextBand, band, onFix }) {
+function CriterionItems({ items, toNextBand, band, onFix, documentId }) {
   const { t, formatNumber } = useI18n();
   const fixLabel = (target) => t(`scorecard.fix_${target.action}`);
   return (
@@ -72,18 +72,21 @@ function CriterionItems({ items, toNextBand, band, onFix }) {
                 <span className="strong small">{item.title}</span>
               </span>
               {item.location && <span className="tiny muted">{item.location}</span>}
+              {item.statement && <q className="tiny scorecard-quote" dir="auto">{item.statement}</q>}
               {item.recommendation && <span className="tiny">{item.recommendation}</span>}
             </span>
             <span className="scorecard-item-side">
               {item.weight > 0 && <span className="tiny muted nowrap">{t('scorecard.points', { points: formatNumber(item.weight) })}</span>}
-              {item.target && (onFix
+              {/* The page handles a place in its own document; a place in
+                  another document of the domain is a link to it. */}
+              {item.target && (onFix && (!documentId || item.target.documentId === documentId)
                 ? <button className="btn btn-sm" onClick={() => onFix(item.target)}>{fixLabel(item.target)}</button>
                 : (
                   <Link className="btn btn-sm" to={`/documents/${item.target.documentId}?${new URLSearchParams({
                     fix: item.target.action, ...(item.target.sectionKey ? { section: item.target.sectionKey } : {}),
                     ...(item.target.heading ? { heading: item.target.heading } : {}), ...(item.target.field ? { field: item.target.field } : {}),
                     ...(item.target.after ? { after: item.target.after } : {})
-                  })}`}>{fixLabel(item.target)}</Link>
+                  })}`}>{fixLabel(item.target)}{item.target.documentId !== documentId && item.target.reference ? ` · ${item.target.reference}` : ''}</Link>
                 ))}
             </span>
           </li>
@@ -93,7 +96,7 @@ function CriterionItems({ items, toNextBand, band, onFix }) {
   );
 }
 
-function BandRow({ label, question, band, status, findings, meta, items, toNextBand, onFix }) {
+function BandRow({ label, question, band, status, findings, meta, items, toNextBand, onFix, documentId }) {
   const { t, formatNumber } = useI18n();
   const [open, setOpen] = useState(false);
   return (
@@ -128,7 +131,7 @@ function BandRow({ label, question, band, status, findings, meta, items, toNextB
           ))}
       </div>
     </div>
-    {open && items?.length > 0 && <CriterionItems items={items} toNextBand={toNextBand} band={band} onFix={onFix} />}
+    {open && items?.length > 0 && <CriterionItems items={items} toNextBand={toNextBand} band={band} onFix={onFix} documentId={documentId} />}
     </div>
   );
 }
@@ -137,7 +140,7 @@ function BandRow({ label, question, band, status, findings, meta, items, toNextB
  * The engine's profile. `compact` drops the framing text for inline use;
  * `onFix` takes the reader to a finding's place on the current page.
  */
-export function Scorecard({ scorecard, compact = false, onFix, live = false }) {
+export function Scorecard({ scorecard, compact = false, onFix, live = false, documentId }) {
   const { t, formatNumber } = useI18n();
   const labelOf = useCriterionLabel();
   const questionOf = useQuestion();
@@ -150,7 +153,7 @@ export function Scorecard({ scorecard, compact = false, onFix, live = false }) {
         {scorecard.criteria.map((c) => (
           <BandRow key={c.key} label={labelOf(c)} question={compact ? null : questionOf(c)}
             band={c.band} status={c.status} findings={c.findings}
-            items={c.items} toNextBand={c.toNextBand} onFix={onFix} />
+            items={c.items} toNextBand={c.toNextBand} onFix={onFix} documentId={documentId} />
         ))}
       </div>
       <div className="between">

@@ -130,6 +130,13 @@ function parseList(html, ordered, level = 0) {
       items.push(...sub.items);
     }
   }
+  // A numbered list whose items already open with their own numbers ("1.",
+  // "2-1") is shown as written: numbered again it would read "1. 1. …".
+  const typed = /^\s*[0-9\u0660-\u0669]+(?:[.\-][0-9\u0660-\u0669]+)*\s*[.)\-:]?\s/;
+  const own = (item) => typed.test(item.runs.map((r) => r.text).join(''));
+  if (ordered && items.length && items.filter((i) => i.level === level).every(own)) {
+    return { type: 'list', ordered: false, plain: true, items };
+  }
   return { type: 'list', ordered, items };
 }
 

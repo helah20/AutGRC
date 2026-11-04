@@ -64,7 +64,7 @@ export default function Settings() {
           {tab === 'brand' && (
             <>
               <BrandSettings canEdit={can('settings:write')} orgName={org?.org_name || ''} />
-              <LayoutSettings canEdit={can('settings:write')} toast={toast} />
+              <LayoutSettings canEdit={can('settings:write')} />
             </>
           )}
           {tab === 'users' && <UserSettings />}

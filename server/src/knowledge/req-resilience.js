@@ -47,7 +47,7 @@ export const RESILIENCE_DOMAINS = {
         evidence: ['Detection use case inventory', 'Review and triage records', 'Retention configuration evidence per source'],
         refs: { 'NCA-ECC': ['2-12-3'], 'ISO-27001': ['A.8.15', 'A.8.16'], 'NIST-800-53': ['AU-6', 'AU-11'], 'CIS-V8': ['8.10'] } },
       { key: 'privileged_activity_logging', title: 'Logging of privileged activity',
-        policy: 'Privileged activity shall be logged in sufficient detail to reconstruct what a privileged user did.',
+        policy: 'Privileged activity shall be logged in enough detail to reconstruct what a privileged user did: who, what, on which system and when.',
         standard: 'Privileged events shall record {{privilegedLogDetail}}. Privileged session activity on critical systems shall be captured to a level permitting reconstruction, and the capture shall not be disableable by the account being captured. Privileged logs shall be retained {{criticalLogRetention}} and reviewed {{logReviewFrequency}} against approved change and access records, so that activity without a corresponding authorisation is visible.',
         clauseOwners: ['it_manager', 'it_manager', 'soc_analyst'],
         guidance: 'Reconcile privileged activity against approved changes rather than reading it in isolation. The question worth answering is not what the administrator did but whether anyone had agreed they should.',
@@ -335,7 +335,7 @@ export const RESILIENCE_DOMAINS = {
         evidence: ['Segmentation and access path evidence for industrial environments', 'Recorded compensating controls with business and safety owner agreement', 'Separate asset inventory for operational technology'],
         refs: { 'ISO-27001': ['A.8.22', 'A.8.20'], 'NIST-800-53': ['SC-8', 'CM'], 'NCA-CSCC': ['2-4'], 'NCA-OTCC': ['1-3', '1-5', '2-1', '2-3', '2-4', '2-11'] } },
       { key: 'ops_tool_lifecycle', title: 'Lifecycle of security tooling',
-        policy: 'Security tooling shall be maintained, supported and periodically reassessed against what it is relied upon to do.',
+        policy: 'Security tooling shall be maintained, supported and reassessed at least annually against what it is relied upon to do.',
         standard: 'Each tool shall have a named owner, a supported version and a licence position recorded. Tools shall be reviewed {{serviceReviewFrequency}} against the detections and controls that depend on them, and a tool no longer serving a purpose shall be decommissioned rather than left running unmonitored. Availability shall be measured against {{toolAvailabilityTarget}}. Tool replacement shall carry a transition plan, since the gap between decommissioning one and configuring the next is a period of reduced coverage that shall be declared.',
         clauseOwners: ['it_manager', 'soc_analyst', 'it_manager', 'it_manager'],
         guidance: 'The dangerous tool is the one still installed, still holding credentials, and no longer looked at by anyone. Decommission deliberately or keep it properly; the middle state is the liability.',
@@ -401,7 +401,7 @@ export const RESILIENCE_DOMAINS = {
 
   cloud_security: {
     objectives: ['Apply the shared responsibility model explicitly for every cloud service.', 'Enforce secure configuration baselines in cloud environments.', 'Maintain data residency, portability and exit capability.'],
-    parameters: { cspAssessmentFrequency: 'annually', configBaselineStandard: 'the approved cloud security baseline derived from the CIS Benchmarks for the relevant platform', cspmScanFrequency: 'continuously with daily reporting', dataResidency: 'inside the Kingdom of Saudi Arabia unless an approved exception applies', exitPlanReviewFrequency: 'annually', privilegedCloudReview: 'quarterly' , cloudStrategyReview: 'annually, and before adopting a new service model or a new provider', tenancyApprovalRule: 'no cloud tenancy or subscription may be created outside the approved procurement and registration process', cloudDataClassificationRule: 'the classification of the data determines the permitted service model, region and provider, and is decided before the service is procured', cloudEncryptionKeys: 'customer-managed keys for Confidential and Secret data, held so that the provider cannot decrypt without the organisation', cloudSaasAssessment: 'assessed before adoption for authentication, logging, data location, sub-processing and exit, proportionate to the data it will hold', cloudIncidentTerms: 'notification within the contractual period, with the provider obliged to supply the logs and forensic support the investigation needs'},
+    parameters: { cspAssessmentFrequency: 'annually', configBaselineStandard: 'the approved cloud security baseline derived from the CIS Benchmarks for the relevant platform', cspmScanFrequency: 'continuously with daily reporting', dataResidency: 'inside the Kingdom of Saudi Arabia unless an approved exception applies', exitPlanReviewFrequency: 'annually', privilegedCloudReview: 'quarterly' , cloudStrategyReview: 'annually, and before adopting a new service model or a new provider', tenancyApprovalRule: 'no cloud tenancy or subscription shall be created outside the approved procurement and registration process', cloudDataClassificationRule: 'the classification of the data determines the permitted service model, region and provider, and is decided before the service is procured', cloudEncryptionKeys: 'customer-managed keys for Confidential and Secret data, held so that the provider cannot decrypt without the organisation', cloudSaasAssessment: 'assessed before adoption for authentication, logging, data location, sub-processing and exit, proportionate to the data it will hold', cloudIncidentTerms: 'notification within the contractual period, with the provider obliged to supply the logs and forensic support the investigation needs'},
     requirements: [
       { key: 'shared_responsibility', title: 'Shared responsibility definition',
         policy: 'The division of cybersecurity responsibility between {{orgName}} and each cloud service provider shall be documented and agreed before the service is used.',
@@ -445,7 +445,7 @@ export const RESILIENCE_DOMAINS = {
         refs: { 'NCA-ECC': ['4-2-1', '4-2-3'], 'NCA-CCC': ['2-6'], 'ISO-27001': ['A.5.23'], 'SAMA-CSF': ['4.3'], 'NCA-TCC': ['3-1'] } },
       { key: 'cloud_strategy', title: 'Cloud strategy and policy',
         policy: 'Cloud adoption shall follow an approved strategy that states which service models, providers and data classifications are permitted.',
-        standard: 'The strategy shall be approved by the CISO and reviewed {{cloudStrategyReview}}. It shall state the permitted service models per data classification, the approved providers and regions, and the conditions under which an exception may be sought. {{cloudDataClassificationRule}}. Adoption decisions shall record the classification, the chosen model and the reason, so that a later review can tell whether the decision was made against the strategy or around it.',
+        standard: 'The strategy shall be approved by the CISO and reviewed {{cloudStrategyReview}}. It shall state the permitted service models per data classification, the approved providers and regions, and the conditions under which an exception can be sought. {{cloudDataClassificationRule}}. Adoption decisions shall record the classification, the chosen model and the reason, so that a later review can tell whether the decision was made against the strategy or around it.',
         clauseOwners: ['ciso', 'ciso', 'grc_manager', 'grc_manager'],
         guidance: 'Decide the permitted combinations in advance and publish them. Assessing every service individually from first principles guarantees that the fast-moving projects do not wait for you.',
         controlName: 'Cloud strategy and adoption policy', controlType: 'directive', controlNature: 'administrative',
@@ -541,7 +541,7 @@ export const RESILIENCE_DOMAINS = {
 
   business_continuity: {
     objectives: ['Understand which business services matter most and how quickly they must be restored.', 'Maintain plans that work under real disruption.', 'Ensure cybersecurity capability itself survives disruption.'],
-    parameters: { biaFrequency: 'annually', bcpTestFrequency: 'annually', criticalServiceRto: 'as defined in the business impact analysis for each service', planReviewFrequency: 'annually and after any invocation', exerciseTypes: 'a tabletop exercise annually and a functional exercise for critical services' , bcmsScopeReview: 'annually, and on any change to the services, sites or suppliers in scope', dependencyMapping: 'upstream suppliers, downstream consumers, people, premises, technology and data for each critical service', minimumServiceLevel: 'the reduced but acceptable level of service each critical activity must sustain during disruption', crisisTeamActivation: 'within 1 hour of a disruption meeting the declaration criteria, at any hour', continuityCommsChannel: 'a channel that does not depend on the systems it may be needed to discuss', bcmsMeasures: 'exercise outcomes against objectives, plan currency, dependency map currency, and recovery objectives met during real invocations'},
+    parameters: { biaFrequency: 'annually', bcpTestFrequency: 'annually', criticalServiceRto: 'as defined in the business impact analysis for each service', planReviewFrequency: 'annually and after any invocation', exerciseTypes: 'a tabletop exercise annually and a functional exercise for critical services' , bcmsScopeReview: 'annually, and on any change to the services, sites or suppliers in scope', dependencyMapping: 'upstream suppliers, downstream consumers, people, premises, technology and data for each critical service', minimumServiceLevel: 'the reduced but acceptable level of service each critical activity must sustain during disruption', crisisTeamActivation: 'within 1 hour of a disruption meeting the declaration criteria, at any hour', continuityCommsChannel: 'a channel that does not depend on the systems it could be needed to discuss', bcmsMeasures: 'exercise outcomes against objectives, plan currency, dependency map currency, and recovery objectives met during real invocations'},
     requirements: [
       { key: 'bia', title: 'Business impact analysis',
         policy: 'A business impact analysis shall identify critical business services, their dependencies and the maximum tolerable period of disruption.',
@@ -614,7 +614,7 @@ export const RESILIENCE_DOMAINS = {
         evidence: ['Dependency maps per critical activity', 'Agreed minimum service levels signed by business owners', 'Single point of failure register with treatment decisions'],
         refs: { 'ISO-22301': ['6', '8'], 'NCA-ECC': ['3-1'], 'ISO-27001': ['A.5.30'], 'NCA-CCC': ['3-1'] } },
       { key: 'bcms_resources', title: 'Resources, competence and crisis communication',
-        policy: 'The continuity programme shall be resourced, the people in it shall be competent, and a means of communicating during disruption shall exist independent of the systems that may be unavailable.',
+        policy: 'The continuity programme shall be resourced, the people in it shall be competent, and a means of communicating during disruption shall exist independent of the systems that could be unavailable.',
         standard: 'Continuity and crisis roles shall be filled by named individuals with recorded competence and a named deputy for each. Contact information shall be maintained and verified {{planReviewFrequency}}, held in a form reachable without corporate systems. {{continuityCommsChannel}} shall be established and tested. {{crisisTeamActivation}} shall be the activation standard. Awareness of continuity duties shall reach every person who has one, not only the plan authors.',
         clauseOwners: ['grc_manager', 'grc_manager', 'it_manager', 'ciso', 'grc_manager'],
         guidance: 'Keep the call list somewhere that survives the outage, and test it out of hours. A contact list inside the collapsed system is the most common single failure of otherwise sound plans.',
@@ -680,7 +680,7 @@ export const RESILIENCE_DOMAINS = {
   },
 
   disaster_recovery: {
-    objectives: ['Maintain technology recovery capability aligned to business recovery objectives.', 'Test recovery regularly and honestly.', 'Ensure recovery does not reintroduce compromise.'],
+    objectives: ['Maintain technology recovery capability aligned to business recovery objectives.', 'Test recovery on the cycle the Standard sets, and record the result as it was.', 'Ensure recovery does not reintroduce compromise.'],
     parameters: { drTestFrequency: 'annually for critical systems', rtoDefault: 'as recorded in the business impact analysis', rpoDefault: 'as recorded in the business impact analysis', failoverTestType: 'a full failover for critical systems and a component test for others', drPlanReviewFrequency: 'annually and after any invocation' , drSiteSeparation: 'a separate site or availability zone that does not share power, cooling, network path or physical premises with production', recoveryRunbookDetail: 'step level, naming the system, the command or console action, the expected result and the verification check', recoveryCommsPlan: 'notification to affected business owners, customers and, where reportable, the regulator, with named approvers for each audience', drDependencyOrder: 'a recovery sequence derived from the dependency map, so that a service is not restored before what it depends on', invocationCriteria: 'the conditions under which recovery is declared, and who may declare it at any hour'},
     requirements: [
       { key: 'dr_plans', title: 'Disaster recovery plans',
@@ -694,8 +694,8 @@ export const RESILIENCE_DOMAINS = {
         evidence: ['Disaster recovery plans per critical system', 'Recovery objectives traced to the business impact analysis', 'Dependency and sequencing documentation'],
         refs: { 'NCA-ECC': ['3-1-3'], 'ISO-27001': ['A.5.30', 'A.8.14'], 'ISO-22301': ['8.4'], 'NIST-800-53': ['CP-10'], 'NIST-CSF': ['RC.RP'] } },
       { key: 'recovery_capability', title: 'Recovery capability and redundancy',
-        policy: 'Technology infrastructure supporting critical services shall provide sufficient redundancy and recovery capability to meet agreed objectives.',
-        standard: 'Redundancy shall be provided at a level consistent with the recovery objective, and the recovery site or capability shall be sufficiently independent of the primary that a single event cannot affect both. Capacity at the recovery site shall support the minimum viable service level.',
+        policy: 'Technology infrastructure supporting critical services shall provide the redundancy and recovery capability their agreed recovery objectives require.',
+        standard: 'Redundancy shall be provided at a level consistent with the recovery objective, and the recovery site or capability shall be independent of the primary, so that a single event cannot affect both. Capacity at the recovery site shall support the minimum viable service level.',
         clauseOwners: ['security_architect', 'it_manager'],
         guidance: 'Verify independence of power, network and identity between sites; shared dependencies defeat geographic separation.',
         controlName: 'Recovery capability and redundancy', controlType: 'preventive', controlNature: 'technical',
@@ -844,7 +844,7 @@ export const RESILIENCE_DOMAINS = {
         evidence: ['Backup encryption configuration', 'Immutability or offline copy evidence', 'Separation of backup administrative credentials', 'Dual authorisation configuration for deletion'],
         refs: { 'NCA-ECC': ['2-9-3'], 'ISO-27001': ['A.8.13'], 'CIS-V8': ['11'], 'NIST-800-53': ['CP-9'] } },
       { key: 'restore_testing', title: 'Restoration testing',
-        policy: 'The ability to restore from backup shall be tested regularly, and results recorded.',
+        policy: 'The ability to restore from backup shall be tested on the cycle the Backup Standard sets, and results recorded.',
         standard: 'Restoration tests shall be conducted {{restoreTestFrequency}} for critical systems, covering full system restore and granular file recovery. Tests shall verify data integrity and completeness, not only job success, and shall achieve a success rate of at least {{restoreTestSuccessTarget}}. Failures shall be investigated and corrected.',
         clauseOwners: ['it_manager', 'it_manager', 'it_manager'],
         guidance: 'A successful backup job is not evidence of a restorable backup; only a restore test establishes that.',
@@ -874,7 +874,7 @@ export const RESILIENCE_DOMAINS = {
         evidence: ['Backup platform account inventory with separation evidence', 'Dual authorisation records for deletion and retention change', 'Immutable audit log of backup administration'],
         refs: { 'NCA-ECC': ['2-9-3', '2-2-3-4'], 'NCA-CSCC': ['2-8'], 'ISO-27001': ['A.8.13', 'A.8.2'], 'NIST-800-53': ['CP-9', 'AC-6'] } },
       { key: 'backup_monitoring', title: 'Backup monitoring and scope reconciliation',
-        policy: 'Backup failures and gaps in backup coverage shall be detected promptly, not discovered when a restore is requested.',
+        policy: 'Backup failures and gaps in backup coverage shall be detected by the backup report of the following day, not discovered when a restore is requested.',
         standard: 'Job success shall be monitored with {{backupMonitoringSla}}. Coverage shall be reconciled {{backupScopeReconciliation}}. A system found unprotected shall be brought into scope or recorded as an accepted risk by its business owner with a date. Repeated failure of the same job shall be escalated as a control failure rather than re-run indefinitely, and backup performance shall be reported to management with coverage and restore test results together.',
         clauseOwners: ['it_manager', 'it_manager', 'business_owner', 'grc_manager'],
         guidance: 'Reconcile against the asset register rather than the backup platform\'s own list. The platform can only report on what somebody remembered to add to it.',
@@ -885,7 +885,7 @@ export const RESILIENCE_DOMAINS = {
         refs: { 'NCA-ECC': ['2-9-3'], 'NCA-CSCC': ['2-8'], 'ISO-27001': ['A.8.13', 'A.8.16'], 'NIST-800-53': ['CP-9', 'SI-4'] } },
       { key: 'backup_cyber_recovery', title: 'Recovery after a destructive cyber attack',
         policy: 'The organisation shall be able to recover from a destructive attack that reaches the production environment and its connected backups.',
-        standard: '{{cyberRecoveryCopy}} shall be maintained and its isolation verified rather than assumed. Recovery from that copy shall be tested {{restoreTestFrequency}} for critical systems, including verification that the restored data predates the compromise. Restored systems shall be scanned and patched before returning to service, and restoration shall be to a clean build rather than over a compromised one. The recovery point acceptable after such an event shall be agreed with the business, since it may be older than {{backupRetention}} suggests.',
+        standard: '{{cyberRecoveryCopy}} shall be maintained and its isolation verified rather than assumed. Recovery from that copy shall be tested {{restoreTestFrequency}} for critical systems, including verification that the restored data predates the compromise. Restored systems shall be scanned and patched before returning to service, and restoration shall be to a clean build rather than over a compromised one. The recovery point acceptable after such an event shall be agreed with the business, since it can be older than {{backupRetention}} suggests.',
         clauseOwners: ['security_architect', 'it_manager', 'vuln_specialist', 'business_owner'],
         guidance: 'Test the restore from the immutable copy specifically, not from the convenient online one. They are different paths, and only one of them survives ransomware.',
         controlName: 'Destructive attack recovery capability', controlType: 'corrective', controlNature: 'hybrid',

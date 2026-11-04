@@ -358,6 +358,7 @@ export default {
     raiseActionLabel: 'Raise an action for this decision',
     raiseActionHint: 'Needs an owner and a due date, and is then tracked to verification.',
     decisionAdded: 'Decision recorded',
+    closeConfirm: 'Once closed, the minutes are a record: they are not edited and no decision can be added. Close them?',
     closeMinutes: 'Close minutes',
     closedToast: 'Minutes closed',
     closedNote: 'These minutes are closed and are no longer edited. Record a further review for anything new.',
@@ -993,6 +994,7 @@ export default {
   scorecard: {
     liveDomainSubtitle: 'Readiness {score} of 100 across {documents} documents, as they stand now. Open a criterion to see each issue and go to where it is fixed.',
     reviseHint: 'Open the document for revision first, from the buttons at the top.',
+    reviseFirst: 'The document is published: open it for revision, and the section then opens for editing.',
     notEditableHint: 'A published document is edited once it is opened for revision.',
     liveSubtitle: 'Readiness {score} of 100, as the document stands now.',
     questionPA: 'Do the adopted framework requirements have organisational controls behind them?',
