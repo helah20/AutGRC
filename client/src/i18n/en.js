@@ -358,6 +358,7 @@ export default {
     raiseActionLabel: 'Raise an action for this decision',
     raiseActionHint: 'Needs an owner and a due date, and is then tracked to verification.',
     decisionAdded: 'Decision recorded',
+    closeConfirm: 'Once closed, the minutes are a record: they are not edited and no decision can be added. Close them?',
     closeMinutes: 'Close minutes',
     closedToast: 'Minutes closed',
     closedNote: 'These minutes are closed and are no longer edited. Record a further review for anything new.',

@@ -1,5 +1,6 @@
 /** Renders a governance finding with its evidence and recommendation. */
 
+import { Link } from 'react-router-dom';
 import { SeverityBadge, Badge, ProvenanceTag } from './ui.jsx';
 import { titleCase, relativeTime } from '../lib/format.js';
 import { IconCheck, IconX, IconAlert } from './Icons.jsx';
@@ -14,10 +15,19 @@ function parseEvidence(evidence) {
   return evidence;
 }
 
+/** The document page, opened at the place a finding is fixed. */
+function fixHref(target) {
+  const q = new URLSearchParams({ fix: target.action });
+  for (const k of ['sectionKey', 'heading', 'field', 'after']) if (target[k]) q.set(k === 'sectionKey' ? 'section' : k, target[k]);
+  return `/documents/${target.documentId}?${q}`;
+}
+
 export default function FindingCard({ finding, onStatusChange, canManage, onRaiseAction }) {
   const { t } = useI18n();
   const labels = useLabels();
   const evidence = parseEvidence(finding.evidence);
+  // Where the finding is fixed, when the check knows it.
+  const target = evidence?.target?.documentId ? evidence.target : null;
 
   return (
     <article className={`finding ${finding.severity}`}>
@@ -92,7 +102,14 @@ export default function FindingCard({ finding, onStatusChange, canManage, onRais
 
       {canManage && onStatusChange && finding.id && (
         <div className="row-tight" style={{ marginTop: 9, flexWrap: 'wrap' }}>
-          <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'acknowledged')}>{t('findingsUi.acknowledge')}</button>
+          {target && (
+            <Link className="btn btn-sm btn-primary" to={fixHref(target)}>
+              {t(`scorecard.fix_${target.action}`)}{target.reference ? ` · ${target.reference}` : ''}
+            </Link>
+          )}
+          {finding.status !== 'acknowledged' && (
+            <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'acknowledged')}>{t('findingsUi.acknowledge')}</button>
+          )}
           <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'resolved')}><IconCheck width={12} height={12} />{t('findingsUi.resolved')}</button>
           <button className="btn btn-sm" onClick={() => onStatusChange(finding, 'accepted_risk')}><IconAlert width={12} height={12} />{t('findingsUi.acceptRisk')}</button>
           <button className="btn btn-ghost btn-sm" onClick={() => onStatusChange(finding, 'false_positive')}><IconX width={12} height={12} />{t('findingsUi.falsePositive')}</button>

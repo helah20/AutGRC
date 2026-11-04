@@ -143,6 +143,8 @@ function matchWords(title, language, minLength) {
   if (language !== 'ar') return title.toLowerCase().split(/\W+/).filter((w) => w.length > minLength);
   return foldArabic(title).split(/[^\u0621-\u064A]+/)
     .map((w) => w.replace(/^(وال|بال|فال|كال|لل|ال)/, '').replace(/^[وبفل](?=[\u0621-\u064A]{4,})/, ''))
+    // The plural and feminine endings go too, so "الهويات" matches "الهوية".
+    .map((w) => w.replace(/(ات|ين|ون|ه)$/, (m, _e, i) => (i >= 3 ? '' : m)))
     .filter((w) => w.length >= 3 && !AR_STOP.has(w));
 }
 
@@ -156,11 +158,19 @@ function titleRegion(text) {
   return String(text).split(/\n+/).map((l) => l.trim()).filter(Boolean).slice(0, 4).join(' \n ').slice(0, 400);
 }
 
+/**
+ * Words that many domain names share ("security", "cybersecurity",
+ * "management", "related to"), which say nothing about which domain a title
+ * names. Arabic in its folded, stemmed form.
+ */
+const GENERIC_NAME_WORDS = new Set(['امن', 'سيبراني', 'ادار', 'متعلق', 'security', 'management', 'cybersecurity']);
+
 /** Detect the most likely domain from the document text. */
 export function detectDomain(text) {
   const language = textLanguage(text);
   const haystack = matchText(text, language);
   const head = matchText(titleRegion(text), language);
+  const titleLine = matchText(String(text).split(/\n+/).map((l) => l.trim()).find(Boolean) || '', language);
   const scores = DOMAIN_META.map((meta) => {
     // An Arabic document is read against the Arabic model: its domain name
     // and requirement titles, not the English ones it does not contain.
@@ -174,6 +184,8 @@ export function detectDomain(text) {
     if (haystack.includes(matchText(name, language))) score += 12;
     for (const word of matchWords(name, language, 4)) {
       if (haystack.includes(word)) score += 2;
+      // A word of the domain's name in the title says more than one in the body.
+      if (titleLine.includes(word) && !GENERIC_NAME_WORDS.has(word)) score += 8;
     }
     for (const req of model?.requirements || []) {
       const words = matchWords(req.title, language, 5);

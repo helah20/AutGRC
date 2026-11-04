@@ -3,7 +3,7 @@ import { api } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import {
-  Card, Loading, ErrorNote, Empty, Badge, DataTable, Select, useToast, Drawer, Field, Modal
+  Card, Loading, ErrorNote, Empty, Badge, DataTable, Select, useToast, Drawer, Field, Modal, ConfirmDialog
 } from '../components/ui.jsx';
 import { IconCheck, IconPlus, IconDownload, IconLock, IconUsers } from '../components/Icons.jsx';
 import { formatDate } from '../lib/format.js';
@@ -80,6 +80,7 @@ function ReviewDrawer({ id, onClose, onChanged, toast, canWrite, categories }) {
 
   const review = data?.review;
   const open = review && review.status !== 'closed' && canWrite;
+  const [confirmClose, setConfirmClose] = useState(false);
   const ready = form.decision.trim().length >= 5 && (!form.raise_action || (form.owner_id && form.due_date));
 
   async function addDecision() {
@@ -96,6 +97,7 @@ function ReviewDrawer({ id, onClose, onChanged, toast, canWrite, categories }) {
   async function close() {
     try {
       await api.post(`/management-reviews/${id}/close`, {});
+      setConfirmClose(false);
       reload(); onChanged();
       toast.success(t('reviews.closedToast'));
     } catch (err) { toast.error(t('reviews.couldNotSave'), err.message); }
@@ -113,7 +115,7 @@ function ReviewDrawer({ id, onClose, onChanged, toast, canWrite, categories }) {
         <>
           <button className="btn" onClick={() => download('docx')}><IconDownload width={13} height={13} />Word</button>
           <button className="btn" onClick={() => download('pdf')}><IconDownload width={13} height={13} />PDF</button>
-          {open && <button className="btn btn-primary" onClick={close}><IconLock width={13} height={13} />{t('reviews.closeMinutes')}</button>}
+          {open && <button className="btn btn-primary" onClick={() => setConfirmClose(true)}><IconLock width={13} height={13} />{t('reviews.closeMinutes')}</button>}
         </>
       )}>
       {loading && <Loading />}
@@ -209,6 +211,9 @@ function ReviewDrawer({ id, onClose, onChanged, toast, canWrite, categories }) {
           )}
         </div>
       )}
+      {/* Closed minutes are a record: they are not edited again, so closing asks first. */}
+      <ConfirmDialog open={confirmClose} onClose={() => setConfirmClose(false)} onConfirm={close}
+        title={t('reviews.closeMinutes')} message={t('reviews.closeConfirm')} confirmLabel={t('reviews.closeMinutes')} />
     </Drawer>
   );
 }

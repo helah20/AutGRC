@@ -72,3 +72,9 @@ test('a mostly Arabic sentence that opens with an English command reads right to
   assert.equal(paragraphDirection('The policy is reviewed annually (4.2.1).'), 'ltr');
   assert.equal(paragraphDirection('2024 — 12'), 'rtl');
 });
+
+test('an Arabic policy is read as the domain its title names, not one its body mentions', async () => {
+  const { detectDomain } = await import('../src/services/import.js');
+  const text = 'سياسة إدارة الهويات والصلاحيات\n1. الغرض\nتهدف هذه السياسة إلى تحديد متطلبات الأمن السيبراني المتعلقة بإدارة هويات الدخول والصلاحيات.\n2. النطاق\nتنطبق على جميع الأنظمة والتطبيقات وقواعد البيانات المملوكة للشركة.';
+  assert.equal(detectDomain(text).best.key, 'iam');
+});

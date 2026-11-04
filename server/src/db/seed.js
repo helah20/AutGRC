@@ -578,6 +578,21 @@ export function settleFindings() {
 }
 
 /**
+ * The controls of a published domain are approved with it; one most of
+ * whose evidence has been verified is implemented. Left proposed, every
+ * report would show no control implemented beside half the evidence
+ * verified.
+ */
+export function settleControls() {
+  const at = nowIso();
+  q.run(`UPDATE controls SET status = 'approved', updated_at = ?
+          WHERE status = 'proposed' AND domain_key IN (SELECT DISTINCT domain_key FROM documents WHERE status = 'published')`, at);
+  return q.run(`UPDATE controls SET status = 'implemented', updated_at = ?
+          WHERE status = 'approved'
+            AND (SELECT 2 * SUM(e.status = 'verified') > COUNT(*) FROM evidence e WHERE e.control_id = controls.id)`, at).changes;
+}
+
+/**
  * Evidence collected on its cycle for the published domains, with the
  * longer-established half already verified by the GRC function.
  */
@@ -687,6 +702,7 @@ export function runSeed({ quiet = false } = {}) {
 
   log('Recording collected evidence…');
   log(`  ${seedEvidence()} evidence items collected or verified`);
+  log(`  ${settleControls()} controls implemented`);
 
   // After the findings, which demonstrate the review engine on the English
   // originals; the Arabic versions mirror those originals.
