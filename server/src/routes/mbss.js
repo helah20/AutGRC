@@ -8,7 +8,7 @@ import { asyncHandler, validate, HttpError } from '../middleware/errors.js';
 import { mbssCatalogue, generateMbss } from '../services/mbss.js';
 import { matchTechnologies, mbssTechnology, CATEGORIES } from '../knowledge/mbss/index.js';
 import { requestLanguage } from '../services/localise.js';
-import { getOrgProfile } from './_shared.js';
+import { getOrgProfile, assertActiveUser } from './_shared.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -43,6 +43,8 @@ router.post('/generate', requirePermission('generate:run'), validate(z.object({
   if (unknown.length) throw new HttpError(400, `Unknown technology: ${unknown.join(', ')}`);
   if (!b.technologies.length && !b.custom) throw new HttpError(400, 'Choose at least one technology.');
   if (b.custom && !CATEGORIES[b.custom.category]) throw new HttpError(400, 'Unknown category.');
+  assertActiveUser(b.ownerId, 'The owner');
+  assertActiveUser(b.approverId, 'The approver');
   const created = generateMbss({
     technologies: b.technologies, custom: b.custom || null, language: b.language, level: b.level,
     benchmarkVersions: b.benchmarkVersions, org: getOrgProfile() || {},

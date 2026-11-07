@@ -560,6 +560,30 @@ test('AutGRC end-to-end governance workflow', {
   assert.match(del.body.error, /Retire/i);
 });
 
+  await t.test('a retired document, a missing document and an unknown owner are refused', async () => {
+    const unknownOwner = await api('POST', '/api/mbss/generate', { body: { technologies: ['nginx'], ownerId: 'usr_nobody' } });
+    assert.equal(unknownOwner.status, 400);
+    assert.match(unknownOwner.body.error, /owner/i);
+    const unknownApprover = await api('POST', '/api/generator/generate', {
+      body: { domainKey: 'iam', docTypes: ['policy'], approverId: 'usr_nobody' }
+    });
+    assert.equal(unknownApprover.status, 400);
+
+    const made = await api('POST', '/api/mbss/generate', { body: { technologies: ['nginx'] } });
+    assert.equal(made.status, 201);
+    const baseline = made.body.documents[0];
+    const retired = await api('POST', `/api/documents/${baseline.id}/transition`, { body: { to: 'retired', comment: 'Replaced' } });
+    assert.equal(retired.status, 200);
+    const detail = await api('GET', `/api/documents/${baseline.id}`);
+    const edit = await api('PUT', `/api/documents/${baseline.id}/sections/${detail.body.sections[0].id}`, {
+      body: { exported: false }
+    });
+    assert.equal(edit.status, 409);
+
+    const missing = await api('DELETE', `/api/documents/doc_missing/sections/${detail.body.sections[0].id}`);
+    assert.equal(missing.status, 404);
+  });
+
   await t.test('export to Word, PDF and Excel', async () => {
   const docId = state.docs.policy.id;
 

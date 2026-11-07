@@ -285,7 +285,9 @@ router.put('/:id/sections/:sectionId', requirePermission('document:update'), val
   const section = q.get('SELECT * FROM document_sections WHERE id = ? AND document_id = ?', req.params.sectionId, doc.id);
   if (!section) throw notFound('Section');
   if (section.locked) throw new HttpError(409, 'This section is locked and cannot be edited.');
+  // A retired document is a record, as a published one is a live text.
   if (doc.status === 'published') throw new HttpError(409, 'Move the document to Under Revision before editing its content.');
+  if (doc.status === 'retired') throw new HttpError(409, 'A retired document is a record and is not edited.');
 
   const heading = req.body.heading ?? section.heading;
   const body = req.body.body !== undefined ? sanitiseHtml(req.body.body) : section.body;
@@ -343,10 +345,11 @@ router.post('/:id/sections', requirePermission('document:update'), validate(z.ob
 }));
 
 router.delete('/:id/sections/:sectionId', requirePermission('document:update'), asyncHandler(async (req, res) => {
-  const section = q.get('SELECT * FROM document_sections WHERE id = ? AND document_id = ?', req.params.sectionId, req.params.id);
+  const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
+  if (!doc) throw notFound('Document');
+  const section = q.get('SELECT * FROM document_sections WHERE id = ? AND document_id = ?', req.params.sectionId, doc.id);
   if (!section) throw notFound('Section');
   if (section.locked) throw new HttpError(409, 'This section is locked and cannot be removed.');
-  const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
   assertStructureEditable(doc);
   q.run('DELETE FROM document_sections WHERE id = ?', section.id);
   q.run('UPDATE documents SET updated_at = ? WHERE id = ?', nowIso(), doc.id);

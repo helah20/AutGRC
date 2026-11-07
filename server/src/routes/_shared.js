@@ -1,6 +1,7 @@
 /** Helpers shared across route modules. */
 
 import { q, fromJson } from '../db/index.js';
+import { HttpError } from '../middleware/errors.js';
 import { can, mfaRequiredRoles } from '../middleware/auth.js';
 import { domainName, DOMAIN_META } from '../knowledge/index.js';
 import { DOC_TYPE_LABEL } from '../services/generator.js';
@@ -258,4 +259,15 @@ export function buildMyWork(user) {
     total: documentCount + evidence.length + findings.length + comments.length,
     emptyBecauseNothingAssigned: documentCount + evidence.length + findings.length + comments.length === 0
   };
+}
+
+/**
+ * An owner or approver named in a request is an active user of the
+ * platform; otherwise a document would name an account that does not exist
+ * or can no longer sign in to approve it.
+ */
+export function assertActiveUser(userId, label = 'User') {
+  if (!userId) return;
+  const user = q.get('SELECT id, status FROM users WHERE id = ?', userId);
+  if (!user || user.status !== 'active') throw new HttpError(400, `${label} is not an active user.`);
 }
