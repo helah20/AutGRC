@@ -9,7 +9,7 @@ import { generatePackage, previewPackage, DOC_TYPE_LABEL } from '../services/gen
 import { DOMAIN_META, DOMAIN_MODELS, FRAMEWORKS, buildParameterSet, ROLE_LIBRARY, arParameterLabel } from '../knowledge/index.js';
 import { requestLanguage } from '../services/localise.js';
 import { providerInfo } from '../services/ai.js';
-import { applicableFrameworkCodes, getOrgProfile, enrichDocuments } from './_shared.js';
+import { applicableFrameworkCodes, getOrgProfile, enrichDocuments, assertActiveUser } from './_shared.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -104,6 +104,8 @@ router.post('/preview', requirePermission('generate:run'), validate(generateSche
 }));
 
 router.post('/generate', requirePermission('generate:run'), validate(generateSchema), asyncHandler(async (req, res) => {
+  assertActiveUser(req.body.ownerId, 'The owner');
+  assertActiveUser(req.body.approverId, 'The approver');
   const org = getOrgProfile();
   const result = generatePackage({
     domainKey: req.body.domainKey,

@@ -78,7 +78,7 @@ export default function DocumentDetail() {
   const doc = data?.document;
   const params = doc?.generation_meta?.parameters || {};
 
-  const editable = doc && can('document:update') && doc.status !== 'published';
+  const editable = doc && can('document:update') && !['published', 'retired'].includes(doc.status);
 
   const saveSection = useCallback(async (sectionId, html) => {
     try {
