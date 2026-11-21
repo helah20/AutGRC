@@ -9,6 +9,7 @@ import { asyncHandler, validate, notFound } from '../middleware/errors.js';
 import { indexGapItem, removeFromIndex } from '../services/search.js';
 import { domainName } from '../knowledge/index.js';
 import { sortByRef } from '../utils/refs.js';
+import { requirementStatus } from '../services/compliance.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -97,13 +98,15 @@ router.post('/', requirePermission('gap:write'), validate(z.object({
       );
       for (const r of reqs) {
         const mapped = q.all(
-          `SELECT cm.coverage, c.id AS control_pk, c.control_id, c.name, c.policy_id, c.responsible_role
+          `SELECT cm.coverage, c.id AS control_pk, c.control_id, c.name, c.policy_id, c.responsible_role,
+                  c.status, c.operating_effectiveness
              FROM control_mappings cm JOIN controls c ON c.id = cm.control_id
             WHERE cm.requirement_id = ?`, r.id
         );
-        const covered = mapped.some((m) => m.coverage === 'covered');
-        const partial = mapped.some((m) => m.coverage === 'partial');
-        const status = covered ? 'compliant' : partial ? 'partially_compliant' : 'non_compliant';
+        // Compliance follows whether the controls are implemented and work, not only mapped.
+        const status = requirementStatus(mapped);
+        const covered = status === 'compliant';
+        const partial = status === 'partially_compliant';
         const evidence = mapped.length
           ? q.all('SELECT name FROM evidence WHERE control_id = ?', mapped[0].control_pk).map((e) => e.name).join('; ')
           : '';

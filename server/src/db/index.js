@@ -90,7 +90,10 @@ const ADDED_COLUMNS = [
   ['controls', 'operating_effectiveness', 'TEXT'],
   ['controls', 'last_assessed_at', 'TEXT'],
   ['controls', 'next_assessment_date', 'TEXT'],
-  ['controls', 'assessment_note', 'TEXT']
+  ['controls', 'assessment_note', 'TEXT'],
+  // When the platform first linked controls to this requirement from the
+  // knowledge base. Set once, so a mapping a person later removes is not put back.
+  ['framework_requirements', 'auto_mapped_at', 'TEXT']
 ];
 
 function applyColumnMigrations() {

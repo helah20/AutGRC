@@ -22,6 +22,7 @@ import {
 } from '../knowledge/index.js';
 import { startingPosition, suggestedEffectiveness } from '../services/risk.js';
 import { nextDue } from '../services/cadence.js';
+import { requirementStatus } from '../services/compliance.js';
 import { generatePackage } from '../services/generator.js';
 import { indexFrameworkRequirement } from '../services/search.js';
 import { reviewDomain } from '../services/review.js';
@@ -38,6 +39,32 @@ const force = process.argv.includes('--force');
  * elsewhere. Rows the organisation imported from its licensed copy keep
  * whatever domain it gave them.
  */
+/**
+ * The reference catalogue brought in line with the knowledge base at start-up:
+ * frameworks and requirements added, each framework's name, edition and
+ * description kept current, and requirements an edition no longer has removed,
+ * so a superseded edition does not linger beside the one in force. Only
+ * reference rows are touched; requirements imported from the organisation's
+ * licensed copy are never removed or rewritten.
+ */
+export function syncCatalogue() {
+  seedFrameworks();
+  let changed = 0;
+  for (const f of FRAMEWORKS) {
+    const fw = q.get('SELECT * FROM frameworks WHERE code = ?', f.code);
+    if (!fw) continue;
+    changed += q.run(
+      'UPDATE frameworks SET name = ?, version = ?, publisher = ? WHERE id = ? AND (name != ? OR version != ? OR publisher != ?)',
+      f.name, f.version, f.publisher, fw.id, f.name, f.version, f.publisher
+    ).changes;
+    const current = new Set((REQUIREMENTS[f.code] || []).map((r) => r[0]));
+    for (const row of q.all(`SELECT id, ref FROM framework_requirements WHERE framework_id = ? AND source_status = 'reference'`, fw.id)) {
+      if (!current.has(row.ref)) changed += q.run('DELETE FROM framework_requirements WHERE id = ?', row.id).changes;
+    }
+  }
+  return changed + syncCatalogueDomains();
+}
+
 export function syncCatalogueDomains() {
   let changed = 0;
   for (const f of FRAMEWORKS) {
@@ -46,7 +73,7 @@ export function syncCatalogueDomains() {
     // The catalogue's own description of a framework, corrected in the
     // knowledge base, reaches installations already seeded.
     changed += q.run('UPDATE frameworks SET description = ? WHERE id = ? AND description != ?', f.description, fw.id, f.description).changes;
-    for (const [ref, title, domainKey] of REQUIREMENTS[f.code] || []) {
+    for (const [ref, title, domainKey, , , statement] of REQUIREMENTS[f.code] || []) {
       changed += q.run(
         `UPDATE framework_requirements SET domain_key = ?
           WHERE framework_id = ? AND ref = ? AND source_status = 'reference' AND COALESCE(domain_key, '') != ?`,
@@ -56,13 +83,56 @@ export function syncCatalogueDomains() {
       // own wording) reaches installations already seeded. A title imported
       // from the organisation's licensed copy is never touched.
       changed += q.run(
-        `UPDATE framework_requirements SET title = ?, statement = CASE WHEN statement = title THEN ? ELSE statement END
-          WHERE framework_id = ? AND ref = ? AND source_status = 'reference' AND title != ?`,
-        title, title, fw.id, ref, title
+        `UPDATE framework_requirements SET title = ?, statement = ?
+          WHERE framework_id = ? AND ref = ? AND source_status = 'reference' AND (title != ? OR statement != ?)`,
+        title, statement || title, fw.id, ref, title, statement || title
       ).changes;
     }
   }
   return changed;
+}
+
+/**
+ * Controls linked to catalogue requirements that have never been mapped, from
+ * the references each control's canonical requirement cites. This reaches
+ * installations generated before a framework or a requirement was in the
+ * catalogue (a framework the organisation had not adopted, ECC controls added
+ * when the catalogue was completed). Each requirement is mapped this way once:
+ * one that has mappings is marked as done, and so is one mapped here, so a
+ * mapping a person later removes is never put back.
+ */
+export function syncControlMappings() {
+  const at = nowIso();
+  q.run(`UPDATE framework_requirements SET auto_mapped_at = ?
+          WHERE auto_mapped_at IS NULL AND EXISTS (SELECT 1 FROM control_mappings cm WHERE cm.requirement_id = framework_requirements.id)`, at);
+  const pending = new Map(q.all(
+    `SELECT fr.id, fr.ref, f.code FROM framework_requirements fr JOIN frameworks f ON f.id = fr.framework_id
+      WHERE fr.auto_mapped_at IS NULL`
+  ).map((r) => [`${r.code}|${r.ref}`, r.id]));
+  if (!pending.size) return 0;
+  let added = 0;
+  const done = new Set();
+  for (const c of q.all('SELECT id, control_id, domain_key, requirement_key FROM controls WHERE requirement_key IS NOT NULL')) {
+    const requirement = DOMAIN_MODELS[c.domain_key]?.requirements?.find((r) => r.key === c.requirement_key);
+    if (!requirement) continue;
+    for (const [code, refs] of Object.entries(requirement.refs || {})) {
+      for (const ref of refs) {
+        const requirementId = pending.get(`${code}|${ref}`);
+        if (!requirementId) continue;
+        added += q.run(
+          `INSERT OR IGNORE INTO control_mappings
+             (id, control_id, requirement_id, coverage, rationale, confidence, mapped_by, provenance, created_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?)`,
+          id('map'), c.id, requirementId, 'covered',
+          `Control ${c.control_id} implements the canonical requirement that cites ${code} ${ref}.`,
+          'high', 'catalogue', 'ai_recommendation', at, at
+        ).changes;
+        done.add(requirementId);
+      }
+    }
+  }
+  for (const requirementId of done) q.run('UPDATE framework_requirements SET auto_mapped_at = ? WHERE id = ?', at, requirementId);
+  return added;
 }
 
 export function seedFrameworks() {
@@ -83,13 +153,13 @@ export function seedFrameworks() {
       }
       byCode[f.code] = fwId;
 
-      for (const [ref, title, domainKey, level, parentRef] of REQUIREMENTS[f.code] || []) {
+      for (const [ref, title, domainKey, level, parentRef, statement] of REQUIREMENTS[f.code] || []) {
         if (q.get('SELECT id FROM framework_requirements WHERE framework_id = ? AND ref = ?', fwId, ref)) continue;
         const reqId = id('frq');
         q.run(
           `INSERT INTO framework_requirements (id, framework_id, ref, parent_ref, title, statement, domain_key, level, provenance, source_status, created_at)
            VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-          reqId, fwId, ref, parentRef || null, title, title, domainKey || null, level || 1,
+          reqId, fwId, ref, parentRef || null, title, statement || title, domainKey || null, level || 1,
           f.provenance || 'framework_guidance', 'reference', at
         );
         indexFrameworkRequirement(
@@ -358,11 +428,11 @@ export function seedAssessment(users) {
   db.transaction(() => {
     for (const r of reqs) {
       const mapped = q.all(
-        `SELECT cm.coverage, c.id AS pk, c.control_id, c.responsible_role, c.policy_id
+        `SELECT cm.coverage, c.id AS pk, c.control_id, c.responsible_role, c.policy_id, c.status, c.operating_effectiveness
            FROM control_mappings cm JOIN controls c ON c.id = cm.control_id WHERE cm.requirement_id = ?`, r.id
       );
-      const covered = mapped.some((m) => m.coverage === 'covered');
-      const status = covered ? 'compliant' : mapped.length ? 'partially_compliant' : 'non_compliant';
+      const status = requirementStatus(mapped);
+      const covered = status === 'compliant';
       q.run(
         `INSERT INTO gap_items (id, assessment_id, requirement_id, requirement_ref, requirement_txt,
            current_state, target_state, gap, risk, risk_rating, recommendation, owner, due_date, status,
@@ -374,13 +444,13 @@ export function seedAssessment(users) {
           : 'No organisational control is currently mapped to this requirement.',
         'A documented, operating control with retained evidence demonstrating compliance.',
         covered ? 'No gap identified; control operating effectiveness to be tested.'
-          : mapped.length ? 'Partial coverage: the mapped control addresses part of the requirement only.'
+          : mapped.length ? 'The mapped control is not yet implemented and operating, or covers part of the requirement only.'
           : 'No control identified. The requirement is not addressed by any documented control.',
         covered ? 'Residual risk of control failure between assurance cycles.'
           : 'The organisation cannot currently demonstrate compliance with this requirement to the regulator.',
         covered ? 'low' : mapped.length ? 'medium' : 'high',
         covered ? 'Test control operating effectiveness during the next assurance cycle.'
-          : mapped.length ? 'Extend the mapped control, or add a complementary control covering the remainder.'
+          : mapped.length ? 'Complete the implementation of the mapped control and evidence its operation, or add a control covering the remainder.'
           : 'Define and implement a control addressing this requirement, then map and evidence it.',
         mapped[0]?.responsible_role || 'Cybersecurity GRC Manager',
         new Date(Date.now() + (covered ? 180 : 90) * 86400000).toISOString().slice(0, 10),
@@ -634,6 +704,16 @@ export function settleControlOwnership() {
       pick(c.responsible_role), operating, assessedAt.toISOString(), nextDue('annually', assessedAt), c.id
     );
   }
+  // One assessment found a domain's controls not working: the last
+  // penetration test bypassed the web application firewall and found
+  // authentication weaknesses, so the application security controls are
+  // effective in design but not in operation. The requirements they answer
+  // show as non-compliant until they are fixed and re-assessed.
+  q.run(
+    `UPDATE controls SET operating_effectiveness = 'ineffective',
+       assessment_note = 'The latest penetration test bypassed the web application firewall and found weak session handling on two external applications. Re-test after remediation.'
+     WHERE domain_key = 'application_security' AND status IN ('approved','implemented')`
+  );
   for (const r of q.all('SELECT id FROM risks')) {
     const controls = q.all(
       'SELECT c.operating_effectiveness FROM risk_controls rc JOIN controls c ON c.id = rc.control_id WHERE rc.risk_id = ?', r.id);
@@ -720,9 +800,6 @@ export function runSeed({ quiet = false } = {}) {
   const applied = seedInconsistency();
   log(`  ${applied ? 'IAM Procedure now disagrees with the IAM Standard on access review frequency' : 'skipped'}`);
 
-  log('Seeding gap assessment…');
-  const assessmentId = seedAssessment(users);
-  if (assessmentId) log(`  ${q.get('SELECT COUNT(*) AS n FROM gap_items WHERE assessment_id = ?', assessmentId).n} gap items`);
 
   log('Building the risk register from the canonical requirement model…');
   const risks = seedRisks(users);
@@ -753,6 +830,12 @@ export function runSeed({ quiet = false } = {}) {
   log('Recording collected evidence…');
   log(`  ${seedEvidence()} evidence items collected or verified`);
   log(`  ${settleControls()} controls implemented`);
+
+  // After the controls are settled: compliance follows whether the controls
+  // answering a requirement are implemented, not only whether they are mapped.
+  log('Seeding gap assessment…');
+  const assessmentId = seedAssessment(users);
+  if (assessmentId) log(`  ${q.get('SELECT COUNT(*) AS n FROM gap_items WHERE assessment_id = ?', assessmentId).n} gap items`);
 
   // After the findings, which demonstrate the review engine on the English
   // originals; the Arabic versions mirror those originals.

@@ -19,7 +19,7 @@ import config from './config.js';
 import { db } from './db/index.js';
 import { errorHandler } from './middleware/errors.js';
 import { validateKnowledgeBase } from './knowledge/index.js';
-import { syncCatalogueDomains } from './db/seed.js';
+import { syncCatalogue, syncControlMappings } from './db/seed.js';
 import { startSweepSchedule, stopSweepSchedule } from './services/notify.js';
 import { loadMethodology } from './services/risk-methodology.js';
 
@@ -166,8 +166,10 @@ if (fs.existsSync(config.clientDist)) {
 app.use(errorHandler);
 
 const problems = validateKnowledgeBase();
-const moved = syncCatalogueDomains();
-if (moved) console.log(`[AutGRC] Brought ${moved} reference catalogue value(s) (domain or title) in line with the knowledge base.`);
+const moved = syncCatalogue();
+const newlyMapped = syncControlMappings();
+if (newlyMapped) console.log(`[AutGRC] Mapped controls to ${newlyMapped} catalogue requirement(s) not mapped before.`);
+if (moved) console.log(`[AutGRC] Brought ${moved} reference catalogue value(s) in line with the knowledge base.`);
 if (problems.length) {
   console.warn(`[AutGRC] Knowledge base integrity problems (${problems.length}):`);
   problems.slice(0, 10).forEach((p) => console.warn(`  - ${p}`));

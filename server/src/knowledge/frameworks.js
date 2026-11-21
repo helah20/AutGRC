@@ -11,6 +11,8 @@
  * replace these with `user_imported` records from their licensed copies.
  */
 
+import { ECC_2024_CONTROLS } from './catalogue/ecc-2024.js';
+
 export const FRAMEWORKS = [
   {
     code: 'NCA-ECC',
@@ -216,28 +218,20 @@ export const FRAMEWORKS = [
 
 /**
  * Requirement entries. `d` is the AutGRC domain key used for auto-mapping.
- * Tuple shape: [ref, title, domainKey, level, parentRef?]
+ * Tuple shape: [ref, title, domainKey, level, parentRef?, statement?]
+ * `statement` is the requirement's full wording where the catalogue holds it;
+ * without it the title is the statement.
  */
 export const REQUIREMENTS = {
-  // ECC-2:2024. Titles are the publication's own words: subdomain titles, and the
-  // first sentence of each control (knowledge-base/frameworks). The rows are those
-  // the ECC-1:2018 catalogue held, renumbered where 2024 moved them.
+  // ECC-2:2024: the four domains and 28 subdomains here, and every main
+  // control and subcontrol from the publication (catalogue/ecc-2024.js).
   'NCA-ECC': [
     ['1', 'Cybersecurity Governance', 'governance', 1],
     ['1-1', 'Cybersecurity Strategy', 'governance', 2, '1'],
     ['1-2', 'Cybersecurity Management', 'governance', 2, '1'],
     ['1-3', 'Cybersecurity Policies and Procedures', 'governance', 2, '1'],
-    ['1-3-1', 'The cybersecurity department of the entity shall identify and document cybersecurity policies and procedures, including the cybersecurity controls and requirements, and have them approved by the entity’s Authorized…', 'governance', 3, '1-3'],
-    ['1-3-2', 'The cybersecurity department shall ensure that the cybersecurity policies and procedures, including the relevant controls and requirements, are implemented at the entity.', 'governance', 3, '1-3'],
-    ['1-3-3', 'The cybersecurity policies and procedures shall be supported by technical security standards (e.g. technical security standards for firewall, databases, operating systems, etc.).', 'governance', 3, '1-3'],
-    ['1-3-4', 'The cybersecurity policies and procedures shall be reviewed and updated at planned intervals (or in case of changes to the relevant legislative and regulatory requirements and standards).', 'governance', 3, '1-3'],
     ['1-4', 'Cybersecurity Roles and Responsibilities', 'governance', 2, '1'],
-    ['1-4-1', 'The Authorized Official shall identify, document, and approve the governance organizational structure, roles, and responsibilities of the entity’s cybersecurity, and assign the persons concerned therewith.', 'governance', 3, '1-4'],
-    ['1-4-2', 'The cybersecurity roles and responsibilities within the entity shall be reviewed and updated at planned intervals (or in case of changes to the relevant legislative and regulatory requirements).', 'governance', 3, '1-4'],
     ['1-5', 'Cybersecurity Risk Management', 'risk_management', 2, '1'],
-    ['1-5-1', 'The cybersecurity department of the entity shall identify, document, and approve the cybersecurity risk management methodology and procedures within the entity, in accordance with considerations of confidentiality, and…', 'risk_management', 3, '1-5'],
-    ['1-5-2', 'The cybersecurity department shall implement the cybersecurity risk management methodology and procedures within the entity.', 'risk_management', 3, '1-5'],
-    ['1-5-3', 'The cybersecurity risk assessment procedures shall be implemented at least in the following cases:', 'risk_management', 3, '1-5'],
     ['1-6', 'Cybersecurity in Information and Technology Project Management', 'change_management', 2, '1'],
     ['1-7', 'Compliance with Cybersecurity Standards, Laws and Regulations', 'governance', 2, '1'],
     ['1-8', 'Periodical Cybersecurity Review and Audit', 'governance', 2, '1'],
@@ -245,81 +239,27 @@ export const REQUIREMENTS = {
     ['1-10', 'Cybersecurity Awareness and Training Program', 'security_awareness', 2, '1'],
     ['2', 'Cybersecurity Defense', 'security_operations', 1],
     ['2-1', 'Asset Management', 'asset_management', 2, '2'],
-    ['2-1-1', 'Cybersecurity requirements for managing information and technology assets of the entity shall be identified, documented, and approved.', 'asset_management', 3, '2-1'],
-    ['2-1-2', 'Cybersecurity requirements for managing information and technology assets of the entity shall be implemented.', 'asset_management', 3, '2-1'],
-    ['2-1-3', 'The policy of acceptable use of information and technology assets of the entity shall be identified, documented, approved, and communicated.', 'asset_management', 3, '2-1'],
-    ['2-1-5', 'Information and technology assets of the entity shall be classified, labeled, and handled as per the relevant legislative and regulatory requirements.', 'asset_management', 3, '2-1'],
-    ['2-1-6', 'Cybersecurity requirements for managing information and technology assets of the entity shall be periodically reviewed.', 'asset_management', 3, '2-1'],
     ['2-2', 'Identity and Access Management', 'iam', 2, '2'],
-    ['2-2-1', 'Cybersecurity requirements for identity and access management of the entity shall be identified, documented, and approved.', 'iam', 3, '2-2'],
-    ['2-2-2', 'Cybersecurity requirements for identity and access management of the entity shall be implemented.', 'iam', 3, '2-2'],
-    ['2-2-3', 'Cybersecurity requirements for identity and access management of the entity shall include the following as a minimum:', 'iam', 3, '2-2'],
-    ['2-2-3-1', 'Single-factor authentication based on username and password.', 'iam', 4, '2-2-3'],
-    ['2-2-3-2', 'Multi-factor authentication, and defining the suitable authentication factors and their numbers as well as the suitable authentication techniques based on the result of impact assessment of authentication failure and…', 'iam', 4, '2-2-3'],
-    ['2-2-3-3', 'User authorization based on identity and access control principles (Need-to- Know and Need-to-Use principle, Least Privilege principle, and Segregation of Duties principle).', 'iam', 4, '2-2-3'],
-    ['2-2-3-4', 'Privileged access management.', 'pam', 4, '2-2-3'],
-    ['2-2-3-5', 'Periodic review of identities and access rights.', 'iam', 4, '2-2-3'],
-    ['2-2-4', 'The implementation of cybersecurity requirements for identity and access management of the entity shall be periodically reviewed.', 'iam', 3, '2-2'],
     ['2-3', 'Information Systems and Information Processing Facilities Protection', 'endpoint_security', 2, '2'],
-    ['2-3-1', 'Cybersecurity requirements for protection of information system and processing facilities of the entity shall be identified, documented, and approved.', 'endpoint_security', 3, '2-3'],
-    ['2-3-2', 'Cybersecurity requirements for protection of information systems and processing facilities of the entity shall be implemented.', 'endpoint_security', 3, '2-3'],
-    ['2-3-3', 'Cybersecurity requirements for protection of information systems and processing facilities of the entity shall include the following as a minimum:', 'endpoint_security', 3, '2-3'],
-    ['2-3-4', 'The implementation of cybersecurity requirements for protection of the information system and processing facilities of the entity shall be periodically reviewed.', 'endpoint_security', 3, '2-3'],
     ['2-4', 'Email Protection', 'email_security', 2, '2'],
-    ['2-4-1', 'Cybersecurity requirements for protection of the email service of the entity shall be identified, documented, and approved.', 'email_security', 3, '2-4'],
-    ['2-4-2', 'Cybersecurity requirements for protection of email service of the entity shall be implemented.', 'email_security', 3, '2-4'],
-    ['2-4-3', 'Cybersecurity requirements for protection of the email service of the entity shall include the following as a minimum:', 'email_security', 3, '2-4'],
-    ['2-4-3-1', 'Analyzing and filtering email messages (specifically phishing emails and spam emails) using modern and advanced email protection techniques and mechanisms.', 'email_security', 4, '2-4-3'],
-    ['2-4-3-2', 'Multi-factor authentication, and defining the suitable authentication factors and their numbers as well as the suitable authentication techniques based on the result of impact assessment of authentication failure and…', 'email_security', 4, '2-4-3'],
-    ['2-4-3-3', 'Email archiving and backup.', 'email_security', 4, '2-4-3'],
-    ['2-4-3-4', 'Secure management and protection against Advanced Persistent Threats (APT), which normally utilize zero-day malware and viruses.', 'email_security', 4, '2-4-3'],
-    ['2-4-3-5', 'Validation of the entity’s email service domains by using Sender Policy Framework (SPF), Domain Keys Identified Mail (DKIM), and Domain Message Authentication Reporting and Conformance (DMARC).', 'email_security', 4, '2-4-3'],
-    ['2-4-4', 'The implementation of cybersecurity requirements for email service of the entity shall be periodically reviewed.', 'email_security', 3, '2-4'],
     ['2-5', 'Networks Security Management', 'network_security', 2, '2'],
-    ['2-5-1', 'Cybersecurity requirements for the entity’s network security management shall be identified, documented, and approved.', 'network_security', 3, '2-5'],
-    ['2-5-3', 'Cybersecurity requirements for the entity’s network security management shall include the following as a minimum:', 'network_security', 3, '2-5'],
     ['2-6', 'Mobile Devices Security', 'endpoint_security', 2, '2'],
     ['2-7', 'Data and Information Protection', 'data_protection', 2, '2'],
-    ['2-7-1', 'Cybersecurity requirements for protecting and handling data and information of the entity shall be identified, documented, and approved, as per the relevant legislative and regulatory requirements.', 'data_protection', 3, '2-7'],
-    ['2-7-2', 'Cybersecurity requirements for protecting data and information of the entity shall be implemented, based on its classification level.', 'data_protection', 3, '2-7'],
     ['2-8', 'Cryptography', 'cryptography', 2, '2'],
-    ['2-8-1', 'Cybersecurity requirements for cryptography within the entity shall be identified, documented, and approved.', 'cryptography', 3, '2-8'],
-    ['2-8-3', 'Cybersecurity requirements for cryptography shall include at least the requirements in the National Cryptographic Standards, published by NCA.', 'cryptography', 3, '2-8'],
     ['2-9', 'Backup and Recovery Management', 'backup_recovery', 2, '2'],
-    ['2-9-1', 'Cybersecurity requirements for backup and recovery management within the entity shall be identified, documented, and approved.', 'backup_recovery', 3, '2-9'],
-    ['2-9-3', 'Cybersecurity requirements for backup and recovery management shall include the following as a minimum:', 'backup_recovery', 3, '2-9'],
     ['2-10', 'Vulnerability Management', 'vulnerability_management', 2, '2'],
-    ['2-10-1', 'Cybersecurity requirements for technical vulnerabilities management within the entity shall be identified, documented, and approved.', 'vulnerability_management', 3, '2-10'],
-    ['2-10-2', 'Cybersecurity requirements for technical vulnerabilities management within the entity shall be implemented.', 'vulnerability_management', 3, '2-10'],
-    ['2-10-3', 'Cybersecurity requirements for technical vulnerabilities management shall include the following as a minimum:', 'vulnerability_management', 3, '2-10'],
     ['2-11', 'Penetration Testing', 'vulnerability_management', 2, '2'],
     ['2-12', 'Cybersecurity Event Logs and Monitoring Management', 'logging_monitoring', 2, '2'],
-    ['2-12-1', 'Cybersecurity requirements for cybersecurity event logs and monitoring management within the entity shall be identified, documented, and approved.', 'logging_monitoring', 3, '2-12'],
-    ['2-12-2', 'Cybersecurity requirements for cybersecurity event logs and monitoring management within the entity shall be implemented.', 'logging_monitoring', 3, '2-12'],
-    ['2-12-3', 'Cybersecurity requirements for cybersecurity event logs and monitoring management shall include the following as a minimum:', 'logging_monitoring', 3, '2-12'],
     ['2-13', 'Cybersecurity Incident and Threat Management', 'incident_management', 2, '2'],
-    ['2-13-1', 'Requirements for cybersecurity incident and threat management within the entity shall be identified, documented, and approved.', 'incident_management', 3, '2-13'],
-    ['2-13-2', 'Requirements for cybersecurity incident and threat management within the entity shall be implemented.', 'incident_management', 3, '2-13'],
-    ['2-13-3', 'Requirements for cybersecurity incident and threat management shall include the following as a minimum:', 'incident_management', 3, '2-13'],
     ['2-14', 'Physical Security', 'physical_security', 2, '2'],
     ['2-15', 'Web Application Security', 'application_security', 2, '2'],
     ['3', 'Cybersecurity Resilience', 'business_continuity', 1],
     ['3-1', 'Cybersecurity Resilience Aspects of Business Continuity Management (BCM)', 'business_continuity', 2, '3'],
-    ['3-1-1', 'Cybersecurity requirements for business continuity management within the entity shall be identified, documented, and approved.', 'business_continuity', 3, '3-1'],
-    ['3-1-3', 'Cybersecurity requirements for business continuity management within the entity shall include the following as a minimum:', 'disaster_recovery', 3, '3-1'],
     ['4', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
     ['4-1', 'Third-Party Cybersecurity', 'third_party', 2, '4'],
-    ['4-1-1', 'Cybersecurity requirements for the entity’s contracts and agreements with third parties shall be identified, documented, and approved.', 'third_party', 3, '4-1'],
-    ['4-1-2', 'Cybersecurity requirements for contracts and agreements with third parties, e.g. Service Level Agreement (SLA), which, if impaired, may affect the entity\'s data or services shall include the following as a minimum:', 'third_party', 3, '4-1'],
-    ['4-1-3', 'Cybersecurity requirements for contracts and agreements with third parties providing IT or cybersecurity outsourcing or managed services shall include the following as a minimum:', 'third_party', 3, '4-1'],
     ['4-2', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '4'],
-    ['4-2-1', 'Cybersecurity requirements for use of cloud computing and hosting services shall be identified, documented, and approved.', 'cloud_security', 3, '4-2'],
-    ['4-2-3', 'In accordance with the relevant legislative and regulatory requirements, and in addition to the applicable controls in the Main Domains (1), (2), and (3) and Subdomain (4.1) that are necessary to protect the entity’s…', 'cloud_security', 3, '4-2']
+    ...ECC_2024_CONTROLS
   ],
-
-  // CSCC, DCC, TCC and CCC: domain and subdomain titles as printed in the NCA
-  // publications (knowledge-base/frameworks). Only subdomain level is held;
-  // the controls beneath them come from an import of the licensed copy.
   'NCA-CSCC': [
     ['1', 'Cybersecurity Governance', 'governance', 1],
     ['1-1', 'Cybersecurity Strategy', 'governance', 2, '1'],

@@ -58,18 +58,51 @@ function assessableRequirements(frameworkId) {
   return all.filter((r) => !parents.has(r.ref));
 }
 
+/**
+ * Each requirement's coverage as the register reads it: its own mappings, or,
+ * with none, the coverage of the nearest mapped requirement it belongs to. A
+ * subcontrol is part of its control's text ("shall include at least: …"), so a
+ * control mapped to 2-4-3 answers 2-4-3-1 to 2-4-3-5; a control mapped to a
+ * subdomain (2-14 Physical Security) is mapped to the topic its controls make
+ * up. A requirement mapped differently keeps its own. Inheritance stops below
+ * the main domains (Governance, Defense …), which are too broad to vouch for
+ * what is under them, and the inherited source is always shown.
+ * Returns Map id -> { coverage, inheritedFrom }.
+ */
+function effectiveCoverage(frameworkId) {
+  const reqs = q.all('SELECT id, ref, parent_ref, level FROM framework_requirements WHERE framework_id = ?', frameworkId);
+  const own = {};
+  for (const m of q.all(
+    `SELECT cm.requirement_id, cm.coverage FROM control_mappings cm
+       JOIN framework_requirements fr ON fr.id = cm.requirement_id WHERE fr.framework_id = ?`, frameworkId)) {
+    (own[m.requirement_id] = own[m.requirement_id] || []).push(m);
+  }
+  const byRef = new Map(reqs.map((r) => [r.ref, r]));
+  const out = new Map();
+  for (const r of reqs) {
+    if (own[r.id]) { out.set(r.id, { coverage: coverageOf(own[r.id]), inheritedFrom: null }); continue; }
+    let parent = byRef.get(r.parent_ref);
+    let found = null;
+    while (parent && parent.level >= 2 && !found) {
+      if (own[parent.id]) found = parent;
+      else parent = byRef.get(parent.parent_ref);
+    }
+    out.set(r.id, found ? { coverage: coverageOf(own[found.id]), inheritedFrom: found.ref } : { coverage: 'not_covered', inheritedFrom: null });
+  }
+  return out;
+}
+
 router.get('/', asyncHandler(async (req, res) => {
   const rows = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code');
-  // Counted over the most detailed requirements held (see assessableRequirements).
-  const coveredIds = new Set(q.all(
-    `SELECT DISTINCT requirement_id FROM control_mappings WHERE coverage IN ('covered','partial')`
-  ).map((r) => r.requirement_id));
+  // Counted over the most detailed requirements held (see assessableRequirements),
+  // each with its effective coverage (see effectiveCoverage).
   const counts = {};
   const mapped = {};
   for (const f of rows) {
     const reqs = assessableRequirements(f.id);
+    const effective = effectiveCoverage(f.id);
     counts[f.id] = reqs.length;
-    mapped[f.id] = reqs.filter((r) => coveredIds.has(r.id)).length;
+    mapped[f.id] = reqs.filter((r) => ['covered', 'partial'].includes(effective.get(r.id)?.coverage)).length;
   }
   const byId = Object.fromEntries(rows.map((f) => [f.id, f]));
   // How completely the reference catalogue represents each publication. A
@@ -241,6 +274,7 @@ router.get('/:code/requirements', asyncHandler(async (req, res) => {
   }
 
   const org = getOrgProfile();
+  const effective = effectiveCoverage(fw.id);
   res.json({
     framework: fw,
     sourceNote: SOURCE_NOTE,
@@ -249,7 +283,9 @@ router.get('/:code/requirements', asyncHandler(async (req, res) => {
       applicability: evaluateApplicability(r.applicability, org),
       domain_label: r.domain_key ? domainName(r.domain_key) : null,
       controls: byReq[r.id] || [],
-      coverage: coverageOf(byReq[r.id] || [])
+      coverage: effective.get(r.id)?.coverage || 'not_covered',
+      // The control this subcontrol takes its coverage from, when it has no mapping of its own.
+      coverage_inherited_from: effective.get(r.id)?.inheritedFrom || null
     })),
     domains: DOMAIN_META.filter((d) => rows.some((r) => r.domain_key === d.key))
   });
@@ -495,13 +531,8 @@ router.get('/coverage', asyncHandler(async (req, res) => {
     // with its controls below it is a heading, and counting it would report
     // an uncovered requirement where every control under it is covered.
     const reqs = assessableRequirements(f.id);
-    const mapped = q.all(
-      `SELECT DISTINCT cm.requirement_id, cm.coverage
-         FROM control_mappings cm
-         JOIN framework_requirements fr ON fr.id = cm.requirement_id
-        WHERE fr.framework_id = ?`, f.id
-    );
-    const byId = Object.fromEntries(mapped.map((m) => [m.requirement_id, m.coverage]));
+    const effective = effectiveCoverage(f.id);
+    const byId = Object.fromEntries(reqs.map((r) => [r.id, effective.get(r.id)?.coverage]));
     const covered = reqs.filter((r) => byId[r.id] === 'covered').length;
     const partial = reqs.filter((r) => byId[r.id] === 'partial').length;
     const notApplicable = reqs.filter((r) => byId[r.id] === 'not_applicable').length;
