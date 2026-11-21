@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, qs } from '../lib/api.js';
 import { useFetch, useDebounced } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -26,6 +26,19 @@ export default function Risks() {
   const [selected, setSelected] = useState(null);
   const [position, setPosition] = useState('residual');
   const [addOpen, setAddOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // The organisation's methodology: scale wording and the matrix the client
+  // rates a new risk with before the server has seen it.
+  const { data: methodologyData } = useFetch('/admin/risk-methodology');
+  const methodology = methodologyData?.methodology || null;
+
+  // A notification links to a risk with ?open=<id>.
+  useEffect(() => {
+    const open = searchParams.get('open');
+    if (!open) return;
+    setSelected({ id: open });
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const { data, loading, error, reload } = useFetch(
     `/risks${qs({ search: debounced, domain, status, treatment, unassessed: unassessed || undefined, limit: 500 })}`
@@ -49,7 +62,7 @@ export default function Risks() {
         )}
       </div>
 
-      <AddRisk open={addOpen} onClose={() => setAddOpen(false)} toast={toast}
+      <AddRisk open={addOpen} onClose={() => setAddOpen(false)} toast={toast} methodology={methodology}
         onCreated={(risk) => { reload(); setSelected(risk); }} />
 
       {loading && <Loading />}
@@ -75,7 +88,7 @@ export default function Risks() {
             <Card title={t('risks.matrix')}
               subtitle={t('risks.matrixSubtitle')}
               actions={
-                <Tabs tabs={[{ key: 'residual', label: t('risks.residual') }, { key: 'inherent', label: t('risks.inherent') }]}
+                <Tabs tabs={[{ key: 'residual', label: t('risks.residual') }, { key: 'current', label: t('risks.current') }, { key: 'inherent', label: t('risks.inherent') }]}
                   active={position} onChange={setPosition} />
               }>
               <RiskMatrix cells={data.matrix[position]} onPick={(riskId) => {
@@ -153,12 +166,24 @@ export default function Risks() {
                 render: (r) => <Badge tone={RISK_TONE[r.inherent.rating]} title={t('risksUi.scoreTitle', { likelihood: r.inherent.likelihood, impact: r.inherent.impact })}>{r.inherent.score}</Badge>
               },
               {
+                key: 'current', header: t('risks.current'), nowrap: true,
+                render: (r) => (r.current
+                  ? <Badge tone={RISK_TONE[r.current.rating]} title={t('risksUi.scoreTitle', { likelihood: r.current.likelihood, impact: r.current.impact })}>{r.current.score}</Badge>
+                  : <span className="small muted" title={t('risks.controlsNotAssessedTitle')}>{t('risks.notAssessed')}</span>)
+              },
+              {
                 key: 'residual', header: t('risks.residual'), nowrap: true,
                 render: (r) => (r.residual_assessed
                   ? <Badge tone={RISK_TONE[r.residual.rating]} title={t('risksUi.scoreTitle', { likelihood: r.residual.likelihood, impact: r.residual.impact })}>{r.residual.score}</Badge>
                   : <span className="small muted" title={t('risks.notAssessedTitle')}>{t('risks.notAssessed')}</span>)
               },
               { key: 'treatment', header: t('risks.treatment'), nowrap: true, render: (r) => <Badge tone="neutral">{labels.treatment(r.treatment)}</Badge> },
+              {
+                key: 'review_date', header: t('risks.nextReview'), nowrap: true, minor: true,
+                render: (r) => (r.review_date
+                  ? <span className={`small ${r.status !== 'closed' && r.review_date < new Date().toISOString().slice(0, 10) ? 'text-danger' : ''}`}>{formatDate(r.review_date)}</span>
+                  : <span className="faint">—</span>)
+              },
               {
                 key: 'status', header: t('common.status'), nowrap: true,
                 render: (r) => (r.acceptanceExpired
@@ -178,7 +203,7 @@ export default function Risks() {
       </Card>
 
       <RiskDrawer risk={selected} onClose={() => setSelected(null)} onChanged={() => { reload(); }}
-        canWrite={can('risk:write')} canAccept={can('risk:accept')} toast={toast} />
+        canWrite={can('risk:write')} canAccept={can('risk:accept')} toast={toast} methodology={methodology} />
     </>
   );
 }
@@ -211,15 +236,28 @@ function RiskMatrix({ cells, onPick }) {
 
 /* ------------------------------------------------------------- drawer --- */
 
-function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
-  const navigate = useNavigate();
-  const { t: tr } = useI18n();
-  // The scale words in the reader's language; the server's English if missing.
-  const scaleWord = (kind, value, fallback) => {
+/**
+ * The scale word for a level, in the reader's language: the organisation's
+ * own wording from its methodology, else the interface's, else the server's.
+ */
+function useScaleWord(methodology) {
+  const { t: tr, language } = useI18n();
+  return (kind, value, fallback) => {
+    const level = methodology?.[kind]?.[Number(value) - 1];
+    if (level) return (language === 'ar' ? level.label_ar : level.label) || level.label;
     const key = `riskScale.${kind}.${value}`;
     const word = tr(key);
     return word && word !== key && !word.endsWith(`.${value}`) ? word : fallback;
   };
+}
+
+const EFFECTIVENESS = ['not_assessed', 'ineffective', 'partially_effective', 'effective'];
+
+function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast, methodology }) {
+  const navigate = useNavigate();
+  const { t: tr } = useI18n();
+  const scaleWord = useScaleWord(methodology);
+  const { data: directory } = useFetch(risk && canWrite ? '/admin/directory' : null);
   const labels = useLabels();
   const { t, formatNumber } = useI18n();
   const [detail, setDetail] = useState(null);
@@ -236,7 +274,12 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
         residual_likelihood: res.risk.residual.likelihood,
         residual_impact: res.risk.residual.impact,
         treatment: res.risk.treatment,
-        treatment_summary: res.risk.treatment_summary || ''
+        treatment_summary: res.risk.treatment_summary || '',
+        risk_source: res.risk.risk_source || '',
+        control_effectiveness: res.risk.control_effectiveness || 'not_assessed',
+        owner_id: res.risk.owner_id || '',
+        action_owner_id: res.risk.action_owner_id || '',
+        target_date: res.risk.target_date || ''
       });
     } catch (err) { toast.error(t('risksUi.couldNotLoad'), err.message); }
   }, [toast]);
@@ -257,6 +300,11 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
         residual_impact: draft.residual_impact,
         treatment: draft.treatment,
         treatment_summary: draft.treatment_summary || null,
+        risk_source: draft.risk_source || null,
+        control_effectiveness: draft.control_effectiveness === 'not_assessed' ? null : draft.control_effectiveness,
+        owner_id: draft.owner_id || null,
+        action_owner_id: draft.action_owner_id || null,
+        target_date: draft.target_date || null,
         status: 'treated'
       });
       toast.success(t('risks.assessmentRecorded'));
@@ -277,6 +325,15 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
     } catch (err) { toast.error(t('risksUi.couldNotAccept'), err.message); }
   }
 
+  async function recordReview() {
+    try {
+      const res = await api.post(`/risks/${risk.id}/review`, {});
+      toast.success(t('risks.reviewRecorded'), t('risks.nextReviewOn', { date: formatDate(res.risk.review_date) }));
+      await load(risk.id);
+      onChanged();
+    } catch (err) { toast.error(t('common.couldNotSave'), err.message); }
+  }
+
   async function withdraw() {
     try {
       await api.post(`/risks/${risk.id}/withdraw-acceptance`);
@@ -295,7 +352,10 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
         footer={r && (
           <>
             <button className="btn" onClick={() => { setDetail(null); onClose(); }}>{t('common.close')}</button>
-            {canAccept && !r.accepted && (
+            {canWrite && r.status !== 'closed' && (
+              <button className="btn" onClick={recordReview}>{t('risks.recordReview')}</button>
+            )}
+            {canAccept && !r.accepted && r.withinAppetite && (
               <button className="btn" onClick={() => setAcceptOpen(true)}><IconShield width={13} height={13} />{t('risks.accept')}</button>
             )}
             {canAccept && r.accepted && (
@@ -336,7 +396,13 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
               </div>
             )}
 
-            <div className="grid grid-2">
+            {!r.accepted && !r.withinAppetite && (
+              <div className="callout" data-callout="danger">
+                <p style={{ margin: 0 }}>{t('risks.aboveAppetite', { rating: labels.rating(r.residual.rating), limit: labels.rating(methodology?.acceptableUpTo || 'high') })}</p>
+              </div>
+            )}
+
+            <div className="grid grid-3">
               <div className="position-card">
                 <div className="tiny muted">{t('risks.inherentLabel')}</div>
                 <div className="position-score">
@@ -344,6 +410,19 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
                   <span className="mono">{r.inherent.score}</span>
                 </div>
                 <div className="tiny muted">{scaleWord('likelihood', r.inherent.likelihood, r.inherent.likelihoodLabel)} × {scaleWord('impact', r.inherent.impact, r.inherent.impactLabel)}</div>
+              </div>
+              <div className="position-card">
+                <div className="tiny muted">{t('risks.currentLabel')}</div>
+                <div className="position-score">
+                  {r.current
+                    ? <><Badge tone={RISK_TONE[r.current.rating]}>{labels.rating(r.current.rating)}</Badge><span className="mono">{r.current.score}</span></>
+                    : <Badge tone="neutral">{t('risks.notYetAssessed')}</Badge>}
+                </div>
+                <div className="tiny muted">
+                  {r.current
+                    ? `${scaleWord('likelihood', r.current.likelihood, r.current.likelihoodLabel)} × ${scaleWord('impact', r.current.impact, r.current.impactLabel)} · ${labels.effectiveness(r.control_effectiveness)}`
+                    : t('risks.controlsNotAssessedTitle')}
+                </div>
               </div>
               <div className="position-card">
                 <div className="tiny muted">{t('risks.residualLabel')}</div>
@@ -360,8 +439,44 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
               </div>
             </div>
 
+            <div className="kv-grid small">
+              <span className="muted">{t('risks.source')}</span><span>{r.risk_source || '—'}</span>
+              <span className="muted">{t('common.owner')}</span><span>{detail.owner?.name || r.owner_role || '—'}</span>
+              <span className="muted">{t('risks.actionOwner')}</span><span>{detail.actionOwner?.name || '—'}</span>
+              <span className="muted">{t('risks.targetDate')}</span><span>{r.target_date ? formatDate(r.target_date) : '—'}</span>
+              <span className="muted">{t('risks.lastReviewed')}</span><span>{r.last_reviewed_at ? formatDate(r.last_reviewed_at) : t('risks.neverReviewed')}</span>
+              <span className="muted">{t('risks.nextReview')}</span><span>{r.review_date ? formatDate(r.review_date) : '—'}</span>
+            </div>
+
             {canWrite && !r.accepted && (
               <>
+                <h4>{t('risks.detailsAndOwners')}</h4>
+                <div className="grid grid-2">
+                  <Field label={t('risks.source')} hint={t('risks.sourceHint')}>
+                    <input className="input" value={draft.risk_source} onChange={(e) => setDraft((d) => ({ ...d, risk_source: e.target.value }))} />
+                  </Field>
+                  <Field label={t('risks.controlEffectiveness')}
+                    hint={detail.suggestedEffectiveness ? t('risks.suggestedFromControls', { value: labels.effectiveness(detail.suggestedEffectiveness) }) : t('risks.noAssessedControls')}>
+                    <div className="row-tight">
+                      <Select value={draft.control_effectiveness} onChange={(v) => setDraft((d) => ({ ...d, control_effectiveness: v }))}
+                        options={EFFECTIVENESS.map((e) => ({ value: e, label: labels.effectiveness(e) }))} />
+                      {detail.suggestedEffectiveness && detail.suggestedEffectiveness !== draft.control_effectiveness && (
+                        <button type="button" className="btn btn-sm" onClick={() => setDraft((d) => ({ ...d, control_effectiveness: detail.suggestedEffectiveness }))}>{t('risks.useSuggested')}</button>
+                      )}
+                    </div>
+                  </Field>
+                  <Field label={t('common.owner')}>
+                    <Select value={draft.owner_id} onChange={(v) => setDraft((d) => ({ ...d, owner_id: v }))} placeholder={t('common.owner')}
+                      options={(directory || []).map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
+                  </Field>
+                  <Field label={t('risks.actionOwner')}>
+                    <Select value={draft.action_owner_id} onChange={(v) => setDraft((d) => ({ ...d, action_owner_id: v }))} placeholder={t('risks.actionOwner')}
+                      options={(directory || []).map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
+                  </Field>
+                  <Field label={t('risks.targetDate')}>
+                    <input className="input" type="date" value={draft.target_date} onChange={(e) => setDraft((d) => ({ ...d, target_date: e.target.value }))} />
+                  </Field>
+                </div>
                 <h4>{t('risks.assessResidual')}</h4>
                 <div className="grid grid-2">
                   <Field label={t('risks.residualLikelihood')}>
@@ -393,7 +508,7 @@ function RiskDrawer({ risk, onClose, onChanged, canWrite, canAccept, toast }) {
                   <li key={c.link_id} className="attachment">
                     <div className="attachment-main">
                       <div className="attachment-name"><span className="ref-tag">{c.control_id}</span> {c.name}</div>
-                      <div className="attachment-meta">{labels.riskEffect(c.effect)} · {labels.status(c.status)}</div>
+                      <div className="attachment-meta">{labels.riskEffect(c.effect)} · {labels.status(c.status)} · {t('risks.operating')}: {labels.effectiveness(c.operating_effectiveness)}</div>
                     </div>
                   </li>
                 ))}
@@ -455,19 +570,23 @@ const TREATMENTS = ['mitigate', 'accept', 'transfer', 'avoid'];
  * requirement model, but the risks that matter most are often the ones only
  * the organisation knows about (ISO/IEC 27005 risk identification).
  */
-function AddRisk({ open, onClose, onCreated, toast }) {
+function AddRisk({ open, onClose, onCreated, toast, methodology }) {
   const labels = useLabels();
   const { t } = useI18n();
+  const scaleWord = useScaleWord(methodology);
   const { data: options } = useFetch(open ? '/generator/options' : null);
   const { data: directory } = useFetch(open ? '/admin/directory' : null);
   const blank = {
     title: '', description: '', domain_key: '', category: 'operational', threat: '', vulnerability: '',
-    affected_asset: '', inherent_likelihood: 3, inherent_impact: 3, treatment: 'mitigate', treatment_summary: '', owner_id: ''
+    affected_asset: '', inherent_likelihood: 3, inherent_impact: 3, treatment: 'mitigate', treatment_summary: '', owner_id: '',
+    risk_source: '', control_effectiveness: '', action_owner_id: '', target_date: ''
   };
   const [form, setForm] = useState(blank);
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
   const ready = form.title.trim().length >= 5 && form.domain_key;
   const score = form.inherent_likelihood * form.inherent_impact;
+  // The rating the organisation's matrix gives this cell.
+  const cellRating = methodology?.matrix?.[form.inherent_impact - 1]?.[form.inherent_likelihood - 1];
 
   async function create() {
     try {
@@ -480,7 +599,8 @@ function AddRisk({ open, onClose, onCreated, toast }) {
     } catch (err) { toast.error(t('risks.addFailed'), err.message); }
   }
 
-  const scale = [1, 2, 3, 4, 5].map((n) => ({ value: n, label: String(n) }));
+  const likelihoodScale = [1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n} — ${scaleWord('likelihood', n, String(n))}` }));
+  const impactScale = [1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n} — ${scaleWord('impact', n, String(n))}` }));
   return (
     <Modal open={open} onClose={onClose} title={t('risks.addTitle')} size="modal-lg"
       footer={
@@ -520,13 +640,16 @@ function AddRisk({ open, onClose, onCreated, toast }) {
       </Field>
       <div className="field-row">
         <Field label={t('risks.likelihood')} hint={t('risks.scaleHint')}>
-          <Select value={form.inherent_likelihood} onChange={(v) => set('inherent_likelihood')(Number(v))} options={scale} />
+          <Select value={form.inherent_likelihood} onChange={(v) => set('inherent_likelihood')(Number(v))} options={likelihoodScale} />
         </Field>
         <Field label={t('risks.impact')} hint={t('risks.scaleHint')}>
-          <Select value={form.inherent_impact} onChange={(v) => set('inherent_impact')(Number(v))} options={scale} />
+          <Select value={form.inherent_impact} onChange={(v) => set('inherent_impact')(Number(v))} options={impactScale} />
         </Field>
         <Field label={t('risks.inherentScore')}>
-          <div className="input" style={{ display: 'flex', alignItems: 'center' }}><strong>{score}</strong></div>
+          <div className="input" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <strong>{score}</strong>
+            {cellRating && <Badge tone={RISK_TONE[cellRating]}>{labels.rating(cellRating)}</Badge>}
+          </div>
         </Field>
       </div>
       <div className="field-row">
@@ -537,6 +660,24 @@ function AddRisk({ open, onClose, onCreated, toast }) {
         <Field label={t('common.owner')}>
           <Select value={form.owner_id} onChange={set('owner_id')} placeholder={t('common.owner')}
             options={(directory || []).map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
+        </Field>
+      </div>
+      <div className="field-row">
+        <Field label={t('risks.source')} hint={t('risks.sourceHint')}>
+          <input className="input" value={form.risk_source} onChange={(e) => set('risk_source')(e.target.value)} />
+        </Field>
+        <Field label={t('risks.controlEffectiveness')} hint={t('risks.controlEffectivenessHint')}>
+          <Select value={form.control_effectiveness} onChange={set('control_effectiveness')} placeholder={labels.effectiveness('not_assessed')}
+            options={EFFECTIVENESS.filter((e) => e !== 'not_assessed').map((e) => ({ value: e, label: labels.effectiveness(e) }))} />
+        </Field>
+      </div>
+      <div className="field-row">
+        <Field label={t('risks.actionOwner')}>
+          <Select value={form.action_owner_id} onChange={set('action_owner_id')} placeholder={t('risks.actionOwner')}
+            options={(directory || []).map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
+        </Field>
+        <Field label={t('risks.targetDate')}>
+          <input className="input" type="date" value={form.target_date} onChange={(e) => set('target_date')(e.target.value)} />
         </Field>
       </div>
       <Field label={t('risks.treatmentSummary')}>

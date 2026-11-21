@@ -15,9 +15,11 @@ import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound, HttpError } from '../middleware/errors.js';
 import { domainName, domainShort, DOMAIN_META } from '../knowledge/index.js';
 import {
-  enrichRisk, buildMatrix, describe, LIKELIHOOD_SCALE, IMPACT_SCALE, TREATMENTS
+  enrichRisk, buildMatrix, describe, LIKELIHOOD_SCALE, IMPACT_SCALE, TREATMENTS,
+  EFFECTIVENESS, rating, acceptable, nextReviewDate, suggestedEffectiveness
 } from '../services/risk.js';
-import { listParam, paginate } from './_shared.js';
+import { listParam, paginate, assertActiveUser } from './_shared.js';
+import { notify } from '../services/notify.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -29,7 +31,8 @@ function loadRisk(ref) {
 function controlsFor(riskRowId) {
   return q.all(
     `SELECT rc.id AS link_id, rc.effect, rc.note, rc.provenance,
-            c.id, c.control_id, c.name, c.status, c.control_type, c.maturity, c.domain_key
+            c.id, c.control_id, c.name, c.status, c.control_type, c.maturity, c.domain_key,
+            c.design_effectiveness, c.operating_effectiveness, c.last_assessed_at
        FROM risk_controls rc
        JOIN controls c ON c.id = rc.control_id
       WHERE rc.risk_id = ?
@@ -95,6 +98,7 @@ router.get('/', requirePermission('risk:read'), asyncHandler(async (req, res) =>
     })),
     matrix: {
       residual: buildMatrix(all, { position: 'residual' }),
+      current: buildMatrix(all, { position: 'current' }),
       inherent: buildMatrix(all, { position: 'inherent' })
     },
     summary: {
@@ -129,12 +133,17 @@ router.get('/:id', requirePermission('risk:read'), asyncHandler(async (req, res)
   const row = loadRisk(req.params.id);
   if (!row) throw notFound('Risk');
   const risk = enrichRisk(row);
+  const controls = controlsFor(row.id);
   res.json({
     risk: { ...risk, domain_label: domainName(risk.domain_key) },
-    controls: controlsFor(row.id),
+    controls,
+    // What the linked controls' assessed operation says about this risk's
+    // existing controls, offered beside the recorded value.
+    suggestedEffectiveness: suggestedEffectiveness(controls),
     actions: actionsFor('risk', row.id),
     owner: row.owner_id ? q.get('SELECT id, name, email, job_title FROM users WHERE id = ?', row.owner_id) : null,
-    scales: { likelihood: LIKELIHOOD_SCALE, impact: IMPACT_SCALE, treatments: TREATMENTS }
+    actionOwner: row.action_owner_id ? q.get('SELECT id, name, email, job_title FROM users WHERE id = ?', row.action_owner_id) : null,
+    scales: { likelihood: LIKELIHOOD_SCALE, impact: IMPACT_SCALE, treatments: TREATMENTS, effectiveness: EFFECTIVENESS }
   });
 }));
 
@@ -153,8 +162,37 @@ const riskBody = {
   treatment_summary: z.string().max(2000).nullable().optional(),
   owner_id: z.string().nullable().optional(),
   owner_role: z.string().max(160).nullable().optional(),
-  review_date: z.string().max(40).nullable().optional()
+  review_date: z.string().max(40).nullable().optional(),
+  risk_source: z.string().max(300).nullable().optional(),
+  control_effectiveness: z.enum(EFFECTIVENESS).nullable().optional(),
+  action_owner_id: z.string().nullable().optional(),
+  target_date: z.string().max(40).nullable().optional()
 };
+
+/** Owners named on a risk are active users. */
+function assertRiskPeople(b) {
+  assertActiveUser(b.owner_id, 'The risk owner');
+  assertActiveUser(b.action_owner_id, 'The action owner');
+}
+
+const RISK_URL = (rowId) => `/risks?open=${rowId}`;
+
+/**
+ * Tell the people named on a risk that its status changed: the owner, who
+ * answers for it, and the action owner, who carries out the treatment.
+ */
+function notifyStatusChange(row, from, to, actor) {
+  const people = [...new Set([row.owner_id, row.action_owner_id].filter((u) => u && u !== actor.id))];
+  for (const userId of people) {
+    notify({
+      userId, kind: 'risk_status', entityType: 'risk', entityId: row.id, url: RISK_URL(row.id),
+      severity: to === 'accepted' || to === 'closed' ? 'info' : 'warn', actor,
+      title: `Risk ${row.risk_id} is now ${to}`,
+      body: `${row.title} moved from ${from} to ${to}.`,
+      dedupeKey: `risk-status:${row.id}:${to}:${nowIso().slice(0, 16)}`
+    });
+  }
+}
 
 router.post('/', requirePermission('risk:write'), validate(z.object(riskBody)),
   asyncHandler(async (req, res) => {
@@ -162,6 +200,7 @@ router.post('/', requirePermission('risk:write'), validate(z.object(riskBody)),
     if (!DOMAIN_META.some((d) => d.key === b.domain_key)) {
       throw new HttpError(400, `"${b.domain_key}" is not a known domain.`);
     }
+    assertRiskPeople(b);
     const at = nowIso();
     const rowId = id('rsk');
     // The next number after the highest in use: a count would reuse the
@@ -175,8 +214,8 @@ router.post('/', requirePermission('risk:write'), validate(z.object(riskBody)),
       `INSERT INTO risks (id, risk_id, title, description, domain_key, category, threat, vulnerability,
          affected_asset, inherent_likelihood, inherent_impact, residual_likelihood, residual_impact,
          residual_assessed, treatment, treatment_summary, owner_id, owner_role, status, review_date,
-         provenance, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         provenance, created_at, updated_at, risk_source, control_effectiveness, action_owner_id, target_date)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       rowId, reference, b.title, b.description || null, b.domain_key, b.category,
       b.threat || null, b.vulnerability || null, b.affected_asset || null,
       b.inherent_likelihood, b.inherent_impact,
@@ -184,7 +223,10 @@ router.post('/', requirePermission('risk:write'), validate(z.object(riskBody)),
       // out, so it starts at the inherent figures and says it is unassessed.
       b.inherent_likelihood, b.inherent_impact, 0,
       b.treatment, b.treatment_summary || null, b.owner_id || null, b.owner_role || null,
-      'identified', b.review_date || null, 'user_input', at, at
+      // Without a date given, the first review falls due on the cycle the
+      // methodology sets for the risk's rating.
+      'identified', b.review_date || nextReviewDate(rating(b.inherent_likelihood, b.inherent_impact)), 'user_input', at, at,
+      b.risk_source || null, b.control_effectiveness || null, b.action_owner_id || null, b.target_date || null
     );
 
     audit(req, {
@@ -208,6 +250,7 @@ router.patch('/:id', requirePermission('risk:write'), validate(z.object({
       'This risk has been formally accepted. Withdraw the acceptance before changing its rating or treatment.');
   }
 
+  assertRiskPeople(req.body);
   const entries = Object.entries(req.body).filter(([, v]) => v !== undefined);
   // Touching either residual figure means somebody has now assessed it.
   const assessedResidual = entries.some(([k]) => k === 'residual_likelihood' || k === 'residual_impact');
@@ -221,6 +264,7 @@ router.patch('/:id', requirePermission('risk:write'), validate(z.object({
   }
 
   const updated = q.get('SELECT * FROM risks WHERE id = ?', row.id);
+  if (req.body.status && req.body.status !== row.status) notifyStatusChange(updated, row.status, req.body.status, req.user);
   audit(req, {
     action: 'risk:update', entityType: 'risk', entityId: row.id,
     summary: `Updated risk ${row.risk_id}`,
@@ -240,6 +284,31 @@ router.delete('/:id', requirePermission('risk:write'), asyncHandler(async (req, 
   res.json({ ok: true });
 }));
 
+// ---------------------------------------------------------------- review --
+
+/**
+ * A review of the risk: the owner confirms or revises its position, and the
+ * next review falls due on the cycle the methodology sets for its residual
+ * rating, so a critical risk comes back sooner than a low one.
+ */
+router.post('/:id/review', requirePermission('risk:write'), validate(z.object({
+  note: z.string().max(2000).optional()
+})), asyncHandler(async (req, res) => {
+  const row = loadRisk(req.params.id);
+  if (!row) throw notFound('Risk');
+  if (row.status === 'closed') throw new HttpError(409, 'A closed risk is not reviewed. Reopen it first.');
+  const at = nowIso();
+  const residualRating = rating(row.residual_likelihood, row.residual_impact);
+  const next = nextReviewDate(residualRating);
+  q.run('UPDATE risks SET last_reviewed_at = ?, review_date = ?, updated_at = ? WHERE id = ?', at, next, at, row.id);
+  audit(req, {
+    action: 'risk:review', entityType: 'risk', entityId: row.id,
+    summary: `Reviewed risk ${row.risk_id}; next review ${next}`,
+    detail: { note: req.body.note || null, residual: residualRating }
+  });
+  res.json({ risk: enrichRisk(q.get('SELECT * FROM risks WHERE id = ?', row.id)) });
+}));
+
 // ------------------------------------------------------------ acceptance --
 
 /**
@@ -257,6 +326,11 @@ router.post('/:id/accept', requirePermission('risk:accept'), validate(z.object({
   if (new Date(req.body.expires) <= new Date()) {
     throw new HttpError(400, 'The acceptance must expire in the future.');
   }
+  // Above the organisation's appetite a risk is treated, not accepted.
+  const residualRating = rating(row.residual_likelihood, row.residual_impact);
+  if (!acceptable(residualRating)) {
+    throw new HttpError(409, `A ${residualRating} residual risk is above the organisation's risk appetite and cannot be accepted. Treat it further first.`);
+  }
   // The person who owns a risk should not be the one who signs off living with
   // it: the same segregation the platform applies to document approval.
   if (row.owner_id === req.user.id) {
@@ -273,6 +347,7 @@ router.post('/:id/accept', requirePermission('risk:accept'), validate(z.object({
        accepted_at = ?, acceptance_rationale = ?, acceptance_expires = ?, updated_at = ? WHERE id = ?`,
     req.user.id, req.user.name, at, req.body.rationale, req.body.expires, at, row.id
   );
+  notifyStatusChange(row, row.status, 'accepted', req.user);
   audit(req, {
     action: 'risk:accept', entityType: 'risk', entityId: row.id,
     summary: `Accepted risk ${row.risk_id} until ${req.body.expires}`,

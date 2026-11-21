@@ -49,7 +49,31 @@ const TIER_AR = { Standard: 'معيار', Procedure: 'إجراء', standard: 'ا
  * [pattern, render(match, t)] pairs. `t` translates a name through the
  * localiser and returns it unchanged when it is not knowledge-base text.
  */
+const RISK_STATUS_AR = { identified: 'مُحدَّد', assessed: 'مُقيَّم', treated: 'مُعالَج', accepted: 'مقبول', closed: 'مُغلق' };
+const ar = (n) => String(n).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+
+/** What a deadline is for, in Arabic: "review of risk RSK-IAM-004 — …". */
+function deadlineWhat(text, t) {
+  const m = text.match(/^(corrective action|review of risk|treatment of risk|acceptance of risk|assessment of control|collection of evidence) (\S+) — (.+)$/);
+  if (!m) return text;
+  const kind = {
+    'corrective action': 'الإجراء التصحيحي', 'review of risk': 'مراجعة الخطر', 'treatment of risk': 'معالجة الخطر',
+    'acceptance of risk': 'قبول الخطر', 'assessment of control': 'تقييم الضابط', 'collection of evidence': 'جمع الدليل'
+  }[m[1]];
+  return `${kind} ${m[2]} — ${t(m[3])}`;
+}
+
 export const FINDING_PATTERNS = [
+  // ---- deadlines and risk status (services/notify.js, routes/risks.js) ----
+  [/^Due in (\d+) day\(s\): (.+)$/, (m, t) => `يستحق خلال ${ar(m[1])} يوم: ${deadlineWhat(m[2], t)}`],
+  [/^Overdue: (.+)$/, (m, t) => `متأخر: ${deadlineWhat(m[1], t)}`],
+  [/^Escalated, (\d+) day\(s\) overdue: (.+)$/, (m, t) => `مُصعَّد، متأخر ${ar(m[1])} يوم: ${deadlineWhat(m[2], t)}`],
+  [/^The deadline is (\S+)\.$/, (m) => `الموعد النهائي ${m[1]}.`],
+  [/^The deadline was (\S+)\.$/, (m) => `كان الموعد النهائي ${m[1]}.`],
+  [/^The deadline was (\S+)\. It is escalated to you because it is (\d+) day\(s\) overdue\.$/,
+    (m) => `كان الموعد النهائي ${m[1]}. صُعِّد إليك لأنه متأخر ${ar(m[2])} يوم.`],
+  [/^Risk (\S+) is now (\w+)$/, (m) => `أصبح الخطر ${m[1]} ${RISK_STATUS_AR[m[2]] || m[2]}`],
+  [/^(.+) moved from (\w+) to (\w+)\.$/, (m, t) => `${t(m[1])}: انتقل من ${RISK_STATUS_AR[m[2]] || m[2]} إلى ${RISK_STATUS_AR[m[3]] || m[3]}.`],
   // ---- the analysis of an uploaded document (services/import.js) ----
   [/^Requirement not addressed: (.+)$/, (m, t) => `متطلب غير مُعالَج: ${t(m[1])}`],
   [/^The uploaded document does not appear to address "(.+)", which the (.+) requirement model treats as mandatory\. This leaves a gap against (.+)\.$/,

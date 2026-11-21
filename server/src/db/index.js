@@ -70,7 +70,27 @@ const ADDED_COLUMNS = [
   ['org_profile', 'export_layout', 'TEXT'],
   ['document_sections', 'exported', 'INTEGER NOT NULL DEFAULT 1'],
   // A Word upload read as HTML, so its headings, lists and tables survive the import.
-  ['uploads', 'extracted_html', 'TEXT']
+  ['uploads', 'extracted_html', 'TEXT'],
+  // The risk methodology (scales, matrix, appetite, review cycles, control
+  // effectiveness) and the reminder schedule, set by an administrator.
+  ['org_profile', 'risk_methodology', 'TEXT'],
+  ['org_profile', 'automation', 'TEXT'],
+  // A risk's source, the effectiveness of the controls already in place (from
+  // which its current position follows), who carries out its treatment, by
+  // when, and when it was last reviewed. review_date is the next review.
+  ['risks', 'risk_source', 'TEXT'],
+  ['risks', 'control_effectiveness', 'TEXT'],
+  ['risks', 'action_owner_id', 'TEXT REFERENCES users(id) ON DELETE SET NULL'],
+  ['risks', 'target_date', 'TEXT'],
+  ['risks', 'last_reviewed_at', 'TEXT'],
+  // A control's named owner and the record of how well it is designed and
+  // how well it operates, with the next assessment due.
+  ['controls', 'owner_id', 'TEXT REFERENCES users(id) ON DELETE SET NULL'],
+  ['controls', 'design_effectiveness', 'TEXT'],
+  ['controls', 'operating_effectiveness', 'TEXT'],
+  ['controls', 'last_assessed_at', 'TEXT'],
+  ['controls', 'next_assessment_date', 'TEXT'],
+  ['controls', 'assessment_note', 'TEXT']
 ];
 
 function applyColumnMigrations() {

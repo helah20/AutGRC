@@ -8,7 +8,9 @@ import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound, HttpError } from '../middleware/errors.js';
 import { indexControl, removeFromIndex, indexEvidence } from '../services/search.js';
 import { domainName, domainShort, DOMAIN_META } from '../knowledge/index.js';
-import { enrichControl, listParam, paginate } from './_shared.js';
+import { enrichControl, listParam, paginate, assertActiveUser } from './_shared.js';
+import { EFFECTIVENESS, enrichRisk } from '../services/risk.js';
+import { nextDue } from '../services/cadence.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -62,7 +64,14 @@ router.get('/:id', asyncHandler(async (req, res) => {
     'SELECT id, reference, title, doc_type, status FROM documents WHERE id IN (?,?,?)',
     row.policy_id, row.standard_id, row.procedure_id
   );
-  res.json({ control: enriched, documents: docs });
+  // The risks this control treats, so its effectiveness is read beside what
+  // depends on it.
+  const risks = q.all(
+    `SELECT r.*, rc.effect FROM risk_controls rc JOIN risks r ON r.id = rc.risk_id WHERE rc.control_id = ? ORDER BY r.risk_id`,
+    row.id
+  ).map((r) => ({ ...enrichRisk(r), effect: r.effect }));
+  const owner = row.owner_id ? q.get('SELECT id, name, email, job_title FROM users WHERE id = ?', row.owner_id) : null;
+  res.json({ control: enriched, documents: docs, risks, owner, effectiveness: EFFECTIVENESS });
 }));
 
 const controlSchema = z.object({
@@ -84,7 +93,9 @@ const controlSchema = z.object({
   policy_id: z.string().nullable().optional(),
   standard_id: z.string().nullable().optional(),
   procedure_id: z.string().nullable().optional(),
-  evidence: z.array(z.string().max(400)).optional()
+  evidence: z.array(z.string().max(400)).optional(),
+  owner_id: z.string().nullable().optional(),
+  next_assessment_date: z.string().max(40).nullable().optional()
 });
 
 router.post('/', requirePermission('control:write'), validate(controlSchema), asyncHandler(async (req, res) => {
@@ -134,6 +145,7 @@ router.patch('/:id', requirePermission('control:write'), validate(controlSchema.
   const row = q.get('SELECT * FROM controls WHERE id = ? OR control_id = ?', req.params.id, req.params.id);
   if (!row) throw notFound('Control');
   const { evidence, ...fields } = req.body;
+  assertActiveUser(fields.owner_id, 'The control owner');
   const entries = Object.entries(fields).filter(([, v]) => v !== undefined);
   if (entries.length) {
     q.run(
@@ -154,6 +166,42 @@ router.delete('/:id', requirePermission('control:write'), asyncHandler(async (re
   removeFromIndex('control', row.id);
   audit(req, { action: 'control:delete', entityType: 'control', entityId: row.id, summary: `Deleted control ${row.control_id}` });
   res.json({ ok: true });
+}));
+
+/**
+ * An assessment of the control: how well it is designed, how well it
+ * operates, and what the assessor saw. The next assessment falls due in a
+ * year, or on the date the assessor sets. A control cannot operate more
+ * effectively than it is designed.
+ */
+router.post('/:id/assessment', requirePermission('control:write'), validate(z.object({
+  design_effectiveness: z.enum(EFFECTIVENESS.filter((e) => e !== 'not_assessed')),
+  operating_effectiveness: z.enum(EFFECTIVENESS.filter((e) => e !== 'not_assessed')),
+  note: z.string().max(2000).optional(),
+  next_assessment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
+})), asyncHandler(async (req, res) => {
+  const row = q.get('SELECT * FROM controls WHERE id = ? OR control_id = ?', req.params.id, req.params.id);
+  if (!row) throw notFound('Control');
+  const order = EFFECTIVENESS;
+  if (order.indexOf(req.body.operating_effectiveness) > order.indexOf(req.body.design_effectiveness)) {
+    throw new HttpError(400, 'A control cannot operate more effectively than it is designed.');
+  }
+  const at = nowIso();
+  // How often a control operates is not how often it is assessed: a weekly
+  // control is still assessed on the annual cycle unless the owner sets an
+  // earlier date.
+  const next = req.body.next_assessment_date || nextDue('annually', new Date());
+  q.run(
+    `UPDATE controls SET design_effectiveness = ?, operating_effectiveness = ?, assessment_note = ?,
+       last_assessed_at = ?, next_assessment_date = ?, updated_at = ? WHERE id = ?`,
+    req.body.design_effectiveness, req.body.operating_effectiveness, req.body.note || null, at, next, at, row.id
+  );
+  audit(req, {
+    action: 'control:assess', entityType: 'control', entityId: row.id,
+    summary: `Assessed control ${row.control_id}: design ${req.body.design_effectiveness}, operation ${req.body.operating_effectiveness}`,
+    detail: { note: req.body.note || null, next }
+  });
+  res.json({ control: enrichControl(q.get('SELECT * FROM controls WHERE id = ?', row.id)) });
 }));
 
 /** Evidence attached to a control. */

@@ -3,6 +3,7 @@ import { api, qs } from '../lib/api.js';
 import { useFetch } from '../lib/useApi.js';
 import FrameworkPicker from '../components/FrameworkPicker.jsx';
 import { LayoutSettings } from '../components/ExportLayout.jsx';
+import { RiskMethodologySettings } from '../components/RiskMethodology.jsx';
 import BrandSettings from '../components/BrandSettings.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import {
@@ -42,6 +43,7 @@ export default function Settings() {
   const tabs = [
     { key: 'organisation', label: t('settingsUi.tabs.organisation'), icon: <IconBuilding width={14} height={14} /> },
     { key: 'brand', label: t('settingsUi.tabs.brand'), icon: <IconPalette width={14} height={14} /> },
+    ...(can('risk:read') ? [{ key: 'risk', label: t('settingsUi.tabs.riskMethodology'), icon: <IconShield width={14} height={14} /> }] : []),
     ...(can('user:manage') ? [{ key: 'users', label: t('settingsUi.tabs.users'), icon: <IconUsers width={14} height={14} /> }] : []),
     { key: 'account', label: t('settingsUi.tabs.account'), icon: <IconLock width={14} height={14} /> },
     ...(can('audit:read') ? [{ key: 'audit', label: t('settingsUi.tabs.audit'), icon: <IconHistory width={14} height={14} /> }] : []),
@@ -67,6 +69,7 @@ export default function Settings() {
               <LayoutSettings canEdit={can('settings:write')} />
             </>
           )}
+          {tab === 'risk' && <RiskMethodologySettings canEdit={can('settings:write')} />}
           {tab === 'users' && <UserSettings />}
           {tab === 'account' && <AccountSettings user={user} />}
           {tab === 'audit' && <AuditLog />}

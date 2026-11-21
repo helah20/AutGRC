@@ -763,3 +763,15 @@ a.worklist-title:hover { color: var(--accent); }
 .scorecard-item-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .scorecard-quote { display: block; padding-inline-start: 8px; border-inline-start: 2px solid var(--border); color: var(--text-muted, inherit); quotes: none; }
 .scorecard-item-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }
+
+/* Label/value pairs in a drawer: the record's facts at a glance. */
+.kv-grid { display: grid; grid-template-columns: minmax(120px, max-content) 1fr; gap: 6px 14px; align-items: baseline; }
+.text-danger { color: var(--danger); font-weight: 600; }
+
+/* The methodology matrix editor: each cell coloured by the rating it carries. */
+.methodology-matrix td.methodology-cell { padding: 6px; }
+.methodology-cell .select { min-width: 110px; font-weight: 600; }
+.methodology-cell.tone-low .select      { background: var(--ok-soft); }
+.methodology-cell.tone-medium .select   { background: var(--warn-soft); }
+.methodology-cell.tone-high .select     { background: color-mix(in srgb, var(--danger) 18%, var(--bg-raised)); }
+.methodology-cell.tone-critical .select { background: color-mix(in srgb, var(--danger) 38%, var(--bg-raised)); }

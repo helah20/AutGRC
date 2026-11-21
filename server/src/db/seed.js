@@ -20,7 +20,8 @@ import {
   FRAMEWORKS, REQUIREMENTS, CROSSWALKS, SOURCE_NOTE,
   DOMAIN_MODELS, DOMAIN_META, domainShort, validateKnowledgeBase, buildParameterSet, resolveText
 } from '../knowledge/index.js';
-import { startingPosition } from '../services/risk.js';
+import { startingPosition, suggestedEffectiveness } from '../services/risk.js';
+import { nextDue } from '../services/cadence.js';
 import { generatePackage } from '../services/generator.js';
 import { indexFrameworkRequirement } from '../services/search.js';
 import { reviewDomain } from '../services/review.js';
@@ -587,9 +588,47 @@ export function settleControls() {
   const at = nowIso();
   q.run(`UPDATE controls SET status = 'approved', updated_at = ?
           WHERE status = 'proposed' AND domain_key IN (SELECT DISTINCT domain_key FROM documents WHERE status = 'published')`, at);
-  return q.run(`UPDATE controls SET status = 'implemented', updated_at = ?
+  const implemented = q.run(`UPDATE controls SET status = 'implemented', updated_at = ?
           WHERE status = 'approved'
             AND (SELECT 2 * SUM(e.status = 'verified') > COUNT(*) FROM evidence e WHERE e.control_id = controls.id)`, at).changes;
+  settleControlOwnership();
+  return implemented;
+}
+
+/**
+ * Each control of a published domain has a named owner, chosen from the
+ * demonstration users by the role the control names, and a recorded
+ * assessment: an implemented control was found effective in design and
+ * operation, an approved one effective in design and partly in operation.
+ * Each risk then takes its existing controls' effectiveness from the
+ * controls linked to it, so its current position follows from them.
+ */
+export function settleControlOwnership() {
+  const byEmail = (email) => q.get('SELECT id FROM users WHERE email = ?', email)?.id || null;
+  const owners = {
+    architect: byEmail('reviewer@autgrc.demo'),
+    analyst: byEmail('analyst@autgrc.demo'),
+    ciso: byEmail('ciso@autgrc.demo'),
+    grc: byEmail('grc@autgrc.demo')
+  };
+  const pick = (role) => (/architect/i.test(role || '') ? owners.architect
+    : /analyst|operations|soc/i.test(role || '') ? owners.analyst
+      : /chief information security|ciso/i.test(role || '') ? owners.ciso : owners.grc);
+  const assessedAt = new Date(Date.now() - 40 * 86400000);
+  for (const c of q.all(`SELECT id, responsible_role, frequency, status FROM controls WHERE status IN ('approved','implemented')`)) {
+    const operating = c.status === 'implemented' ? 'effective' : 'partially_effective';
+    q.run(
+      `UPDATE controls SET owner_id = ?, design_effectiveness = 'effective', operating_effectiveness = ?,
+         last_assessed_at = ?, next_assessment_date = ? WHERE id = ?`,
+      pick(c.responsible_role), operating, assessedAt.toISOString(), nextDue('annually', assessedAt), c.id
+    );
+  }
+  for (const r of q.all('SELECT id FROM risks')) {
+    const controls = q.all(
+      'SELECT c.operating_effectiveness FROM risk_controls rc JOIN controls c ON c.id = rc.control_id WHERE rc.risk_id = ?', r.id);
+    const effectiveness = suggestedEffectiveness(controls);
+    if (effectiveness) q.run('UPDATE risks SET control_effectiveness = ? WHERE id = ?', effectiveness, r.id);
+  }
 }
 
 /**
