@@ -193,7 +193,7 @@ export default function Frameworks() {
                   key: 'title', header: t('frameworksUi.colRequirement'),
                   render: (r) => (
                     <div style={{ paddingInlineStart: (r.level - 1) * 14 }}>
-                      <div className={`${r.level <= 2 ? 'cell-title' : ''} ltr-content`}>{r.title}</div>
+                      <div className={`${r.level <= 2 ? 'cell-title' : ''} source-text`} dir="auto">{r.title}</div>
                       {r.domain_label && <div className="cell-sub">{labels.domain(r.domain_key, r.domain_label)}</div>}
                     </div>
                   )

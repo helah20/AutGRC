@@ -688,10 +688,17 @@ table.data .cell-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 
   unicode-bidi: isolate;
 }
 
+/* Catalogue text is the publisher's: English for most frameworks, Arabic for
+   the NCA editions published only in Arabic (CSCC-2:2026, NCNICC-1:2025).
+   Its direction follows its own first letter, in either interface. */
+.source-text {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+
 /* Framework requirement titles and generated document bodies are the two
    places this applies wholesale. */
 [dir="rtl"] .prose:not([dir="rtl"]),
-[dir="rtl"] .cell-title.source-text,
 [dir="rtl"] .requirement-statement {
   direction: ltr;
   text-align: start;

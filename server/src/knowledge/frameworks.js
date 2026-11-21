@@ -12,6 +12,8 @@
  */
 
 import { ECC_2024_CONTROLS } from './catalogue/ecc-2024.js';
+import { CSCC_2026_CONTROLS } from './catalogue/cscc-2026.js';
+import { NCNICC_2025_CONTROLS } from './catalogue/ncnicc-2025.js';
 
 export const FRAMEWORKS = [
   {
@@ -35,14 +37,18 @@ export const FRAMEWORKS = [
   },
   {
     code: 'NCA-CSCC',
-    name: 'NCA Critical Systems Cybersecurity Controls (CSCC-1:2019)',
+    name: 'NCA Critical Systems Cybersecurity Controls (CSCC-2:2026)',
     publisher: 'National Cybersecurity Authority (Saudi Arabia)',
-    version: 'CSCC-1:2019',
+    version: 'CSCC-2:2026',
     kind: 'regulation',
     jurisdiction: 'Saudi Arabia',
     isMandatory: 1,
     description:
-      'Additional controls applicable to systems whose failure would have a significant national impact. Applied on top of the ECC.',
+      'Controls for systems whose failure would have a significant national impact, applied on top of the ECC. The 2026 edition supersedes CSCC-1:2019; the authority publishes it in Arabic only.',
+    // The publication's summary counts 32 main controls and 73 subcontrols;
+    // its body numbers 33 main controls (2-3-4 is the one beyond the count).
+    publishedControls: 106,
+    controlLevels: [3, 4],
     provenance: 'regulatory_requirement'
   },
   {
@@ -102,6 +108,20 @@ export const FRAMEWORKS = [
     isMandatory: 1,
     description:
       'Cybersecurity controls for an organisation\'s official social media accounts, applied on top of the ECC.',
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'NCA-NCNICC',
+    name: 'NCA Non-CNI Private Sector Entities Cybersecurity Controls (NCNICC-1:2025)',
+    publisher: 'National Cybersecurity Authority (Saudi Arabia)',
+    version: 'NCNICC-1:2025',
+    kind: 'regulation',
+    jurisdiction: 'Saudi Arabia',
+    isMandatory: 1,
+    description:
+      'Cybersecurity controls for private-sector entities that are not critical national infrastructure. Category A (large entities) is bound by all 65 main controls, category B (small and medium entities) by 26. The authority publishes it in Arabic only.',
+    publishedControls: 112,
+    controlLevels: [3, 4],
     provenance: 'regulatory_requirement'
   },
   {
@@ -264,13 +284,13 @@ export const REQUIREMENTS = {
     ['1', 'Cybersecurity Governance', 'governance', 1],
     ['1-1', 'Cybersecurity Strategy', 'governance', 2, '1'],
     ['1-2', 'Cybersecurity Risk Management', 'risk_management', 2, '1'],
-    ['1-3', 'Cybersecurity in Information Technology Project Management', 'secure_sdlc', 2, '1'],
-    ['1-4', 'Periodical Cybersecurity Review and Audit', 'governance', 2, '1'],
+    ['1-3', 'Cybersecurity in Information Technology Projects', 'secure_sdlc', 2, '1'],
+    ['1-4', 'Cybersecurity Periodical Assessment and Audit', 'governance', 2, '1'],
     ['1-5', 'Cybersecurity in Human Resources', 'hr_security', 2, '1'],
     ['2', 'Cybersecurity Defense', 'security_operations', 1],
     ['2-1', 'Asset Management', 'asset_management', 2, '2'],
     ['2-2', 'Identity and Access Management', 'iam', 2, '2'],
-    ['2-3', 'Information System and Information Processing Facilities Protection', 'endpoint_security', 2, '2'],
+    ['2-3', 'Information System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
     ['2-4', 'Networks Security Management', 'network_security', 2, '2'],
     ['2-5', 'Mobile Devices Security', 'endpoint_security', 2, '2'],
     ['2-6', 'Data and Information Protection', 'data_protection', 2, '2'],
@@ -285,7 +305,8 @@ export const REQUIREMENTS = {
     ['3-1', 'Cybersecurity Resilience Aspects of Business Continuity Management (BCM)', 'business_continuity', 2, '3'],
     ['4', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
     ['4-1', 'Third-Party Cybersecurity', 'third_party', 2, '4'],
-    ['4-2', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '4']
+    ['4-2', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '4'],
+    ...CSCC_2026_CONTROLS
   ],
 
   'NCA-DCC': [
@@ -388,6 +409,34 @@ export const REQUIREMENTS = {
     ['4-1', 'Third-Party Cybersecurity', 'third_party', 2, '4']
   ],
 
+  'NCA-NCNICC': [
+    ['1', 'Cybersecurity Governance', 'governance', 1],
+    ['1-1', 'Cybersecurity Management', 'governance', 2, '1'],
+    ['1-2', 'Cybersecurity Policies and Procedures', 'governance', 2, '1'],
+    ['1-3', 'Cybersecurity Risk Management', 'risk_management', 2, '1'],
+    ['1-4', 'Periodical Cybersecurity Review and Audit', 'governance', 2, '1'],
+    ['1-5', 'Cybersecurity Awareness and Training Program', 'security_awareness', 2, '1'],
+    ['2', 'Cybersecurity Defense', 'security_operations', 1],
+    ['2-1', 'Asset Management', 'asset_management', 2, '2'],
+    ['2-2', 'Identity and Access Management', 'iam', 2, '2'],
+    ['2-3', 'Information System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
+    ['2-4', 'Email Protection', 'email_security', 2, '2'],
+    ['2-5', 'Networks Security Management', 'network_security', 2, '2'],
+    ['2-6', 'Mobile Devices Security', 'endpoint_security', 2, '2'],
+    ['2-7', 'Data and Information Protection', 'data_protection', 2, '2'],
+    ['2-8', 'Cryptography', 'cryptography', 2, '2'],
+    ['2-9', 'Backup and Recovery Management', 'backup_recovery', 2, '2'],
+    ['2-10', 'Vulnerabilities Management', 'vulnerability_management', 2, '2'],
+    ['2-11', 'Penetration Testing', 'vulnerability_management', 2, '2'],
+    ['2-12', 'Cybersecurity Event Logs and Monitoring Management', 'logging_monitoring', 2, '2'],
+    ['2-13', 'Cybersecurity Incident and Threat Management', 'incident_management', 2, '2'],
+    ['2-14', 'Physical Security', 'physical_security', 2, '2'],
+    ['2-15', 'Web Application Security', 'application_security', 2, '2'],
+    ['3', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
+    ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3'],
+    ['3-2', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '3'],
+    ...NCNICC_2025_CONTROLS
+  ],
   'NCA-OSMACC': [
     ['1', 'Cybersecurity Governance', 'governance', 1],
     ['1-1', 'Cybersecurity Policies and Procedures', 'governance', 2, '1'],

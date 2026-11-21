@@ -25,11 +25,12 @@ are missing), **Missing**.
 | | Current risk (after existing controls), control effectiveness, risk source, action owner, target date, last and next review | Built (increment 1) |
 | | Configurable methodology (scales, matrix, appetite, review cycles) | Built (increment 1) |
 | | Separate enterprise, cyber and operational registers | Partial: one register with categories and domains |
-| Compliance | Framework library (NCA ECC, CCC, DCC, CSCC, TCC, OTCC, OSMACC, SAMA CSF, ISO/IEC 27001, 27002, 27005, ISO 22301, NIST CSF, 800-53, CIS v8, COBIT) | Built (reference text; publishers' full text imported under licence) |
+| Compliance | Framework library (NCA ECC, CCC, DCC, CSCC, TCC, OTCC, OSMACC, NCNICC, SAMA CSF, ISO/IEC 27001, 27002, 27005, ISO 22301, NIST CSF, 800-53, CIS v8, COBIT) | Built (reference text; publishers' full text imported under licence) |
+| | Full control text from the official NCA publications: ECC-2:2024 (English edition), CSCC-2:2026 and NCNICC-1:2025 (published in Arabic only, held in Arabic) | Built |
 | | Cross-framework mapping and crosswalks, one control answering many frameworks | Built |
 | | Gap assessment, Statement of Applicability, evidence with collection and verification | Built |
 | | Control owner (a person), design and operating effectiveness, last and next assessment | Built (increment 1) |
-| | Regulatory change: new editions supersede old ones without disturbing records | Partial |
+| | Regulatory change: new editions supersede old ones without disturbing records (CSCC-1:2019 replaced by CSCC-2:2026 at startup) | Partial |
 | Audit | Assessments, findings, corrective actions with root cause and independent verification, internal audit report | Built |
 | | Audit universe, annual audit plan, engagements | Missing → increment 4 |
 | Business continuity | BIA, BCP, DRP with RTO and RPO, exercises and lessons learned | Missing → increment 3 (policy documents exist; no records) |

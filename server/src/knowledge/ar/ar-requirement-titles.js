@@ -13,6 +13,11 @@
 export const AR_REQUIREMENT_TITLES = {
   // ------------------------------------------------- NCA frameworks -------
   'Cybersecurity Governance': 'حوكمة الأمن السيبراني',
+  'Asset Management': 'إدارة الأصول',
+  'Cryptography': 'التشفير',
+  'Physical Security': 'الأمن المادي',
+  'Application Security': 'حماية التطبيقات',
+  'Cybersecurity Resilience Aspects of Business Continuity Management (BCM)': 'جوانب صمود الأمن السيبراني في إدارة استمرارية الأعمال',
   'Cybersecurity Strategy': 'استراتيجية الأمن السيبراني',
   'Cybersecurity Management': 'إدارة الأمن السيبراني',
   'Cybersecurity Policies and Procedures': 'سياسات وإجراءات الأمن السيبراني',
@@ -23,6 +28,8 @@ export const AR_REQUIREMENT_TITLES = {
   'Compliance with Cybersecurity Standards, Laws and Regulations': 'الالتزام بتشريعات وتنظيمات ومعايير الأمن السيبراني',
   'Compliance with Cybersecurity Standards, Laws, and Regulations': 'الالتزام بتشريعات وتنظيمات ومعايير الأمن السيبراني',
   'Periodical Cybersecurity Review and Audit': 'المراجعة والتدقيق الدوري للأمن السيبراني',
+  'Cybersecurity Periodical Assessment and Audit': 'المراجعة والتدقيق الدوري للأمن السيبراني',
+  'Cybersecurity in Information Technology Projects': 'الأمن السيبراني ضمن إدارة المشاريع المعلوماتية والتقنية',
   'Cybersecurity in Human Resources': 'الأمن السيبراني المتعلق بالموارد البشرية',
   'Cybersecurity Awareness and Training Program': 'برنامج التوعية والتدريب بالأمن السيبراني',
   'Cybersecurity Defense': 'تعزيز الأمن السيبراني',
