@@ -102,7 +102,7 @@ export default {
   counts: {
     findings: '{count} findings',
     requirements: '{count} requirements',
-    mapped: '{mapped} of {total} mapped',
+    mapped: '{mapped} of {total} requirements held are mapped',
     covered: '{covered} of {total}',
     raci: '{activities} activities · {roles} roles',
     rows: '{count} rows'
@@ -1314,6 +1314,7 @@ export default {
   },
 
   frameworksUi: {
+    rollup: '{covered} of {total} controls covered',
     fileUnreadable: 'The file could not be read',
     imported: 'Catalogue imported',
     importFailed: 'The import failed',

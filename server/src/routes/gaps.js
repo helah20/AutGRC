@@ -8,6 +8,7 @@ import { authenticate, requirePermission, audit } from '../middleware/auth.js';
 import { asyncHandler, validate, notFound } from '../middleware/errors.js';
 import { indexGapItem, removeFromIndex } from '../services/search.js';
 import { domainName } from '../knowledge/index.js';
+import { sortByRef } from '../utils/refs.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -46,14 +47,14 @@ router.get('/:id', asyncHandler(async (req, res) => {
       WHERE a.id = ?`, req.params.id
   );
   if (!assessment) throw notFound('Assessment');
-  const items = q.all(
+  const items = sortByRef(q.all(
     `SELECT g.*, fr.domain_key, d.reference AS document_ref, d.title AS document_title, c.control_id AS control_ref
        FROM gap_items g
        LEFT JOIN framework_requirements fr ON fr.id = g.requirement_id
        LEFT JOIN documents d ON d.id = g.document_id
        LEFT JOIN controls c ON c.id = g.control_id
-      WHERE g.assessment_id = ? ORDER BY g.requirement_ref`, req.params.id
-  );
+      WHERE g.assessment_id = ?`, req.params.id
+  ), 'requirement_ref');
   res.json({
     assessment,
     summary: summarise(assessment.id),

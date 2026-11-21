@@ -13,6 +13,7 @@ import { q } from '../db/index.js';
 import { h, joinBlocks } from './html.js';
 import { cellText } from './export-i18n.js';
 import { DECISION_CATEGORY, DECISION_CATEGORY_AR } from './decision-categories.js';
+import { sortByRef } from '../utils/refs.js';
 
 export { DECISION_CATEGORY };
 
@@ -68,7 +69,7 @@ export function auditReportPayload(assessmentId, lang = 'en') {
       WHERE a.id = ?`, assessmentId);
   if (!a) return null;
 
-  const items = q.all('SELECT * FROM gap_items WHERE assessment_id = ? ORDER BY requirement_ref', a.id);
+  const items = sortByRef(q.all('SELECT * FROM gap_items WHERE assessment_id = ?', a.id), 'requirement_ref');
   const count = (s) => items.filter((i) => i.status === s).length;
   const assessable = items.length - count('not_applicable');
   const rate = assessable ? Math.round(((count('compliant') + count('partially_compliant') * 0.5) / assessable) * 100) : 0;

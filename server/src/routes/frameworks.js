@@ -15,6 +15,7 @@ import { suggestMappings } from '../services/ai.js';
 import { analyseCatalogue, applyCatalogue } from '../services/import-framework.js';
 import { listParam, getOrgProfile } from './_shared.js';
 import { evaluateApplicability } from '../services/applicability.js';
+import { sortByRef } from '../utils/refs.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -44,18 +45,32 @@ const catalogueUpload = multer({
   }
 });
 
+/**
+ * The requirements a framework is assessed on: the most detailed ones the
+ * catalogue holds. A domain or subdomain with controls below it is a heading;
+ * counting it would report an uncovered requirement where every control
+ * under it is covered. A subdomain the catalogue holds no controls for is
+ * assessed itself.
+ */
+function assessableRequirements(frameworkId) {
+  const all = q.all('SELECT id, ref, parent_ref, domain_key FROM framework_requirements WHERE framework_id = ?', frameworkId);
+  const parents = new Set(all.map((r) => r.parent_ref).filter(Boolean));
+  return all.filter((r) => !parents.has(r.ref));
+}
+
 router.get('/', asyncHandler(async (req, res) => {
   const rows = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code');
-  const counts = Object.fromEntries(
-    q.all('SELECT framework_id, COUNT(*) AS n FROM framework_requirements GROUP BY framework_id').map((r) => [r.framework_id, r.n])
-  );
-  const mapped = Object.fromEntries(
-    q.all(`SELECT fr.framework_id, COUNT(DISTINCT fr.id) AS n
-             FROM framework_requirements fr
-             JOIN control_mappings cm ON cm.requirement_id = fr.id
-            WHERE cm.coverage IN ('covered','partial')
-            GROUP BY fr.framework_id`).map((r) => [r.framework_id, r.n])
-  );
+  // Counted over the most detailed requirements held (see assessableRequirements).
+  const coveredIds = new Set(q.all(
+    `SELECT DISTINCT requirement_id FROM control_mappings WHERE coverage IN ('covered','partial')`
+  ).map((r) => r.requirement_id));
+  const counts = {};
+  const mapped = {};
+  for (const f of rows) {
+    const reqs = assessableRequirements(f.id);
+    counts[f.id] = reqs.length;
+    mapped[f.id] = reqs.filter((r) => coveredIds.has(r.id)).length;
+  }
   const byId = Object.fromEntries(rows.map((f) => [f.id, f]));
   // How completely the reference catalogue represents each publication. A
   // mapping to a subdomain the catalogue carries no controls for reads exactly
@@ -131,7 +146,7 @@ router.post('/editions', requirePermission('settings:write'), validate(z.object(
     if (req.body.copyRequirements) {
       // Copied, not moved. The old edition keeps its requirements and their
       // control mappings, so an assessment against it stays readable.
-      const requirements = q.all('SELECT * FROM framework_requirements WHERE framework_id = ? ORDER BY ref', previous.id);
+      const requirements = sortByRef(q.all('SELECT * FROM framework_requirements WHERE framework_id = ?', previous.id));
       const idMap = new Map();
       for (const r of requirements) {
         const newId = id('req');
@@ -207,9 +222,10 @@ router.get('/:code/requirements', asyncHandler(async (req, res) => {
     args.push(like, like, like);
   }
 
-  const rows = q.all(
-    `SELECT fr.* FROM framework_requirements fr WHERE ${filters.join(' AND ')} ORDER BY fr.level, fr.id`, ...args
-  );
+  // In the publication's order: 1, 1-1, 1-1-1, 1-2 … not by level or text.
+  const rows = sortByRef(q.all(
+    `SELECT fr.* FROM framework_requirements fr WHERE ${filters.join(' AND ')}`, ...args
+  ));
 
   const mappings = q.all(
     `SELECT cm.requirement_id, cm.coverage, cm.confidence, c.id AS control_pk, c.control_id, c.name AS control_name,
@@ -475,7 +491,10 @@ router.post('/requirements/:id/suggest', requirePermission('ai:use'), asyncHandl
 router.get('/coverage', asyncHandler(async (req, res) => {
   const frameworks = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code');
   const summary = frameworks.map((f) => {
-    const reqs = q.all('SELECT id, domain_key FROM framework_requirements WHERE framework_id = ?', f.id);
+    // Only the most detailed requirements held count: a domain or subdomain
+    // with its controls below it is a heading, and counting it would report
+    // an uncovered requirement where every control under it is covered.
+    const reqs = assessableRequirements(f.id);
     const mapped = q.all(
       `SELECT DISTINCT cm.requirement_id, cm.coverage
          FROM control_mappings cm

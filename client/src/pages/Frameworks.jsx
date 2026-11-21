@@ -76,6 +76,20 @@ export default function Frameworks() {
   if (loading) return <Loading label={t('frameworksUi.loading')} />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
+  // Each heading's controls held in the catalogue below it (any depth),
+  // and how many of them are covered, fully or in part.
+  const rollup = {};
+  for (const r of detail?.requirements || []) {
+    if (r.level <= 2) continue;
+    for (const head of detail.requirements) {
+      if (head.level > 2 || head.level >= r.level) continue;
+      if (!(r.ref.startsWith(`${head.ref}-`) || r.ref.startsWith(`${head.ref}.`))) continue;
+      const entry = rollup[head.ref] || (rollup[head.ref] = { covered: 0, total: 0 });
+      entry.total += 1;
+      if (r.coverage === 'covered' || r.coverage === 'partial') entry.covered += 1;
+    }
+  }
+
   return (
     <>
       <div className="page-head">
@@ -186,7 +200,16 @@ export default function Frameworks() {
                 },
                 {
                   key: 'coverage', header: t('frameworksUi.colCoverage'), nowrap: true,
-                  render: (r) => <Badge tone={COVERAGE_TONE[r.coverage] || 'neutral'}>{labels.coverage(r.coverage)}</Badge>
+                  render: (r) => {
+                    // A domain or subdomain is a heading, not a control: it
+                    // shows how many of the controls under it are covered.
+                    const under = rollup[r.ref];
+                    if (under) {
+                      const tone = under.covered === under.total ? 'ok' : under.covered ? 'warn' : 'danger';
+                      return <Badge tone={tone}>{t('frameworksUi.rollup', { covered: formatNumber(under.covered), total: formatNumber(under.total) })}</Badge>;
+                    }
+                    return <Badge tone={COVERAGE_TONE[r.coverage] || 'neutral'}>{labels.coverage(r.coverage)}</Badge>;
+                  }
                 },
                 {
                   key: 'controls', header: t('frameworksUi.colMappedControls'),

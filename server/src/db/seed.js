@@ -43,11 +43,22 @@ export function syncCatalogueDomains() {
   for (const f of FRAMEWORKS) {
     const fw = q.get('SELECT id FROM frameworks WHERE code = ?', f.code);
     if (!fw) continue;
-    for (const [ref, , domainKey] of REQUIREMENTS[f.code] || []) {
+    // The catalogue's own description of a framework, corrected in the
+    // knowledge base, reaches installations already seeded.
+    changed += q.run('UPDATE frameworks SET description = ? WHERE id = ? AND description != ?', f.description, fw.id, f.description).changes;
+    for (const [ref, title, domainKey] of REQUIREMENTS[f.code] || []) {
       changed += q.run(
         `UPDATE framework_requirements SET domain_key = ?
           WHERE framework_id = ? AND ref = ? AND source_status = 'reference' AND COALESCE(domain_key, '') != ?`,
         domainKey || null, fw.id, ref, domainKey || ''
+      ).changes;
+      // A reference title corrected in the catalogue (to the publication's
+      // own wording) reaches installations already seeded. A title imported
+      // from the organisation's licensed copy is never touched.
+      changed += q.run(
+        `UPDATE framework_requirements SET title = ?, statement = CASE WHEN statement = title THEN ? ELSE statement END
+          WHERE framework_id = ? AND ref = ? AND source_status = 'reference' AND title != ?`,
+        title, title, fw.id, ref, title
       ).changes;
     }
   }

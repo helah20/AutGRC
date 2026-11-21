@@ -18,6 +18,7 @@ import { asyncHandler, validate, notFound, HttpError } from '../middleware/error
 import { domainName, SOURCE_NOTE } from '../knowledge/index.js';
 import { getOrgProfile } from './_shared.js';
 import { evaluateApplicability } from '../services/applicability.js';
+import { sortByRef } from '../utils/refs.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -39,10 +40,10 @@ router.get('/:code', asyncHandler(async (req, res) => {
   const framework = q.get('SELECT * FROM frameworks WHERE code = ? OR id = ?', req.params.code, req.params.code);
   if (!framework) throw notFound('Framework');
 
-  const requirements = q.all(
-    'SELECT * FROM framework_requirements WHERE framework_id = ? ORDER BY ref',
+  const requirements = sortByRef(q.all(
+    'SELECT * FROM framework_requirements WHERE framework_id = ?',
     framework.id
-  );
+  ));
   const decisions = Object.fromEntries(
     q.all('SELECT * FROM soa_decisions WHERE framework_id = ?', framework.id).map((d) => [d.requirement_id, d])
   );

@@ -109,7 +109,7 @@ export default {
   counts: {
     findings: '{count} ملاحظة',
     requirements: '{count} متطلب',
-    mapped: '{mapped} من {total} مربوط',
+    mapped: 'مربوط {mapped} من {total} متطلباً في الكتالوج',
     covered: '{covered} من {total}',
     raci: '{activities} نشاط · {roles} دور',
     rows: '{count} صف'
@@ -1316,6 +1316,7 @@ export default {
   },
 
   frameworksUi: {
+    rollup: 'مغطى {covered} من {total} ضوابط',
     fileUnreadable: 'تعذّرت قراءة الملف',
     imported: 'تم استيراد الكتالوج',
     importFailed: 'فشل الاستيراد',

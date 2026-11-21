@@ -31,6 +31,9 @@ export const AR_REQUIREMENT_TITLES = {
   'Privileged access management.': 'إدارة الصلاحيات الهامة والحساسة.',
   'Periodic review of identities and access rights.': 'المراجعة الدورية لهويات الدخول والصلاحيات.',
   'Information System and Processing Facilities Protection': 'حماية الأنظمة وأجهزة معالجة المعلومات',
+  // ECC-2:2024 wording of subdomains 2-3 and 2-10.
+  'Information Systems and Information Processing Facilities Protection': 'حماية الأنظمة وأجهزة معالجة المعلومات',
+  'Vulnerability Management': 'إدارة الثغرات',
   'Information System and Information Processing Facilities Protection': 'حماية الأنظمة وأجهزة معالجة المعلومات',
   'System and Processing Facilities Protection': 'حماية الأنظمة وأجهزة المعالجة',
   'Email Protection': 'حماية البريد الإلكتروني',

@@ -167,7 +167,7 @@ app.use(errorHandler);
 
 const problems = validateKnowledgeBase();
 const moved = syncCatalogueDomains();
-if (moved) console.log(`[AutGRC] Updated the domain of ${moved} reference catalogue requirement(s).`);
+if (moved) console.log(`[AutGRC] Brought ${moved} reference catalogue value(s) (domain or title) in line with the knowledge base.`);
 if (problems.length) {
   console.warn(`[AutGRC] Knowledge base integrity problems (${problems.length}):`);
   problems.slice(0, 10).forEach((p) => console.warn(`  - ${p}`));

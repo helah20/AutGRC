@@ -197,7 +197,7 @@ export const FRAMEWORKS = [
     jurisdiction: 'International',
     isMandatory: 0,
     description:
-      'Prioritised set of 18 safeguard groups for defending against the most prevalent attacks.',
+      'Prioritised set of 18 Controls, comprising 153 Safeguards grouped into Implementation Groups IG1 to IG3, for defending against the most prevalent attacks.',
     provenance: 'framework_guidance'
   },
   {
@@ -260,7 +260,7 @@ export const REQUIREMENTS = {
     ['2-2-3-4', 'Privileged access management.', 'pam', 4, '2-2-3'],
     ['2-2-3-5', 'Periodic review of identities and access rights.', 'iam', 4, '2-2-3'],
     ['2-2-4', 'The implementation of cybersecurity requirements for identity and access management of the entity shall be periodically reviewed.', 'iam', 3, '2-2'],
-    ['2-3', 'Information System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
+    ['2-3', 'Information Systems and Information Processing Facilities Protection', 'endpoint_security', 2, '2'],
     ['2-3-1', 'Cybersecurity requirements for protection of information system and processing facilities of the entity shall be identified, documented, and approved.', 'endpoint_security', 3, '2-3'],
     ['2-3-2', 'Cybersecurity requirements for protection of information systems and processing facilities of the entity shall be implemented.', 'endpoint_security', 3, '2-3'],
     ['2-3-3', 'Cybersecurity requirements for protection of information systems and processing facilities of the entity shall include the following as a minimum:', 'endpoint_security', 3, '2-3'],
@@ -288,7 +288,7 @@ export const REQUIREMENTS = {
     ['2-9', 'Backup and Recovery Management', 'backup_recovery', 2, '2'],
     ['2-9-1', 'Cybersecurity requirements for backup and recovery management within the entity shall be identified, documented, and approved.', 'backup_recovery', 3, '2-9'],
     ['2-9-3', 'Cybersecurity requirements for backup and recovery management shall include the following as a minimum:', 'backup_recovery', 3, '2-9'],
-    ['2-10', 'Vulnerabilities Management', 'vulnerability_management', 2, '2'],
+    ['2-10', 'Vulnerability Management', 'vulnerability_management', 2, '2'],
     ['2-10-1', 'Cybersecurity requirements for technical vulnerabilities management within the entity shall be identified, documented, and approved.', 'vulnerability_management', 3, '2-10'],
     ['2-10-2', 'Cybersecurity requirements for technical vulnerabilities management within the entity shall be implemented.', 'vulnerability_management', 3, '2-10'],
     ['2-10-3', 'Cybersecurity requirements for technical vulnerabilities management shall include the following as a minimum:', 'vulnerability_management', 3, '2-10'],
