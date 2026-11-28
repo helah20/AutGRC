@@ -14,7 +14,7 @@ import { useI18n } from '../i18n/index.jsx';
 
 export default function Frameworks() {
   const labels = useLabels();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, language } = useI18n();
   const toast = useToast();
   const { data, loading, error, reload } = useFetch('/frameworks');
   const [active, setActive] = useState(null);
@@ -193,7 +193,7 @@ export default function Frameworks() {
                   key: 'title', header: t('frameworksUi.colRequirement'),
                   render: (r) => (
                     <div style={{ paddingInlineStart: (r.level - 1) * 14 }}>
-                      <div className={`${r.level <= 2 ? 'cell-title' : ''} source-text`} dir="auto">{r.title}</div>
+                      <div className={`${r.level <= 2 ? 'cell-title' : ''} source-text`} dir="auto">{(language === 'ar' && r.level > 2 && r.statement_ar) || r.title}</div>
                       {r.domain_label && <div className="cell-sub">{labels.domain(r.domain_key, r.domain_label)}</div>}
                     </div>
                   )

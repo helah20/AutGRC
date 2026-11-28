@@ -205,7 +205,8 @@ router.put('/org', requirePermission('settings:write'), validate(z.object({
   mfa_required_roles: z.array(z.enum(Object.keys(ROLES))).optional(),
   applicable_frameworks: z.array(z.string().max(60)).optional(),
   ot_facility_level: z.enum(['L1', 'L2', 'L3']).nullable().optional(),
-  cloud_roles: z.array(z.enum(['CSP', 'CST'])).optional()
+  cloud_roles: z.array(z.enum(['CSP', 'CST'])).optional(),
+  ncnicc_category: z.enum(['A', 'B']).nullable().optional()
 })), asyncHandler(async (req, res) => {
   const b = req.body;
   const at = nowIso();
@@ -221,11 +222,12 @@ router.put('/org', requirePermission('settings:write'), validate(z.object({
   const previous = getOrgProfile();
   const facility = b.ot_facility_level === undefined ? (previous.ot_facility_level || null) : b.ot_facility_level;
   const cloudRoles = toJson(b.cloud_roles === undefined ? (previous.cloud_roles || []) : b.cloud_roles);
+  const category = b.ncnicc_category === undefined ? (previous.ncnicc_category || null) : b.ncnicc_category;
   q.run(
     `INSERT INTO org_profile (id, org_name, org_type, industry, size, country, regulators, operating_model,
        technology_env, risk_appetite, business_requirements, data_classifications, mfa_required_roles,
-       applicable_frameworks, ot_facility_level, cloud_roles, updated_at)
-     VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       applicable_frameworks, ot_facility_level, cloud_roles, ncnicc_category, updated_at)
+     VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(id) DO UPDATE SET
        org_name = excluded.org_name, org_type = excluded.org_type, industry = excluded.industry,
        size = excluded.size, country = excluded.country, regulators = excluded.regulators,
@@ -235,12 +237,13 @@ router.put('/org', requirePermission('settings:write'), validate(z.object({
        mfa_required_roles = excluded.mfa_required_roles,
        applicable_frameworks = excluded.applicable_frameworks,
        ot_facility_level = excluded.ot_facility_level, cloud_roles = excluded.cloud_roles,
+       ncnicc_category = excluded.ncnicc_category,
        updated_at = excluded.updated_at`,
     b.org_name, b.org_type || null, b.industry || null, b.size || null, b.country || null,
     toJson(b.regulators || []), b.operating_model || null, toJson(b.technology_env || []),
     b.risk_appetite || null, b.business_requirements || null, toJson(b.data_classifications || []),
     b.mfa_required_roles ? b.mfa_required_roles.join(',') : mfaRequiredRoles().join(','), frameworks,
-    facility, cloudRoles, at
+    facility, cloudRoles, category, at
   );
   audit(req, { action: 'settings:org', entityType: 'org_profile', summary: `Updated the organisation profile for ${b.org_name}` });
   res.json(getOrgProfile());

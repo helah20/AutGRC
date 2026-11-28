@@ -17,6 +17,7 @@ import { swimlanes } from './swimlane.js';
 import { translator, arabicTitle } from './doc-strings.js';
 import { AR_FRAMEWORKS } from '../knowledge/ar/ar-frameworks.js';
 import { regulatoryClauses } from './regulatory-text.js';
+import { evaluateApplicability } from './applicability.js';
 
 const P = {
   REGULATORY: 'regulatory_requirement',
@@ -173,6 +174,52 @@ function scopeBody(model, params, org) {
   );
 }
 
+// -------------------------------------------------------- applicability ---
+
+const LEVEL_AR = { Public: 'عام', Confidential: 'مقيد', Secret: 'سري', 'Top Secret': 'سري للغاية', CSP: 'مقدّم الخدمة', CST: 'المستفيد', L1: 'L1', L2: 'L2', L3: 'L3', A: '(أ)', B: '(ب)' };
+
+/**
+ * A CCC control written for the other party: a provider control in a
+ * tenant's policy, or the reverse. The publication itself splits them, so
+ * leaving them out decides nothing the publication has not.
+ */
+function otherCloudRole(x, org) {
+  if (!x.applicability) return false;
+  const app = typeof x.applicability === 'string' ? (() => { try { return JSON.parse(x.applicability); } catch { return null; } })() : x.applicability;
+  return app?.basis === 'cloud_role' && evaluateApplicability(app, org)?.applies === false;
+}
+
+/**
+ * Who a quoted control applies to, as its publication states it, read
+ * against the organisation profile. A control the profile puts out of scope
+ * is still quoted and marked: excluding it is a recorded decision in the
+ * Statement of Applicability, not something a generated Policy decides.
+ */
+function applicabilityNote(stored, org) {
+  const app = typeof stored === 'string' ? (() => { try { return JSON.parse(stored); } catch { return null; } })() : stored;
+  if (!app?.basis) return '';
+  const ar = activeT.isRtl;
+  const list = (names) => names.map((n) => (ar ? LEVEL_AR[n] || n : n)).join(ar ? '، ' : ', ');
+  if (app.basis === 'entity_category') {
+    const own = org?.ncnicc_category;
+    if (!own) return ar ? 'ملزم للفئة (أ)، والفئة (ب) بحسب الضابط؛ حدّد فئة الجهة في ملف المنظمة' : 'mandatory for category A; category B as the control states. Set the entity category in the organisation profile';
+    const obligation = app.levels[own];
+    if (obligation === 'recommended') return ar ? `موصى به، وليس ملزماً، للفئة ${LEVEL_AR[own]}` : `recommended, not mandatory, for category ${own}`;
+    return '';
+  }
+  const result = evaluateApplicability(app, org);
+  const named = Object.keys(app.levels);
+  if (!result || result.applies === true) {
+    return app.basis === 'data_classification' && named.length < 4
+      ? (ar ? `ينطبق على مستويات التصنيف: ${list(named)}` : `applies to ${list(named)} data`) : '';
+  }
+  if (result.applies === false) {
+    return ar ? `ينطبق على ${list(named)} فقط، وهو خارج ما يذكره ملف المنظمة؛ يُقرَّر في بيان قابلية التطبيق`
+      : `applies to ${list(named)} only, which the organisation profile does not include; decide in the Statement of Applicability`;
+  }
+  return ar ? `ينطبق على ${list(named)}` : `applies to ${list(named)}`;
+}
+
 // ------------------------------------------------------------ sources -----
 
 /** What kind of source a framework is: a regulation binds, a standard guides. */
@@ -219,7 +266,8 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
     req: r,
     regulatory: regulatoryClauses(r, regulatory, used, activeT.language)
   }));
-  const quoted = clauses.flatMap((c) => c.regulatory.filter((x) => !x.missing && !x.arabicOnly));
+  const quoted = clauses.flatMap((c) => c.regulatory.filter((x) => !x.missing && !x.arabicOnly && !otherCloudRole(x, org)));
+  const otherRole = clauses.flatMap((c) => c.regulatory.filter((x) => otherCloudRole(x, org)));
   const missing = clauses.flatMap((c) => c.regulatory.filter((x) => x.missing));
   const arabicOnly = clauses.flatMap((c) => c.regulatory.filter((x) => x.arabicOnly));
   const englishOnly = quoted.filter((x) => x.englishOnly);
@@ -229,9 +277,11 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
       const own = `<li><span class="clause-ref">${escapeHtml(c.ref)}</span> <strong>${escapeHtml(c.req.title)}.</strong> `
         + `${escapeHtml(c.text)} `
         + `<span class="clause-source">[${escapeHtml(refLabel(applicableRefs(c.req, frameworkCodes)))}]</span></li>`;
-      const subs = c.regulatory.filter((x) => !x.missing && !x.arabicOnly).map((x, j) =>
-        `<li class="subclause"><span class="clause-ref">${escapeHtml(`${c.ref}.${j + 1}`)}</span> `
-        + `${escapeHtml(x.text)} <span class="clause-source">[${escapeHtml(`${x.framework} ${x.ref}`)}]</span></li>`);
+      const subs = c.regulatory.filter((x) => !x.missing && !x.arabicOnly && !otherCloudRole(x, org)).map((x, j) => {
+        const scope = applicabilityNote(x.applicability, org);
+        return `<li class="subclause"><span class="clause-ref">${escapeHtml(`${c.ref}.${j + 1}`)}</span> `
+          + `${escapeHtml(x.text)}${scope ? ` <em class="clause-scope">(${escapeHtml(scope)})</em>` : ''} <span class="clause-source">[${escapeHtml(`${x.framework} ${x.ref}`)}]</span></li>`;
+      });
       return own + subs.join('');
     })
     .join('')}</ol>`;
@@ -242,6 +292,12 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
         TP('policy.englishOnlyBody',
           `${englishOnly.length} regulatory control(s) are quoted in English because the publisher's Arabic text has not been imported: ${englishOnly.map((x) => `${x.framework} ${x.ref}`).join(', ')}.`,
           { count: englishOnly.length, list: englishOnly.map((x) => `${x.framework} ${x.ref}`).join('، ') }))
+      : '',
+    otherRole.length
+      ? h.callout('note', TP('policy.otherRoleTitle', 'Cloud controls for the other party are not quoted'),
+        TP('policy.otherRoleBody',
+          `${otherRole.length} CCC control(s) bind the other party to the cloud service (provider or tenant) the organisation profile does not name, and are not quoted: ${otherRole.map((x) => x.ref).join(', ')}.`,
+          { count: otherRole.length, list: otherRole.map((x) => x.ref).join('، ') }))
       : '',
     arabicOnly.length
       ? h.callout('note', TP('policy.arabicOnlyTitle', 'Regulatory text published in Arabic only'),

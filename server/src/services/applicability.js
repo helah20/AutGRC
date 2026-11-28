@@ -17,7 +17,10 @@
 const BASES = {
   data_classification: ['Public', 'Confidential', 'Secret', 'Top Secret'],
   facility_level: ['L1', 'L2', 'L3'],
-  cloud_role: ['CSP', 'CST']
+  cloud_role: ['CSP', 'CST'],
+  // NCNICC binds every main control on category A and some on category B;
+  // a level's value is 'mandatory' or 'recommended'.
+  entity_category: ['A', 'B']
 };
 
 const BASIS_OF = new Map();
@@ -61,23 +64,33 @@ export function parseApplicability(cell) {
 const norm = (s) => String(s).trim().toLowerCase();
 
 /** What the organisation profile says about one basis, as a list of level names. */
+// The profile arrives parsed from the API and as a raw row from the seed,
+// where list fields are still JSON text.
+const listOf = (value) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') { try { const v = JSON.parse(value); return Array.isArray(v) ? v : []; } catch { return []; } }
+  return [];
+};
+
 function profileLevels(basis, org) {
   if (basis === 'data_classification') {
     // The profile holds the organisation's own scheme, which may include
     // levels the publication does not use ("Internal"). Only the shared names
     // can be compared.
-    const own = new Set((org?.data_classifications || []).map(norm));
+    const own = new Set(listOf(org?.data_classifications).map(norm));
     return BASES.data_classification.filter((l) => own.has(norm(l)));
   }
   if (basis === 'facility_level') return org?.ot_facility_level ? [org.ot_facility_level] : [];
-  if (basis === 'cloud_role') return (org?.cloud_roles || []).filter((r) => BASES.cloud_role.includes(r));
+  if (basis === 'cloud_role') return listOf(org?.cloud_roles).filter((r) => BASES.cloud_role.includes(r));
+  if (basis === 'entity_category') return org?.ncnicc_category ? [org.ncnicc_category] : [];
   return [];
 }
 
 const UNKNOWN_REASON = {
   data_classification: 'The organisation profile lists none of the publication\'s classification levels (Public, Confidential, Secret, Top Secret), so this cannot be evaluated.',
   facility_level: 'The organisation profile does not state an operational technology facility level (L1, L2 or L3).',
-  cloud_role: 'The organisation profile does not state whether it provides cloud services, consumes them, or both.'
+  cloud_role: 'The organisation profile does not state whether it provides cloud services, consumes them, or both.',
+  entity_category: 'The organisation profile does not state its NCNICC entity category (A or B).'
 };
 
 /**
@@ -107,6 +120,21 @@ export function evaluateApplicability(stored, org) {
     ? { ...base, applies: true, matched, frequency, reason: `Applies to ${matched.join(', ')}, which the organisation profile includes.` }
     : { ...base, applies: false, matched, frequency: null,
         reason: `The publication applies this to ${named.join(', ')}; the organisation profile states ${own.join(', ')}.` };
+}
+
+/**
+ * The applicability a shipped catalogue row carries, from what its
+ * publication states: DCC by classification level, CCC by provider (P) or
+ * tenant (T) in the reference itself, NCNICC by entity category.
+ */
+export function shippedApplicability(code, ref, extra) {
+  if (extra?.levels) return { basis: 'data_classification', levels: Object.fromEntries(extra.levels.map((l) => [l, true])) };
+  if (extra?.categoryA || extra?.categoryB) {
+    return { basis: 'entity_category', levels: { A: extra.categoryA || 'mandatory', B: extra.categoryB || 'recommended' } };
+  }
+  const cloud = code === 'NCA-CCC' && /-([PT])-/.exec(ref);
+  if (cloud) return { basis: 'cloud_role', levels: { [cloud[1] === 'P' ? 'CSP' : 'CST']: true } };
+  return null;
 }
 
 function safeParse(s) {

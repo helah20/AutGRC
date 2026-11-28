@@ -54,6 +54,7 @@ const ADDED_COLUMNS = [
   ['framework_requirements', 'applicability', 'TEXT'],
   ['org_profile', 'ot_facility_level', "TEXT CHECK (ot_facility_level IN ('L1','L2','L3'))"],
   ['org_profile', 'cloud_roles', 'TEXT'],
+  ['org_profile', 'ncnicc_category', "TEXT CHECK (ncnicc_category IN ('A','B'))"],
   ['org_profile', 'logo_data_url', 'TEXT'],
   ['org_profile', 'brand_palette', 'TEXT'],
   ['org_profile', 'brand_primary', 'TEXT'],
