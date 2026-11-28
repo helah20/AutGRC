@@ -29,7 +29,7 @@ console.log = log;
 test('reviewing a generated package finds no requirement without a control', () => {
   const missing = [];
   for (const key of Object.keys(DOMAIN_MODELS)) {
-    for (const f of reviewDomain(key).findings.filter((x) => x.category === 'compliance')) {
+    for (const f of reviewDomain(key).findings.filter((x) => x.category === 'compliance' && x.evidence?.refs)) {
       missing.push(`${key}: ${f.evidence?.framework} ${(f.evidence?.refs || []).join(', ')}`);
     }
   }

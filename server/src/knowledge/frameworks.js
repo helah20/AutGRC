@@ -29,6 +29,10 @@ import { OSMACC_2021_CONTROLS } from './catalogue/osmacc-2021.js';
 import { PCI_DSS_4 } from './catalogue/pci-dss-4.js';
 import { EU_GDPR } from './catalogue/eu-gdpr.js';
 import { ISO_27017 } from './catalogue/iso-27017.js';
+import { TCC_2021_CONTROLS } from './catalogue/tcc-2021.js';
+import { CCC_2024_CONTROLS } from './catalogue/ccc-2024.js';
+import { OTCC_2022_CONTROLS } from './catalogue/otcc-2022.js';
+import { DCC_2022_CONTROLS } from './catalogue/dcc-2022.js';
 
 export const FRAMEWORKS = [
   {
@@ -78,6 +82,9 @@ export const FRAMEWORKS = [
     isMandatory: 1,
     description:
       'Cybersecurity controls for the protection of data across its lifecycle, aligned to data classification levels.',
+    officialText: true,
+    publishedControls: 66,
+    controlLevels: [3, 4],
     provenance: 'regulatory_requirement'
   },
   {
@@ -89,6 +96,9 @@ export const FRAMEWORKS = [
     jurisdiction: 'Saudi Arabia',
     isMandatory: 1,
     description: 'Cybersecurity controls for remote and telework arrangements.',
+    officialText: true,
+    publishedControls: 63,
+    controlLevels: [3, 4],
     provenance: 'regulatory_requirement'
   },
   {
@@ -101,6 +111,9 @@ export const FRAMEWORKS = [
     isMandatory: 1,
     description:
       'Cybersecurity controls for cloud computing, addressed separately to cloud service providers (CSP) and cloud service tenants (CST).',
+    officialText: true,
+    publishedControls: 175,
+    controlLevels: [3, 4],
     provenance: 'regulatory_requirement'
   },
   {
@@ -113,6 +126,9 @@ export const FRAMEWORKS = [
     isMandatory: 1,
     description:
       'Cybersecurity controls for operational technology and industrial control systems, applied on top of the ECC and replacing its former fifth domain. Each control applies by facility level, L1 (highest criticality) to L3.',
+    officialText: true,
+    publishedControls: 169,
+    controlLevels: [3, 4],
     provenance: 'regulatory_requirement'
   },
   {
@@ -490,7 +506,8 @@ export const REQUIREMENTS = {
     ['2-6', 'Secure Data Disposal', 'data_protection', 2, '2'],
     ['2-7', 'Cybersecurity for Printers, Scanners and Copy Machines', 'asset_management', 2, '2'],
     ['3', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
-    ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3']
+    ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3'],
+    ...DCC_2022_CONTROLS
   ],
 
   'NCA-TCC': [
@@ -512,7 +529,8 @@ export const REQUIREMENTS = {
     ['2-11', 'Cybersecurity Events Logs and Monitoring Management', 'logging_monitoring', 2, '2'],
     ['2-12', 'Cybersecurity Incident and Threat Management', 'incident_management', 2, '2'],
     ['3', 'Third-Party and Cloud Computing Cybersecurity', 'cloud_security', 1],
-    ['3-1', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '3']
+    ['3-1', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '3'],
+    ...TCC_2021_CONTROLS
   ],
 
   'NCA-CCC': [
@@ -543,7 +561,8 @@ export const REQUIREMENTS = {
     ['3', 'Cybersecurity Resilience', 'business_continuity', 1],
     ['3-1', 'Cybersecurity Resilience Aspects of Business Continuity Management (BCM)', 'business_continuity', 2, '3'],
     ['4', 'Third-Party Cybersecurity', 'third_party', 1],
-    ['4-1', 'Supply Chain and Third-Party Cybersecurity', 'third_party', 2, '4']
+    ['4-1', 'Supply Chain and Third-Party Cybersecurity', 'third_party', 2, '4'],
+    ...CCC_2024_CONTROLS
   ],
 
   'NCA-OTCC': [
@@ -573,7 +592,8 @@ export const REQUIREMENTS = {
     ['3', 'Cybersecurity Resilience', 'business_continuity', 1],
     ['3-1', 'Cybersecurity Resilience Aspects of Business Continuity Management', 'business_continuity', 2, '3'],
     ['4', 'Third-Party Cybersecurity', 'third_party', 1],
-    ['4-1', 'Third-Party Cybersecurity', 'third_party', 2, '4']
+    ['4-1', 'Third-Party Cybersecurity', 'third_party', 2, '4'],
+    ...OTCC_2022_CONTROLS
   ],
 
   'NCA-NCNICC': [

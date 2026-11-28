@@ -227,9 +227,7 @@ test('a file holding several publications imports only the one asked for', async
 test('a Policy quotes the imported regulatory text under the clause that cites it', async () => {
   const { previewPackage } = await import('../src/services/generator.js');
   const build = (language) => previewPackage({
-    // NCA-TCC is held by reference only, so its controls are listed rather
-    // than quoted; the ECC and CSCC are held in the publishers' own words.
-    domainKey: 'governance', docTypes: ['policy'], frameworkCodes: ['NCA-ECC', 'NCA-CSCC', 'NCA-TCC'],
+    domainKey: 'governance', docTypes: ['policy'], frameworkCodes: ['NCA-ECC', 'NCA-CSCC'],
     org: { org_name: 'Test Org' }, language
   }).documents[0].sections.find((s) => s.key === 'statements').body;
 
@@ -238,7 +236,14 @@ test('a Policy quotes the imported regulatory text under the clause that cites i
   assert.match(en, /class="subclause"><span class="clause-ref">4\.\d+\.\d+<\/span> The CSCC wording of control 1-1-1\./);
   assert.match(en, /NCA-CSCC 1-4-1-1/, 'a subcontrol is quoted beneath its control');
   assert.equal((en.match(/NCA-CSCC 1-4-1\]/g) || []).length, 1, 'a control cited by two clauses is quoted once');
-  assert.match(en, /data-callout="warn"/, 'controls held only by reference are listed, not paraphrased');
+  // The GDPR is held as article references only, so its articles are listed
+  // rather than quoted.
+  const gdpr = previewPackage({
+    domainKey: 'data_protection', docTypes: ['policy'], frameworkCodes: ['NCA-DCC', 'EU-GDPR'],
+    org: { org_name: 'Test Org' }, language: 'en'
+  }).documents[0].sections.find((s) => s.key === 'statements').body;
+  assert.match(gdpr, /data-callout="warn"[\s\S]*EU-GDPR Art\.5/, 'controls held only by reference are listed, not paraphrased');
+  assert.match(gdpr, /class="subclause">[\s\S]*NCA-DCC 2-4-1-2/, 'DCC controls are quoted');
   assert.doesNotMatch(en, /An ECC control that belongs to another framework/);
 
   const ar = build('ar');

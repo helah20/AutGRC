@@ -835,6 +835,92 @@ export function checkCompliance({ doc }) {
  * and a passing consistency check on documents nothing was compared in would
  * read as a clean bill of health.
  */
+/**
+ * The design rules a GRC reviewer applies to a Policy (docs/GOVERNANCE.md):
+ * the domain's own regulation is cited at control level, the scope is the
+ * domain's estate, the document roles are stated once, and references are
+ * kept apart by kind. A document generated before these rules is flagged so
+ * that regenerating it brings it in line.
+ */
+export function checkPolicyDesign({ doc, sections }) {
+  if (doc.doc_type !== 'policy') return [];
+  const out = [];
+  const model = DOMAIN_MODELS[doc.domain_key];
+  if (!model) return out;
+  const meta = fromJson(doc.generation_meta, {});
+  const adopted = meta.frameworks || [];
+  const body = (key) => htmlToText(sections.find((x) => x.section_key === key)?.body || '');
+  const statements = body('statements');
+
+  for (const code of model.principal || []) {
+    if (adopted.length && !adopted.includes(code)) {
+      out.push(finding({
+        category: 'compliance', severity: 'medium',
+        title: `The regulation written for this domain (${code}) is not cited`,
+        detail: `${code} sets the controls for ${domainName(doc.domain_key)}, but it is not among the sources this Policy was generated against.`,
+        location: 'Compliance',
+        recommendation: 'Adopt it in the organisation profile and regenerate, or record why it does not apply.',
+        evidence: fixAt(doc, 'edit_section', { sectionKey: 'compliance' }, { framework: code })
+      }));
+      continue;
+    }
+    const controlLevel = new RegExp(`${code.replace(/[-]/g, '\\-')} \\d+-\\d+-`);
+    if (adopted.includes(code) && !controlLevel.test(statements)) {
+      out.push(finding({
+        category: 'compliance', severity: 'high',
+        title: `${code} is cited only by its headings`,
+        detail: `The Policy statements cite ${code} at subdomain level, so a reviewer cannot trace any statement to a ${code} control.`,
+        location: 'Policy Statements',
+        recommendation: 'Regenerate the Policy so that each statement cites, and quotes, the controls it implements.',
+        evidence: fixAt(doc, 'edit_section', { sectionKey: 'statements' }, { framework: code })
+      }));
+    }
+  }
+
+  if (model.scope?.length) {
+    const org = q.get('SELECT technology_env FROM org_profile WHERE id = 1');
+    const estate = fromJson(org?.technology_env, []);
+    const scope = body('scope');
+    const stray = estate.filter((system) => system && scope.includes(system)
+      && !model.scope.some((line) => line.includes(system)));
+    if (stray.length) {
+      out.push(finding({
+        category: 'completeness', severity: 'medium',
+        title: 'The scope lists systems outside this domain',
+        detail: `The scope names ${stray.join(', ')}, which the ${domainName(doc.domain_key)} domain does not govern.`,
+        location: 'Scope',
+        recommendation: 'Limit the scope to the domain\'s estate; regenerating the Policy applies the domain\'s own scope.',
+        evidence: fixAt(doc, 'edit_section', { sectionKey: 'scope' }, { systems: stray })
+      }));
+    }
+  }
+
+  const governance = body('governance');
+  if (governance && !/custodian|أمين الوثيقة/i.test(governance)) {
+    out.push(finding({
+      category: 'accountability', severity: 'medium',
+      title: 'The document roles are not stated as owner, custodian and approver',
+      detail: 'Governance names the owner and the maintainer differently from document control, so a reader cannot tell who owns, who maintains and who approves the Policy.',
+      location: 'Governance',
+      recommendation: 'State the Policy owner, the document custodian and the approver, named the same way as in document control.',
+      evidence: fixAt(doc, 'edit_section', { sectionKey: 'governance' })
+    }));
+  }
+
+  const references = body('references');
+  if (references && !/Implementation guides|International standards|الأدلة الإرشادية|المعايير والأطر الدولية|Regulatory requirements:|المتطلبات التنظيمية:/.test(references)) {
+    out.push(finding({
+      category: 'completeness', severity: 'low',
+      title: 'References mix regulation, guidance and international standards',
+      detail: 'The authoritative sources are listed together, so a regulatory requirement cannot be told apart from guidance on applying it or from a voluntary standard.',
+      location: 'References',
+      recommendation: 'List regulatory requirements, implementation guides and international standards separately.',
+      evidence: fixAt(doc, 'edit_section', { sectionKey: 'references' })
+    }));
+  }
+  return out;
+}
+
 export function arabicTopicGaps(domainKey) {
   const model = DOMAIN_MODELS[domainKey];
   if (!model) return [];
@@ -1019,6 +1105,7 @@ export function reviewDocument(documentId) {
     ...checkAccountability(loaded),
     ...checkAuditability(loaded),
     ...checkCompliance(loaded),
+    ...checkPolicyDesign(loaded),
     ...checkConsistency(loaded.doc.domain_key)
   ]);
 
@@ -1039,7 +1126,8 @@ export function reviewDomain(domainKey) {
     findings.push(
       ...checkCompleteness(loaded),
       ...checkAmbiguity(loaded),
-      ...checkAccountability(loaded)
+      ...checkAccountability(loaded),
+      ...checkPolicyDesign(loaded)
     );
   }
   if (docs.length) {

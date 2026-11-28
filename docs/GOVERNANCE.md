@@ -203,10 +203,16 @@ evidenced.
   response, GRC measures compliance, and Internal Audit gives assurance
   without taking part in delivery.
 - **The control mapping ties every statement to its source.** A domain that
-  has a regulation written for it (`principal`, such as OSMACC for social
-  media accounts) cites that regulation's own controls, and the Policy warns
+  has a regulation written for it (`principal`: OSMACC for social media
+  accounts, DCC for data, CCC for cloud, OTCC for operational technology,
+  NCS for cryptography) cites that regulation's own controls, and the Policy warns
   when the organisation has not adopted it rather than citing nothing.
 - **The evidence matrix names the proof for every control.**
+- **The quality engine holds every Policy to these rules.** A Policy whose
+  domain regulation is not adopted, or is cited only by its headings, whose
+  scope names systems outside the domain, whose document roles are not
+  stated as owner, custodian and approver, or whose references mix kinds, is
+  reported with the section where it is fixed (`checkPolicyDesign`).
 - **One set of document roles.** The Policy owner (CISO), the document
   custodian (GRC Manager) and the approver (Cybersecurity Steering Committee)
   are named the same way in document control and in the Governance section.

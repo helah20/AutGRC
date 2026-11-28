@@ -96,3 +96,30 @@ test('the Arabic policy carries the same structure', () => {
   assert.match(sectionText(doc, 'references'), /الأدلة الإرشادية/);
   assert.doesNotMatch(sectionText(doc, 'scope'), /Core Banking/);
 });
+
+test('the quality engine flags a policy made before these rules', async () => {
+  const { q, nowIso, fromJson } = await import('../src/db/index.js');
+  const { checkPolicyDesign } = await import('../src/services/review.js');
+  q.run(`INSERT OR IGNORE INTO org_profile (id, org_name, technology_env, updated_at) VALUES (1, 'Test Org', ?, ?)`,
+    JSON.stringify(['Core Banking', 'VMware']), nowIso());
+  const doc = { id: 'd1', reference: 'POL-SMA-001', doc_type: 'policy', domain_key: 'social_media_security',
+    generation_meta: JSON.stringify({ frameworks: ['NCA-ECC', 'NCA-OSMACC'] }) };
+  const old = (key, body) => ({ section_key: key, body });
+  const sections = [
+    old('scope', '<p>It applies to: Core Banking, VMware.</p>'),
+    old('statements', '<p>4.1 Accounts shall be secured. [NCA-OSMACC 2-2; NCA-ECC 2-2-3-2]</p>'),
+    old('governance', '<p>The Cybersecurity GRC Manager maintains the Policy.</p>'),
+    old('references', '<ul><li>NCA ECC</li><li>ISO/IEC 27001</li></ul>')
+  ];
+  const titles = checkPolicyDesign({ doc, sections }).map((f) => f.title);
+  assert.ok(titles.includes('NCA-OSMACC is cited only by its headings'));
+  assert.ok(titles.includes('The scope lists systems outside this domain'));
+  assert.ok(titles.includes('The document roles are not stated as owner, custodian and approver'));
+  assert.ok(titles.includes('References mix regulation, guidance and international standards'));
+  assert.equal(fromJson('[]', []).length, 0);
+
+  const fresh = policy(['NCA-ECC', 'NCA-OSMACC', 'ISO-27001']);
+  const generated = fresh.sections.map((s) => ({ section_key: s.key, body: s.body }));
+  assert.deepEqual(checkPolicyDesign({ doc: { ...doc, generation_meta: JSON.stringify({ frameworks: ['NCA-ECC', 'NCA-OSMACC', 'ISO-27001'] }) }, sections: generated }), [],
+    'a policy generated now passes its own design rules');
+});
