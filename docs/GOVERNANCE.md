@@ -218,6 +218,12 @@ evidenced.
   indicator with no target, and a Procedure step with no responsible role,
   input or output, a KPI with no target or a record with no retention period
   are each reported (`checkTierDesign`).
+- **Accountability follows the function.** The business owns the asset and
+  its content, IT runs the technical controls, cybersecurity owns the security
+  requirements, monitoring and response, GRC measures compliance and keeps the
+  registers, and every audit activity is accountable to the Head of Internal
+  Audit and performed by Internal Audit (`npm run verify:knowledge` fails
+  otherwise).
 - **The Procedure and the RACI name the same people.** Every step is
   performed by a role in the domain's RACI, or by a party the domain declares
   as acting outside it (`outsideActors`: a requester, a platform, a board, an

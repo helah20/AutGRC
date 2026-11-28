@@ -268,7 +268,7 @@ export function seedOrg() {
     toJson(['Microsoft 365', 'Active Directory', 'Microsoft Azure', 'Oracle Database', 'Core banking platform', 'VMware', 'Palo Alto firewalls', 'CrowdStrike EDR', 'Splunk SIEM']),
     'Moderate — low appetite for regulatory and customer-data risk',
     'Maintain continuous compliance with NCA ECC and the SAMA Cyber Security Framework; support digital banking expansion without increasing the customer-data risk profile; achieve ISO/IEC 27001 certification within 18 months.',
-    toJson(['Public', 'Internal', 'Confidential', 'Secret']),
+    toJson(['Public', 'Confidential', 'Secret', 'Top Secret']),
     // The sources this organisation is actually subject to, recorded once. A
     // Saudi bank is bound by the NCA controls and the SAMA framework, and is
     // working towards ISO/IEC 27001; the rest of the catalogue stays available

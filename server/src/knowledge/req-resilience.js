@@ -134,7 +134,7 @@ export const RESILIENCE_DOMAINS = {
       raci('Review logs and triage exceptions', 'Detect', 'A:ciso R:cyber_analyst C:it_manager R:soc_analyst'),
       raci('Verify log source coverage', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager C:internal_auditor'),
       raci('Log and review privileged activity', 'Detect', 'A:ciso R:cyber_analyst C:it_manager I:internal_auditor'),
-      raci('Onboard log sources and assure coverage', 'Detect', 'A:grc_manager R:it_manager C:system_owner'),
+      raci('Onboard log sources and assure coverage', 'Detect', 'C:grc_manager A:it_manager C:system_owner R:cyber_analyst'),
       raci('Forward cloud and remote access logs centrally', 'Detect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Maintain event correlation rules', 'Detect', 'A:ciso R:cyber_analyst C:grc_manager'),
       raci('Manage log retention and disposal', 'Operate', 'A:it_manager R:cyber_analyst C:grc_manager')
@@ -263,7 +263,7 @@ export const RESILIENCE_DOMAINS = {
       raci('Escalate confirmed incidents', 'Respond', 'A:ciso R:cyber_analyst C:grc_manager I:business_owner'),
       raci('Tune use cases and manage false positives', 'Detect', 'A:ciso R:cyber_analyst C:it_manager'),
       raci('Maintain monitoring coverage and operating hours', 'Detect', 'A:ciso R:it_manager C:grc_manager'),
-      raci('Assess threat intelligence for applicability', 'Detect', 'A:grc_manager R:cyber_analyst C:it_manager'),
+      raci('Assess threat intelligence for applicability', 'Detect', 'C:grc_manager R:cyber_analyst C:it_manager A:ciso'),
       raci('Conduct threat hunts', 'Detect', 'A:ciso R:cyber_analyst C:it_manager'),
       raci('Monitor the health of the monitoring capability', 'Detect', 'A:it_manager R:cyber_analyst C:ciso'),
       raci('Review detection coverage against threats', 'Assure', 'A:ciso R:grc_manager C:cyber_analyst C:internal_auditor')
@@ -395,7 +395,7 @@ export const RESILIENCE_DOMAINS = {
       raci('Agree and report security service levels', 'Govern', 'A:grc_manager R:it_manager C:business_owner'),
       raci('Protect industrial control environments', 'Protect', 'A:system_owner R:it_manager C:ciso I:risk_manager'),
       raci('Manage the security tooling lifecycle', 'Operate', 'A:it_manager R:cyber_analyst C:ciso'),
-      raci('Audit security operations', 'Assure', 'A:risk_manager R:internal_auditor C:ciso')
+      raci('Audit security operations', 'Assure', 'C:risk_manager R:internal_auditor C:ciso A:head_internal_audit')
     ]
   },
 
@@ -528,14 +528,14 @@ export const RESILIENCE_DOMAINS = {
     },
     raciActivities: [
       raci('Define the cloud security policy and baselines', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst'),
-      raci('Agree the shared responsibility matrix', 'Govern', 'A:grc_manager R:it_manager C:business_owner C:ciso R:security_architect'),
+      raci('Agree the shared responsibility matrix', 'Govern', 'C:grc_manager R:it_manager C:business_owner A:ciso R:security_architect'),
       raci('Build and harden cloud landing zones', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Operate cloud posture management', 'Detect', 'A:ciso R:cyber_analyst C:it_manager'),
-      raci('Review cloud privileged access', 'Assure', 'A:ciso R:grc_manager C:it_manager C:internal_auditor'),
+      raci('Review cloud privileged access', 'Assure', 'A:ciso C:grc_manager C:it_manager C:internal_auditor R:cyber_analyst'),
       raci('Approve and review the cloud strategy', 'Govern', 'A:ciso R:grc_manager C:it_manager C:business_owner'),
-      raci('Register tenancies and detect unsanctioned cloud', 'Detect', 'A:grc_manager R:it_manager C:business_owner'),
+      raci('Register tenancies and detect unsanctioned cloud', 'Detect', 'C:grc_manager A:it_manager C:business_owner R:cyber_analyst'),
       raci('Control cloud encryption keys', 'Protect', 'A:ciso R:it_manager C:system_owner'),
-      raci('Assess software-as-a-service before adoption', 'Protect', 'A:grc_manager R:cyber_analyst C:business_owner'),
+      raci('Assess software-as-a-service before adoption', 'Protect', 'C:grc_manager R:cyber_analyst C:business_owner A:ciso'),
       raci('Manage cloud resilience and concentration risk', 'Resilience', 'A:business_owner R:it_manager C:risk_manager I:ciso'),
       raci('Maintain and test the cloud exit plan', 'Resilience', 'A:business_owner R:it_manager C:grc_manager')
     ]
@@ -675,7 +675,7 @@ export const RESILIENCE_DOMAINS = {
       raci('Define the continuity scope and context', 'Govern', 'A:business_owner R:grc_manager C:ciso'),
       raci('Own continuity at executive level', 'Govern', 'A:ciso R:business_owner C:risk_manager I:internal_auditor'),
       raci('Map dependencies and agree minimum service levels', 'Resilience', 'A:business_owner R:system_owner C:it_manager'),
-      raci('Maintain continuity resourcing and crisis communication', 'Resilience', 'A:grc_manager R:business_owner C:it_manager'),
+      raci('Maintain continuity resourcing and crisis communication', 'Resilience', 'R:grc_manager A:business_owner C:it_manager'),
       raci('Evaluate continuity performance and drive improvement', 'Assure', 'A:risk_manager R:grc_manager C:internal_auditor'),
       raci('Track exercise findings to closure', 'Assure', 'A:grc_manager R:business_owner C:internal_auditor')
     ]
@@ -946,7 +946,7 @@ export const RESILIENCE_DOMAINS = {
       raci('Separate administrative access to backups', 'Protect', 'A:ciso R:it_manager C:grc_manager I:internal_auditor'),
       raci('Test recovery from an immutable copy', 'Resilience', 'A:it_manager R:system_owner C:ciso'),
       raci('Authorise and record restores', 'Operate', 'A:business_owner R:it_manager C:grc_manager'),
-      raci('Reconcile backup scope to asset inventory', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager')
+      raci('Reconcile backup scope to asset inventory', 'Assure', 'C:grc_manager R:cyber_analyst A:it_manager')
     ]
   }
 };

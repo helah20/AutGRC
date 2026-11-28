@@ -149,13 +149,13 @@ export const OPERATE_DOMAINS = {
       { activity: 'Register newly acquired assets', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'I', cyber_analyst: 'I', it_manager: 'A', asset_owner: 'R', system_owner: 'C', internal_auditor: 'I' } },
       { activity: 'Classify and label assets', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'C', it_manager: 'I', asset_owner: 'A', system_owner: 'R', internal_auditor: 'I' } },
       { activity: 'Run automated asset discovery', phase: 'Detect', assign: { ciso: 'I', grc_manager: 'I', cyber_analyst: 'R', it_manager: 'A', asset_owner: 'I', system_owner: 'I', internal_auditor: 'I' } },
-      { activity: 'Investigate unauthorised assets', phase: 'Detect', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'R', it_manager: 'R', asset_owner: 'C', system_owner: 'C', internal_auditor: 'I' } },
-      { activity: 'Attest inventory accuracy', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'C', it_manager: 'C', asset_owner: 'R', system_owner: 'R', internal_auditor: 'C' } },
+      { activity: 'Investigate unauthorised assets', phase: 'Detect', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'R', it_manager: 'A', asset_owner: 'C', system_owner: 'C', internal_auditor: 'I' } },
+      { activity: 'Attest inventory accuracy', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'C', it_manager: 'C', asset_owner: 'A', system_owner: 'R', internal_auditor: 'C' } },
       { activity: 'Authorise and evidence asset disposal', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'I', it_manager: 'R', asset_owner: 'A', system_owner: 'I', internal_auditor: 'C' } },
       { activity: 'Review the asset management requirements', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'R', it_manager: 'C', asset_owner: 'C', system_owner: 'I', internal_auditor: 'C' } },
       { activity: 'Apply the enhanced baseline to critical assets', phase: 'Protect', assign: { ciso: 'A', grc_manager: 'C', cyber_analyst: 'C', it_manager: 'R', asset_owner: 'C', system_owner: 'R', internal_auditor: 'I' } },
       { activity: 'Reconcile licences and track end of support', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'I', it_manager: 'A', asset_owner: 'R', system_owner: 'C', internal_auditor: 'I' } },
-      { activity: 'Audit asset management controls', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'I', it_manager: 'I', asset_owner: 'I', system_owner: 'I', internal_auditor: 'R' } }
+      { activity: 'Audit asset management controls', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'I', it_manager: 'I', asset_owner: 'I', system_owner: 'I', internal_auditor: 'R', head_internal_audit: 'A' } }
     ]
   },
 
@@ -308,7 +308,7 @@ export const OPERATE_DOMAINS = {
       { activity: 'Notify regulators and affected stakeholders', phase: 'Respond', assign: { ciso: 'A', grc_manager: 'R', ir_analyst: 'C', soc_analyst: 'I', it_manager: 'I', system_owner: 'I', business_owner: 'C', internal_auditor: 'I' } },
       { activity: 'Conduct post-incident review', phase: 'Assure', assign: { ciso: 'A', grc_manager: 'R', ir_analyst: 'R', soc_analyst: 'C', it_manager: 'C', system_owner: 'C', business_owner: 'C', internal_auditor: 'C' } },
       { activity: 'Track post-incident improvement actions to closure', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', ir_analyst: 'C', soc_analyst: 'I', it_manager: 'R', system_owner: 'R', business_owner: 'I', internal_auditor: 'C' } },
-      { activity: 'Exercise the incident response plan', phase: 'Assure', assign: { ciso: 'A', grc_manager: 'R', ir_analyst: 'R', soc_analyst: 'C', it_manager: 'C', system_owner: 'C', business_owner: 'C', internal_auditor: 'C' } }
+      { activity: 'Exercise the incident response plan', phase: 'Assure', assign: { ciso: 'A', grc_manager: 'C', ir_analyst: 'R', soc_analyst: 'C', it_manager: 'C', system_owner: 'C', business_owner: 'C', internal_auditor: 'C' } }
     ]
   },
 
@@ -448,12 +448,12 @@ export const OPERATE_DOMAINS = {
     raciActivities: [
       { activity: 'Define and approve the Vulnerability Management Policy', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', vuln_specialist: 'C', cyber_analyst: 'C', it_manager: 'C', system_owner: 'I', internal_auditor: 'I' } },
       { activity: 'Execute vulnerability scanning', phase: 'Detect', assign: { ciso: 'I', grc_manager: 'I', vuln_specialist: 'R', cyber_analyst: 'C', it_manager: 'A', system_owner: 'I', internal_auditor: 'I' } },
-      { activity: 'Validate findings and remove false positives', phase: 'Detect', assign: { ciso: 'I', grc_manager: 'A', vuln_specialist: 'R', cyber_analyst: 'C', it_manager: 'C', system_owner: 'C', internal_auditor: 'I' } },
-      { activity: 'Prioritise vulnerabilities by risk', phase: 'Detect', assign: { ciso: 'I', grc_manager: 'A', vuln_specialist: 'R', cyber_analyst: 'C', it_manager: 'I', system_owner: 'C', internal_auditor: 'I' } },
+      { activity: 'Validate findings and remove false positives', phase: 'Detect', assign: { ciso: 'A', grc_manager: 'C', vuln_specialist: 'R', cyber_analyst: 'C', it_manager: 'C', system_owner: 'C', internal_auditor: 'I' } },
+      { activity: 'Prioritise vulnerabilities by risk', phase: 'Detect', assign: { ciso: 'A', grc_manager: 'C', vuln_specialist: 'R', cyber_analyst: 'C', it_manager: 'I', system_owner: 'C', internal_auditor: 'I' } },
       { activity: 'Remediate vulnerabilities within service levels', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'C', vuln_specialist: 'C', cyber_analyst: 'I', it_manager: 'R', system_owner: 'A', internal_auditor: 'I' } },
       { activity: 'Approve vulnerability exceptions', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', vuln_specialist: 'C', cyber_analyst: 'I', it_manager: 'C', system_owner: 'C', internal_auditor: 'I' } },
-      { activity: 'Verify remediation by re-scan', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', vuln_specialist: 'R', cyber_analyst: 'C', it_manager: 'I', system_owner: 'I', internal_auditor: 'C' } },
-      { activity: 'Commission penetration testing', phase: 'Assure', assign: { ciso: 'A', grc_manager: 'R', vuln_specialist: 'R', cyber_analyst: 'C', it_manager: 'C', system_owner: 'C', internal_auditor: 'I' } },
+      { activity: 'Verify remediation by re-scan', phase: 'Assure', assign: { ciso: 'A', grc_manager: 'C', vuln_specialist: 'R', cyber_analyst: 'C', it_manager: 'I', system_owner: 'I', internal_auditor: 'C' } },
+      { activity: 'Commission penetration testing', phase: 'Assure', assign: { ciso: 'A', grc_manager: 'C', vuln_specialist: 'R', cyber_analyst: 'C', it_manager: 'C', system_owner: 'C', internal_auditor: 'I' } },
       { activity: 'Report the vulnerability position to management', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', vuln_specialist: 'R', cyber_analyst: 'I', it_manager: 'I', system_owner: 'I', internal_auditor: 'C' } }
     ]
   }

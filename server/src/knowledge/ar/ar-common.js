@@ -14,6 +14,7 @@
 
 export const AR_FREQUENCY = {
   'Continuous': 'مستمر',
+  'Per product or material change': 'لكل منتج أو تغيير جوهري',
   'Every post': 'لكل منشور',
   'Per closure': 'عند كل إغلاق',
   'On every leaver and role change': 'عند كل مغادرة أو تغيير دور',

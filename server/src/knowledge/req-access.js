@@ -339,17 +339,17 @@ export const ACCESS_DOMAINS = {
     roles: ['ciso', 'grc_manager', 'iam_specialist', 'it_manager', 'system_owner', 'business_owner', 'internal_auditor', 'risk_manager'],
     raciActivities: [
       { activity: 'Define and approve the IAM Policy', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', iam_specialist: 'C', it_manager: 'C', system_owner: 'I', business_owner: 'I', internal_auditor: 'I', risk_manager: 'C' } },
-      { activity: 'Maintain the role-to-entitlement catalogue', phase: 'Govern', assign: { ciso: 'I', grc_manager: 'A', iam_specialist: 'R', it_manager: 'C', system_owner: 'C', business_owner: 'C', internal_auditor: 'I', risk_manager: 'I' } },
-      { activity: 'Raise and justify an access request', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'A', iam_specialist: 'C', it_manager: 'I', system_owner: 'C', business_owner: 'R', internal_auditor: 'I', risk_manager: 'I' } },
+      { activity: 'Maintain the role-to-entitlement catalogue', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'C', iam_specialist: 'R', it_manager: 'C', system_owner: 'C', business_owner: 'C', internal_auditor: 'I', risk_manager: 'I' } },
+      { activity: 'Raise and justify an access request', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'I', iam_specialist: 'C', it_manager: 'I', system_owner: 'A', business_owner: 'R', internal_auditor: 'I', risk_manager: 'I' } },
       { activity: 'Approve standard access requests', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'I', iam_specialist: 'C', it_manager: 'I', system_owner: 'A', business_owner: 'R', internal_auditor: 'I', risk_manager: 'I' } },
-      { activity: 'Approve privileged access requests', phase: 'Operate', assign: { ciso: 'A', grc_manager: 'R', iam_specialist: 'C', it_manager: 'C', system_owner: 'R', business_owner: 'I', internal_auditor: 'I', risk_manager: 'C' } },
+      { activity: 'Approve privileged access requests', phase: 'Operate', assign: { ciso: 'A', grc_manager: 'C', iam_specialist: 'C', it_manager: 'C', system_owner: 'R', business_owner: 'I', internal_auditor: 'I', risk_manager: 'C' } },
       { activity: 'Provision and verify access', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'I', iam_specialist: 'R', it_manager: 'A', system_owner: 'C', business_owner: 'I', internal_auditor: 'I', risk_manager: 'I' } },
       { activity: 'Enforce multi-factor authentication', phase: 'Protect', assign: { ciso: 'A', grc_manager: 'C', iam_specialist: 'R', it_manager: 'R', system_owner: 'C', business_owner: 'I', internal_auditor: 'I', risk_manager: 'I' } },
-      { activity: 'Screen requests against segregation-of-duties conflicts', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'A', iam_specialist: 'R', it_manager: 'I', system_owner: 'C', business_owner: 'C', internal_auditor: 'I', risk_manager: 'C' } },
-      { activity: 'Conduct periodic access review', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', iam_specialist: 'R', it_manager: 'C', system_owner: 'R', business_owner: 'R', internal_auditor: 'C', risk_manager: 'I' } },
+      { activity: 'Screen requests against segregation-of-duties conflicts', phase: 'Operate', assign: { ciso: 'A', grc_manager: 'C', iam_specialist: 'R', it_manager: 'I', system_owner: 'C', business_owner: 'C', internal_auditor: 'I', risk_manager: 'C' } },
+      { activity: 'Conduct periodic access review', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'C', iam_specialist: 'R', it_manager: 'C', system_owner: 'R', business_owner: 'A', internal_auditor: 'C', risk_manager: 'I' } },
       { activity: 'Revoke access on termination or transfer', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'C', iam_specialist: 'R', it_manager: 'A', system_owner: 'I', business_owner: 'C', internal_auditor: 'I', risk_manager: 'I' } },
-      { activity: 'Review dormant and orphaned accounts', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', iam_specialist: 'R', it_manager: 'C', system_owner: 'C', business_owner: 'I', internal_auditor: 'I', risk_manager: 'I' } },
-      { activity: 'Audit IAM control effectiveness', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'C', iam_specialist: 'C', it_manager: 'I', system_owner: 'I', business_owner: 'I', internal_auditor: 'R', risk_manager: 'A' } },
+      { activity: 'Review dormant and orphaned accounts', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'C', iam_specialist: 'R', it_manager: 'A', system_owner: 'C', business_owner: 'I', internal_auditor: 'I', risk_manager: 'I' } },
+      { activity: 'Audit IAM control effectiveness', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'C', iam_specialist: 'C', it_manager: 'I', system_owner: 'I', business_owner: 'I', internal_auditor: 'R', risk_manager: 'C', head_internal_audit: 'A' } },
       { activity: 'Report IAM KPIs to the Cybersecurity Steering Committee', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', iam_specialist: 'C', it_manager: 'I', system_owner: 'I', business_owner: 'I', internal_auditor: 'I', risk_manager: 'I' } }
     ]
   },
@@ -617,15 +617,15 @@ export const ACCESS_DOMAINS = {
     roles: ['ciso', 'grc_manager', 'iam_specialist', 'it_manager', 'soc_analyst', 'system_owner', 'internal_auditor'],
     raciActivities: [
       { activity: 'Define and approve the Privileged Access Management Policy', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', iam_specialist: 'C', it_manager: 'C', soc_analyst: 'I', system_owner: 'I', internal_auditor: 'I' } },
-      { activity: 'Maintain the privileged account inventory', phase: 'Govern', assign: { ciso: 'I', grc_manager: 'A', iam_specialist: 'R', it_manager: 'C', soc_analyst: 'I', system_owner: 'C', internal_auditor: 'I' } },
+      { activity: 'Maintain the privileged account inventory', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'C', iam_specialist: 'R', it_manager: 'C', soc_analyst: 'I', system_owner: 'C', internal_auditor: 'I' } },
       { activity: 'Onboard privileged accounts to the vault', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'C', iam_specialist: 'R', it_manager: 'A', soc_analyst: 'I', system_owner: 'C', internal_auditor: 'I' } },
-      { activity: 'Approve privilege elevation requests', phase: 'Operate', assign: { ciso: 'A', grc_manager: 'R', iam_specialist: 'C', it_manager: 'C', soc_analyst: 'I', system_owner: 'C', internal_auditor: 'I' } },
+      { activity: 'Approve privilege elevation requests', phase: 'Operate', assign: { ciso: 'A', grc_manager: 'C', iam_specialist: 'C', it_manager: 'C', soc_analyst: 'I', system_owner: 'R', internal_auditor: 'I' } },
       { activity: 'Perform administrative activity under elevation', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'I', iam_specialist: 'C', it_manager: 'A', soc_analyst: 'I', system_owner: 'R', internal_auditor: 'I' } },
       { activity: 'Rotate privileged credentials', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'I', iam_specialist: 'R', it_manager: 'A', soc_analyst: 'I', system_owner: 'I', internal_auditor: 'I' } },
       { activity: 'Monitor privileged activity alerts', phase: 'Detect', assign: { ciso: 'A', grc_manager: 'I', iam_specialist: 'C', it_manager: 'I', soc_analyst: 'R', system_owner: 'I', internal_auditor: 'I' } },
-      { activity: 'Authorise and review break-glass access', phase: 'Operate', assign: { ciso: 'A', grc_manager: 'R', iam_specialist: 'R', it_manager: 'C', soc_analyst: 'C', system_owner: 'I', internal_auditor: 'C' } },
-      { activity: 'Conduct privileged access review', phase: 'Assure', assign: { ciso: 'A', grc_manager: 'R', iam_specialist: 'R', it_manager: 'C', soc_analyst: 'I', system_owner: 'R', internal_auditor: 'C' } },
-      { activity: 'Audit privileged access controls', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', iam_specialist: 'C', it_manager: 'I', soc_analyst: 'I', system_owner: 'I', internal_auditor: 'R' } }
+      { activity: 'Authorise and review break-glass access', phase: 'Operate', assign: { ciso: 'A', grc_manager: 'C', iam_specialist: 'R', it_manager: 'C', soc_analyst: 'C', system_owner: 'I', internal_auditor: 'C' } },
+      { activity: 'Conduct privileged access review', phase: 'Assure', assign: { ciso: 'A', grc_manager: 'C', iam_specialist: 'R', it_manager: 'C', soc_analyst: 'I', system_owner: 'R', internal_auditor: 'C' } },
+      { activity: 'Audit privileged access controls', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'C', iam_specialist: 'C', it_manager: 'I', soc_analyst: 'I', system_owner: 'I', internal_auditor: 'R', head_internal_audit: 'A' } }
     ]
   }
 };

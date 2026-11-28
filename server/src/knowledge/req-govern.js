@@ -164,7 +164,7 @@ export const GOVERN_DOMAINS = {
       raci('Communicate policies to personnel', 'Govern', 'A:grc_manager R:cyber_analyst C:business_owner'),
       raci('Maintain the compliance obligations register', 'Assure', 'A:grc_manager R:cyber_analyst C:risk_manager C:internal_auditor'),
       raci('Conduct internal cybersecurity review', 'Assure', 'A:ciso R:grc_manager C:cyber_analyst I:internal_auditor'),
-      raci('Conduct independent audit', 'Assure', 'A:risk_manager R:internal_auditor C:ciso C:grc_manager'),
+      raci('Conduct independent audit', 'Assure', 'C:risk_manager R:internal_auditor C:ciso C:grc_manager A:head_internal_audit'),
       raci('Maintain the cybersecurity context and obligation register', 'Govern', 'A:ciso R:grc_manager C:business_owner'),
       raci('Designate and govern critical systems', 'Govern', 'A:ciso R:business_owner C:system_owner I:internal_auditor'),
       raci('Approve the remote working policy', 'Govern', 'A:ciso R:grc_manager C:business_owner'),
@@ -318,7 +318,7 @@ export const GOVERN_DOMAINS = {
       raci('Enforce risk assessment triggers in change and procurement', 'Govern', 'A:risk_manager R:grc_manager C:it_manager'),
       raci('Assign and reconfirm named risk owners', 'Govern', 'A:risk_manager R:business_owner C:ciso'),
       raci('Integrate assurance findings into the risk register', 'Assure', 'A:risk_manager R:grc_manager C:internal_auditor'),
-      raci('Audit the risk management process', 'Assure', 'A:risk_manager R:internal_auditor C:grc_manager')
+      raci('Audit the risk management process', 'Assure', 'C:risk_manager R:internal_auditor C:grc_manager A:head_internal_audit')
     ]
   },
 
@@ -446,13 +446,13 @@ export const GOVERN_DOMAINS = {
     },
     raciActivities: [
       raci('Define the awareness programme', 'Govern', 'A:ciso R:grc_manager C:business_owner'),
-      raci('Develop awareness and role-based content', 'Govern', 'A:grc_manager R:cyber_analyst C:it_manager'),
+      raci('Develop awareness and role-based content', 'Govern', 'C:grc_manager R:cyber_analyst C:it_manager A:ciso'),
       raci('Deliver and track training completion', 'Operate', 'A:business_owner R:grc_manager C:internal_auditor'),
       raci('Run phishing simulations', 'Detect', 'A:ciso R:cyber_analyst C:grc_manager'),
-      raci('Deliver cybersecurity induction before access', 'Govern', 'A:grc_manager R:business_owner C:it_manager'),
+      raci('Deliver cybersecurity induction before access', 'Govern', 'C:grc_manager R:business_owner C:it_manager A:ciso'),
       raci('Measure awareness effectiveness', 'Assure', 'A:grc_manager R:cyber_analyst C:business_owner'),
-      raci('Assess competence for cybersecurity roles', 'Assure', 'A:grc_manager R:business_owner C:ciso'),
-      raci('Deliver remote working awareness', 'Govern', 'A:grc_manager R:business_owner C:it_manager'),
+      raci('Assess competence for cybersecurity roles', 'Assure', 'C:grc_manager R:business_owner A:ciso'),
+      raci('Deliver remote working awareness', 'Govern', 'C:grc_manager R:business_owner C:it_manager A:ciso'),
       raci('Report awareness metrics', 'Govern', 'A:ciso R:grc_manager C:internal_auditor')
     ]
   },
@@ -585,7 +585,7 @@ export const GOVERN_DOMAINS = {
       raci('Apply the disciplinary process to cybersecurity violations', 'Govern', 'A:hr_manager R:business_owner C:grc_manager C:ciso'),
       raci('Reassess access on change of role', 'Protect', 'A:business_owner R:iam_specialist C:hr_manager C:it_manager'),
       raci('Revoke access and recover assets on termination', 'Protect', 'A:it_manager R:iam_specialist C:hr_manager C:business_owner'),
-      raci('Reconcile personnel records against active accounts', 'Detect', 'A:grc_manager R:iam_specialist C:hr_manager C:it_manager'),
+      raci('Reconcile personnel records against active accounts', 'Detect', 'C:grc_manager R:iam_specialist A:hr_manager C:it_manager'),
       raci('Review the human resources cybersecurity requirements', 'Assure', 'A:ciso R:grc_manager C:hr_manager C:internal_auditor')
     ]
   },
@@ -725,10 +725,10 @@ export const GOVERN_DOMAINS = {
     raciActivities: [
       raci('Define the change management process', 'Govern', 'A:ciso R:grc_manager C:it_manager C:system_owner'),
       raci('Raise and document changes', 'Operate', 'A:system_owner R:it_manager C:business_owner'),
-      raci('Assess security impact of change', 'Protect', 'A:grc_manager R:cyber_analyst C:it_manager'),
+      raci('Assess security impact of change', 'Protect', 'C:grc_manager R:cyber_analyst C:it_manager A:ciso'),
       raci('Approve changes at the advisory board', 'Govern', 'A:it_manager R:system_owner C:ciso C:business_owner'),
-      raci('Verify controls after implementation', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager'),
-      raci('Detect and investigate unauthorised change', 'Detect', 'A:grc_manager R:cyber_analyst C:it_manager'),
+      raci('Verify controls after implementation', 'Assure', 'C:grc_manager R:cyber_analyst C:it_manager A:system_owner'),
+      raci('Detect and investigate unauthorised change', 'Detect', 'C:grc_manager R:cyber_analyst C:it_manager A:ciso'),
       raci('Operate the security patch change route', 'Operate', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Verify controls after implementation and close the change', 'Assure', 'A:system_owner R:it_manager C:cyber_analyst'),
       raci('Maintain segregation of duties in change', 'Govern', 'A:ciso R:grc_manager C:it_manager I:internal_auditor'),

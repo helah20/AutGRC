@@ -144,18 +144,18 @@ export const DATA_DOMAINS = {
     roles: ['ciso', 'grc_manager', 'cyber_analyst', 'risk_manager', 'business_owner', 'it_manager', 'iam_specialist', 'internal_auditor'],
     raciActivities: [
       { activity: 'Define and approve the Third-Party Security Policy', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', cyber_analyst: 'C', risk_manager: 'C', business_owner: 'I', it_manager: 'I', internal_auditor: 'I' } },
-      { activity: 'Classify supplier risk tier', phase: 'Govern', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'R', risk_manager: 'C', business_owner: 'C', it_manager: 'I', internal_auditor: 'I' } },
-      { activity: 'Conduct pre-contract due diligence', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'R', risk_manager: 'C', business_owner: 'C', it_manager: 'I', internal_auditor: 'I' } },
+      { activity: 'Classify supplier risk tier', phase: 'Govern', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'R', risk_manager: 'A', business_owner: 'C', it_manager: 'I', internal_auditor: 'I' } },
+      { activity: 'Conduct pre-contract due diligence', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'R', risk_manager: 'A', business_owner: 'C', it_manager: 'I', internal_auditor: 'I' } },
       { activity: 'Negotiate cybersecurity contract clauses', phase: 'Protect', assign: { ciso: 'C', grc_manager: 'R', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'A', it_manager: 'I', internal_auditor: 'I' } },
-      { activity: 'Accept residual supplier risk', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', cyber_analyst: 'C', risk_manager: 'R', business_owner: 'R', it_manager: 'I', internal_auditor: 'I' } },
-      { activity: 'Provision and manage supplier access', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'C', it_manager: 'R', internal_auditor: 'I', iam_specialist: 'R' } },
-      { activity: 'Reassess critical suppliers', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'R', risk_manager: 'C', business_owner: 'C', it_manager: 'I', internal_auditor: 'C' } },
-      { activity: 'Manage supplier security incidents', phase: 'Respond', assign: { ciso: 'A', grc_manager: 'R', cyber_analyst: 'R', risk_manager: 'C', business_owner: 'C', it_manager: 'C', internal_auditor: 'I' } },
-      { activity: 'Offboard suppliers and confirm data destruction', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'R', it_manager: 'R', internal_auditor: 'C' } },
+      { activity: 'Accept residual supplier risk', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'C', cyber_analyst: 'C', risk_manager: 'R', business_owner: 'R', it_manager: 'I', internal_auditor: 'I' } },
+      { activity: 'Provision and manage supplier access', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'C', it_manager: 'A', internal_auditor: 'I', iam_specialist: 'R' } },
+      { activity: 'Reassess critical suppliers', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'R', risk_manager: 'A', business_owner: 'C', it_manager: 'I', internal_auditor: 'C' } },
+      { activity: 'Manage supplier security incidents', phase: 'Respond', assign: { ciso: 'A', grc_manager: 'C', cyber_analyst: 'R', risk_manager: 'C', business_owner: 'C', it_manager: 'C', internal_auditor: 'I' } },
+      { activity: 'Offboard suppliers and confirm data destruction', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'A', it_manager: 'R', internal_auditor: 'C' } },
       { activity: 'Govern critical supplier relationships', phase: 'Govern', assign: { ciso: 'C', grc_manager: 'R', cyber_analyst: 'I', risk_manager: 'C', business_owner: 'A', it_manager: 'I', internal_auditor: 'I' } },
-      { activity: 'Record data protection terms in supplier contracts', phase: 'Protect', assign: { ciso: 'C', grc_manager: 'A', cyber_analyst: 'I', risk_manager: 'C', business_owner: 'R', it_manager: 'I', internal_auditor: 'I' } },
-      { activity: 'Control and review supplier access', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'C', it_manager: 'R', internal_auditor: 'C' } },
-      { activity: 'Maintain and test supplier exit plans', phase: 'Resilience', assign: { ciso: 'I', grc_manager: 'R', cyber_analyst: 'I', risk_manager: 'C', business_owner: 'A', it_manager: 'C', internal_auditor: 'I' } }
+      { activity: 'Record data protection terms in supplier contracts', phase: 'Protect', assign: { ciso: 'C', grc_manager: 'R', cyber_analyst: 'I', risk_manager: 'C', business_owner: 'A', it_manager: 'I', internal_auditor: 'I' } },
+      { activity: 'Control and review supplier access', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'C', it_manager: 'A', internal_auditor: 'C', iam_specialist: 'R' } },
+      { activity: 'Maintain and test supplier exit plans', phase: 'Resilience', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'I', risk_manager: 'C', business_owner: 'A', it_manager: 'R', internal_auditor: 'I' } }
     ]
   },
 
@@ -171,7 +171,8 @@ export const DATA_DOMAINS = {
       'Meet privacy and data residency obligations.'
     ],
     parameters: {
-      classificationLevels: 'Public, Internal, Confidential and Secret',
+      // The national levels (NDMO, and DCC-1:2022 which applies its controls by them).
+      classificationLevels: 'Top Secret, Secret, Confidential and Public',
       classificationReviewFrequency: 'annually',
       dlpCoverageTarget: '95% of managed endpoints and email gateways',
       retentionScheduleReviewFrequency: 'annually',
@@ -233,7 +234,27 @@ export const DATA_DOMAINS = {
         risk: 'Personal data is processed without a lawful basis or transferred outside permitted jurisdictions, attracting regulatory penalties.',
         riskRating: 'high',
         evidence: ['Record of processing activities', 'Data residency evidence for personal data stores', 'Personal data breach assessment records'],
-        refs: { 'ISO-27001': ['A.5.34'], 'NCA-ECC': ['2-7-1'], 'NIST-800-53': ['PT'], 'NIST-800-171': ['03.08.09'], 'AICPA-SOC2': ['P1.1', 'P3.1', 'P4.1', 'P5.1', 'P5.2', 'P6.4', 'P6.7', 'P7.1'], 'SDAIA-PDPL': ['4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '19', '21', '22', '23', '24', '25', '26', '27', '28', '30', '33', '41'], 'HIPAA-SECURITY': ['164.312(c)(2)'], 'EU-GDPR': ['Art.5', 'Art.6', 'Art.7', 'Art.9', 'Art.12', 'Art.13', 'Art.14', 'Art.15', 'Art.16', 'Art.17', 'Art.18', 'Art.20', 'Art.21', 'Art.22', 'Art.30', 'Art.32'] } },
+        refs: { 'ISO-27001': ['A.5.34'], 'NCA-ECC': ['2-7-1'], 'NIST-800-53': ['PT'], 'NIST-800-171': ['03.08.09'], 'AICPA-SOC2': ['P1.1', 'P3.1', 'P4.1', 'P5.1', 'P5.2', 'P6.4', 'P6.7', 'P7.1'], 'SDAIA-PDPL': ['5', '6', '7', '8', '10', '11', '14', '15', '16', '17', '19', '23', '24', '25', '26', '27', '28', '30', '33', '41'], 'HIPAA-SECURITY': ['164.312(c)(2)'], 'EU-GDPR': ['Art.5', 'Art.6', 'Art.7', 'Art.9', 'Art.12', 'Art.13', 'Art.14', 'Art.15', 'Art.16', 'Art.17', 'Art.18', 'Art.20', 'Art.21', 'Art.22', 'Art.30', 'Art.32'] } },
+      { key: 'pd_subject_rights', title: 'Data subject rights and privacy notice',
+        policy: 'People whose personal data {{orgName}} processes shall be told how it is processed, through a published privacy policy and a notice at collection, and their requests to exercise their rights under the Personal Data Protection Law shall be answered within the periods it sets.',
+        standard: 'A privacy policy shall be approved and made available to data subjects before their personal data is collected. At each collection the data subject shall be informed of the purpose, the lawful basis, the recipients and their rights. Requests to access, correct, destroy or obtain a copy of personal data shall be logged, verified and answered within the period the Law and its Regulations set. Each request and its answer shall be retained as a record.',
+        clauseOwners: ['grc_manager', 'business_owner', 'business_owner', 'grc_manager'],
+        guidance: 'Route rights requests through one channel with a logged clock; a request answered from an individual\'s inbox cannot be shown to have met its deadline.',
+        controlName: 'Data subject rights handling', controlType: 'directive', controlNature: 'administrative',
+        frequency: 'Per request', kpi: '% of data subject requests answered within the statutory period (target: 100%)',
+        risk: 'A data subject\'s request goes unanswered or a collection takes place without notice, in breach of the Personal Data Protection Law.', riskRating: 'high',
+        evidence: ['Published privacy policy', 'Collection notices', 'Register of data subject requests with dates and answers'],
+        refs: { 'SDAIA-PDPL': ['4', '9', '12', '13', '21'], 'ISO-27001': ['A.5.34'], 'EU-GDPR': ['Art.12', 'Art.13', 'Art.15'] } },
+      { key: 'pd_impact_records', title: 'Privacy impact assessment and records of processing',
+        policy: 'The impact on data subjects of processing their personal data shall be assessed for every product or service offered to the public before it is offered, and records of processing activities shall be kept for the period the Law sets.',
+        standard: 'A privacy impact assessment shall be completed and approved before a product or service that processes personal data is offered to the public, and repeated on a material change. Records of processing activities shall state the purpose, the categories of data and of recipients, transfers outside the Kingdom and retention. The records shall be retained for the period the Regulations set and made available to the competent authority on request.',
+        clauseOwners: ['risk_manager', 'grc_manager', 'grc_manager'],
+        guidance: 'Run the assessment at design, while changing the product is still cheap; one run before launch finds problems that can then only be accepted.',
+        controlName: 'Privacy impact assessment and processing records', controlType: 'preventive', controlNature: 'administrative',
+        frequency: 'Per product or material change', kpi: '% of public-facing products and services with an approved privacy impact assessment (target: 100%)',
+        risk: 'A product processing personal data is launched without an assessment of its impact, or processing cannot be shown to the regulator.', riskRating: 'high',
+        evidence: ['Approved privacy impact assessments', 'Record of processing activities'],
+        refs: { 'SDAIA-PDPL': ['22', '31'], 'ISO-27001': ['A.5.34'], 'EU-GDPR': ['Art.30', 'Art.35'] } },
       { key: 'data_masking', title: 'Masking of data in non-production environments',
         policy: 'Confidential and Secret information, including personal data, shall not be used in development, test or training environments unless masked, tokenised or synthesised.',
         standard: 'Non-production environments shall be populated with masked, tokenised or synthetic data. Where production data must be used, it shall require Information Owner approval, and the masking, approval expiry and deletion requirements of the Secure Development Standard shall govern how the copy is made, held and destroyed.',
@@ -311,12 +332,14 @@ export const DATA_DOMAINS = {
       { activity: 'Apply handling and encryption controls', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'C', it_manager: 'R', asset_owner: 'A', business_owner: 'I', internal_auditor: 'I' } },
       { activity: 'Operate data leakage prevention', phase: 'Detect', assign: { ciso: 'A', grc_manager: 'I', cyber_analyst: 'R', it_manager: 'R', asset_owner: 'I', business_owner: 'I', internal_auditor: 'I' } },
       { activity: 'Approve external data sharing', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'I', it_manager: 'I', asset_owner: 'A', business_owner: 'R', internal_auditor: 'I' } },
-      { activity: 'Maintain the retention schedule and dispose of data', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'I', it_manager: 'R', asset_owner: 'R', business_owner: 'C', internal_auditor: 'C' } },
-      { activity: 'Own data governance at organisational level', phase: 'Govern', assign: { ciso: 'C', grc_manager: 'R', cyber_analyst: 'I', it_manager: 'I', asset_owner: 'A', business_owner: 'C', internal_auditor: 'I' } },
-      { activity: 'Publish and enforce approved transfer channels', phase: 'Protect', assign: { ciso: 'A', grc_manager: 'R', cyber_analyst: 'C', it_manager: 'R', asset_owner: 'C', business_owner: 'I', internal_auditor: 'I' } },
+      { activity: 'Maintain the retention schedule and dispose of data', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'I', it_manager: 'R', asset_owner: 'R', business_owner: 'A', internal_auditor: 'C' } },
+      { activity: 'Own data governance at organisational level', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', cyber_analyst: 'I', it_manager: 'I', asset_owner: 'C', business_owner: 'C', internal_auditor: 'I' } },
+      { activity: 'Answer data subject requests and maintain the privacy notice', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'R', cyber_analyst: 'I', it_manager: 'C', asset_owner: 'C', business_owner: 'A', internal_auditor: 'I' } },
+      { activity: 'Assess privacy impact and keep records of processing', phase: 'Govern', assign: { ciso: 'C', grc_manager: 'R', cyber_analyst: 'I', it_manager: 'C', asset_owner: 'C', business_owner: 'C', internal_auditor: 'I', risk_manager: 'A' } },
+      { activity: 'Publish and enforce approved transfer channels', phase: 'Protect', assign: { ciso: 'A', grc_manager: 'C', cyber_analyst: 'C', it_manager: 'R', asset_owner: 'C', business_owner: 'I', internal_auditor: 'I' } },
       { activity: 'Apply enhanced protection to critical system data', phase: 'Protect', assign: { ciso: 'C', grc_manager: 'C', cyber_analyst: 'R', it_manager: 'R', asset_owner: 'A', business_owner: 'C', internal_auditor: 'I' } },
       { activity: 'Govern information handling away from the office', phase: 'Protect', assign: { ciso: 'A', grc_manager: 'R', cyber_analyst: 'C', it_manager: 'C', asset_owner: 'C', business_owner: 'C', internal_auditor: 'I' } },
-      { activity: 'Audit data protection controls', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'I', it_manager: 'I', asset_owner: 'I', business_owner: 'I', internal_auditor: 'R' } }
+      { activity: 'Audit data protection controls', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'C', cyber_analyst: 'I', it_manager: 'I', asset_owner: 'I', business_owner: 'I', internal_auditor: 'R', head_internal_audit: 'A' } }
     ]
   }
 };
