@@ -1935,6 +1935,12 @@ export default {
   },
 
   documentDetailUi: {
+    updateTitle: 'Updated content is available',
+    updateBody: 'The platform has improved the content this document is generated from since it was approved. Its approved text stays in force until the update is applied: applying it opens a revision, keeps every section you edited or locked, and returns the document for approval.',
+    updateApply: 'Apply the update in a revision',
+    updateApplied: 'Update applied',
+    updateAppliedBody: '{count} section(s) updated. The document is under revision and goes for approval as usual.',
+    updateFailed: 'The update could not be applied',
     sectionAdded: 'Section added',
     sectionRemoved: 'Section removed',
     sectionHeading: 'Section heading',
@@ -2240,6 +2246,12 @@ export default {
   },
 
   documentsUi: {
+    updatesTitle: '{count} published document(s) have updated content',
+    updatesBody: 'The platform has improved the content these documents are generated from since they were approved. Their approved text stays in force until the update is applied. Applying it opens each document as a revision, keeps every section you edited or locked, and returns it for approval; the approved text stays in its version history.',
+    updatesApply: 'Apply the updates',
+    updatesApplied: '{count} document(s) updated',
+    updatesAppliedBody: 'They are under revision and go for approval as usual.',
+    updatesFailed: 'The updates could not be applied',
     columnReference: 'Reference',
     columnDocument: 'Document',
     columnReviewDue: 'Review due',
@@ -2380,6 +2392,7 @@ export default {
   },
   changeType: {
     generated: 'Generated',
+    regenerated: 'Updated to current content',
     imported: 'Imported',
     revision: 'Revision',
     restore: 'Restored',

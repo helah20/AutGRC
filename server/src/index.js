@@ -20,6 +20,7 @@ import { db } from './db/index.js';
 import { errorHandler } from './middleware/errors.js';
 import { validateKnowledgeBase } from './knowledge/index.js';
 import { syncCatalogue, syncControlMappings } from './db/seed.js';
+import { refreshGeneratedDocuments } from './services/refresh.js';
 import { startSweepSchedule, stopSweepSchedule } from './services/notify.js';
 import { loadMethodology } from './services/risk-methodology.js';
 
@@ -170,6 +171,15 @@ const moved = syncCatalogue();
 const newlyMapped = syncControlMappings();
 if (newlyMapped) console.log(`[AutGRC] Mapped controls to ${newlyMapped} catalogue requirement(s) not mapped before.`);
 if (moved) console.log(`[AutGRC] Brought ${moved} reference catalogue value(s) in line with the knowledge base.`);
+// Generated documents follow the platform: drafts are rebuilt with the
+// current knowledge base, published ones are marked as having an update.
+try {
+  const refreshed = refreshGeneratedDocuments();
+  if (refreshed.updated) console.log(`[AutGRC] Updated ${refreshed.updated} draft document(s) to the current knowledge base.`);
+  if (refreshed.flagged) console.log(`[AutGRC] ${refreshed.flagged} published document(s) have an update awaiting a revision.`);
+} catch (err) {
+  console.warn(`[AutGRC] Generated documents were not refreshed: ${err.message}`);
+}
 if (problems.length) {
   console.warn(`[AutGRC] Knowledge base integrity problems (${problems.length}):`);
   problems.slice(0, 10).forEach((p) => console.warn(`  - ${p}`));

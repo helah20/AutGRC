@@ -62,6 +62,8 @@ export default function Documents({ fixedType }) {
     language: effectiveLanguage === 'all' ? undefined : effectiveLanguage });
 
   const { data, loading, error, reload } = useFetch(`/documents${query}`);
+  const { data: updates, reload: reloadUpdates } = useFetch('/documents/updates');
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => {
     const next = {};
@@ -141,6 +143,26 @@ export default function Documents({ fixedType }) {
           {can('generate:run') && <Link className="btn btn-primary" to="/generator"><IconWand />{t('documentsUi.generate')}</Link>}
         </div>
       </div>
+
+      {updates?.count > 0 && (
+        // The platform's content improved after these documents were
+        // approved. Their approved text stays in force until the update is
+        // applied, which opens each as a revision for approval.
+        <div className="callout" data-callout="note">
+          <strong>{t('documentsUi.updatesTitle', { count: formatNumber(updates.count) })}</strong>
+          <p>{t('documentsUi.updatesBody')}</p>
+          {can('document:update') && (
+            <button className="btn btn-primary btn-sm" disabled={applying} onClick={async () => {
+              setApplying(true);
+              try {
+                const res = await api.post('/documents/updates/apply', {});
+                toast.success(t('documentsUi.updatesApplied', { count: formatNumber(res.applied) }), t('documentsUi.updatesAppliedBody'));
+                reload(); reloadUpdates();
+              } catch (err) { toast.error(t('documentsUi.updatesFailed'), err.message); } finally { setApplying(false); }
+            }}>{t('documentsUi.updatesApply')}</button>
+          )}
+        </div>
+      )}
 
       <Card flush>
         <div className="table-toolbar">

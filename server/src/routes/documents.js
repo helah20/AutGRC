@@ -15,6 +15,7 @@ import { domainName, domainShort } from '../knowledge/index.js';
 import { CRITERIA, KRI_THRESHOLDS, assessmentOf, compareBases } from '../services/scorecard.js';
 import { reviewDocument } from '../services/review.js';
 import { padNumber } from '../utils/ids.js';
+import { refreshDocument } from '../services/refresh.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -62,6 +63,37 @@ function recordVersion(documentId, { version, note, type, user }) {
 }
 
 // ------------------------------------------------------------------ list ---
+
+/** How many published documents carry an update from the platform's content. */
+router.get('/updates', asyncHandler(async (req, res) => {
+  const rows = q.all("SELECT id, generation_meta FROM documents WHERE status = 'published' AND generation_meta IS NOT NULL");
+  res.json({ count: rows.filter((r) => fromJson(r.generation_meta, {}).updateAvailable).length });
+}));
+
+/**
+ * Apply the update to every published document that has one. Each opens as a
+ * revision with its edited and locked sections kept, and returns for approval;
+ * the approved text stays on record in its version history.
+ */
+router.post('/updates/apply', requirePermission('document:update'), asyncHandler(async (req, res) => {
+  const rows = q.all("SELECT * FROM documents WHERE status = 'published' AND generation_meta IS NOT NULL")
+    .filter((d) => fromJson(d.generation_meta, {}).updateAvailable);
+  let applied = 0;
+  for (const doc of rows) {
+    const result = refreshDocument(doc.id, req.user);
+    if (result.error) continue;
+    q.run(
+      `INSERT INTO document_approvals (id, document_id, action, from_status, to_status, actor_id, actor_name, actor_role, comment, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      id('apr'), doc.id, 'reopened', 'published', 'under_revision', req.user.id, req.user.name, req.user.role,
+      'Opened to apply the updated content', nowIso()
+    );
+    indexDocument(q.get('SELECT * FROM documents WHERE id = ?', doc.id), loadSections(doc.id));
+    applied += 1;
+  }
+  audit(req, { action: 'document:refresh_all', entityType: 'document', summary: `Applied updated content to ${applied} published document(s)` });
+  res.json({ applied });
+}));
 
 router.get('/', asyncHandler(async (req, res) => {
   const { limit, offset } = paginate(req, 100, 1000);
@@ -439,6 +471,32 @@ router.post('/:id/transition', requirePermission('document:read'), validate(z.ob
     document: enrichDocument(updated),
     approvals: q.all('SELECT * FROM document_approvals WHERE document_id = ? ORDER BY created_at DESC', doc.id)
   });
+}));
+
+/**
+ * Apply the platform's current content to a generated document. A published
+ * document is first opened for revision, so the updated text is approved
+ * before it is live; sections a person edited or locked are kept.
+ */
+router.post('/:id/refresh', requirePermission('document:update'), asyncHandler(async (req, res) => {
+  const doc = q.get('SELECT * FROM documents WHERE id = ?', req.params.id);
+  if (!doc) throw notFound('Document');
+  if (doc.status === 'approved') throw new HttpError(409, 'Publish or return the approved document before updating it.');
+  const result = refreshDocument(doc.id, req.user);
+  if (result.error === 'retired') throw new HttpError(409, 'A retired document is a record and is not updated.');
+  if (result.error === 'not_generated') throw new HttpError(409, 'Only a generated document can be updated from the knowledge base.');
+  if (doc.status === 'published') {
+    q.run(
+      `INSERT INTO document_approvals (id, document_id, action, from_status, to_status, actor_id, actor_name, actor_role, comment, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      id('apr'), doc.id, 'reopened', 'published', 'under_revision', req.user.id, req.user.name, req.user.role,
+      'Opened to apply the updated content', nowIso()
+    );
+  }
+  const updated = q.get('SELECT * FROM documents WHERE id = ?', doc.id);
+  indexDocument(updated, loadSections(doc.id));
+  audit(req, { action: 'document:refresh', entityType: 'document', entityId: doc.id, summary: `Updated ${doc.reference} to the current knowledge base (${result.changed} section change(s))` });
+  res.json({ document: enrichDocument(updated), changed: result.changed });
 }));
 
 router.get('/:id/transitions', asyncHandler(async (req, res) => {
