@@ -213,6 +213,15 @@ evidenced.
   scope names systems outside the domain, whose document roles are not
   stated as owner, custodian and approver, or whose references mix kinds, is
   reported with the section where it is fixed (`checkPolicyDesign`).
+- **Standards and Procedures are held to the same reviewer.** A Policy that
+  states a measurable value, a Standard clause with no accountable role or an
+  indicator with no target, and a Procedure step with no responsible role,
+  input or output, a KPI with no target or a record with no retention period
+  are each reported (`checkTierDesign`).
+- **The Procedure and the RACI name the same people.** Every step is
+  performed by a role in the domain's RACI, or by a party the domain declares
+  as acting outside it (`outsideActors`: a requester, a platform, a board, an
+  owner named per asset); `npm run verify:knowledge` fails otherwise.
 - **One set of document roles.** The Policy owner (CISO), the document
   custodian (GRC Manager) and the approver (Cybersecurity Steering Committee)
   are named the same way in document control and in the Governance section.

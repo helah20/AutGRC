@@ -921,6 +921,102 @@ export function checkPolicyDesign({ doc, sections }) {
   return out;
 }
 
+/** The body rows of the first table in an HTML section, as text cells. */
+function tableRows(html) {
+  const body = (html || '').split(/<tbody[^>]*>/)[1] || '';
+  return [...body.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)]
+    .map((row) => [...row[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)].map((c) => htmlToText(c[1]).trim()));
+}
+
+const MEASURE = /\b\d+\s*(days?|hours?|minutes?|months?|years?|%|characters)\b|[\d٠-٩]+\s*(يوماً|يوم|أيام|ساعة|ساعات|دقيقة|دقائق|شهراً|شهر|أشهر|سنة|سنوات|٪|%|حرفاً)/i;
+
+/**
+ * The same reviewer's rules for a Standard and a Procedure: a Policy states
+ * no measurable value (that is the Standard's), every Standard clause has an
+ * accountable role and every indicator a target, and every Procedure step
+ * has someone responsible, an input and an output, every KPI a target and
+ * every record a retention period.
+ */
+export function checkTierDesign({ doc, sections }) {
+  const out = [];
+  const section = (key) => sections.find((x) => x.section_key === key);
+  const text = (key) => htmlToText(section(key)?.body || '');
+  const add = (sectionKey, partial) => out.push(finding({ ...partial, evidence: fixAt(doc, 'edit_section', { sectionKey }) }));
+
+  if (doc.doc_type === 'policy') {
+    const statements = (section('statements')?.body || '').replace(/<li class="subclause">[\s\S]*?<\/li>/g, '');
+    const hit = htmlToText(statements).match(MEASURE);
+    if (hit) {
+      add('statements', {
+        category: 'ambiguity', severity: 'low',
+        title: 'The Policy states a measurable value',
+        detail: `The Policy statements contain "${hit[0]}". Values, frequencies and deadlines belong in the Standard, so the Policy does not need reissuing when one changes.`,
+        location: 'Policy Statements',
+        recommendation: 'Move the value to the Standard and refer to it from the Policy.'
+      });
+    }
+  }
+
+  if (doc.doc_type === 'standard') {
+    const unassigned = (text('mandatory').match(/Not yet assigned|غير مُسنَد بعد|لم يُسنَد بعد/g) || []).length;
+    if (unassigned) {
+      add('mandatory', {
+        category: 'accountability', severity: 'medium',
+        title: `${unassigned} Standard clause(s) have no accountable role`,
+        detail: 'Each measurable requirement needs a role that answers for it, or it cannot be tested against anyone.',
+        location: 'Mandatory Requirements',
+        recommendation: 'Assign an accountable role to each clause.'
+      });
+    }
+    const noTarget = tableRows(section('monitoring')?.body).filter((r) => r.length > 1 && !/target|المستهدف|\d|[٠-٩]/i.test(r[1]));
+    if (noTarget.length) {
+      add('monitoring', {
+        category: 'auditability', severity: 'medium',
+        title: `${noTarget.length} indicator(s) have no target`,
+        detail: `Indicators without a target cannot show whether the requirement is met: ${noTarget.map((r) => r[0]).slice(0, 5).join('; ')}.`,
+        location: 'Monitoring',
+        recommendation: 'State a measurable target for each indicator.'
+      });
+    }
+  }
+
+  if (doc.doc_type === 'procedure') {
+    const steps = tableRows(section('steps')?.body).filter((r) => r.length >= 4);
+    const incomplete = steps.filter((r) => r.some((cell) => !cell || cell === '—'));
+    if (incomplete.length) {
+      add('steps', {
+        category: 'accountability', severity: 'medium',
+        title: `${incomplete.length} procedure step(s) lack a responsible role, an input or an output`,
+        detail: 'Each step needs who performs it, what it starts from and what it produces, or it cannot be followed or evidenced.',
+        location: 'Detailed Steps',
+        recommendation: 'Complete the responsible role, the input and the output of each step.'
+      });
+    }
+    const kpis = tableRows(section('kpis')?.body).filter((r) => r.length > 1 && !r[1]);
+    if (kpis.length) {
+      add('kpis', {
+        category: 'auditability', severity: 'medium',
+        title: `${kpis.length} KPI(s) have no target`,
+        detail: 'A KPI without a target cannot show whether the procedure performs as intended.',
+        location: 'Key Performance Indicators',
+        recommendation: 'State a target for each KPI.'
+      });
+    }
+    const records = (section('records')?.body || '').match(/<li>([\s\S]*?)<\/li>/g) || [];
+    const unretained = records.map((li) => htmlToText(li)).filter((r) => !/retain|kept|life of|until|years?|months?|يُحتفظ|طوال|سنة|سنوات|أشهر/i.test(r));
+    if (unretained.length) {
+      add('records', {
+        category: 'auditability', severity: 'low',
+        title: `${unretained.length} record(s) have no retention period`,
+        detail: `Records relied on as evidence need a retention period: ${unretained.slice(0, 4).join('; ')}.`,
+        location: 'Records and Evidence',
+        recommendation: 'State how long each record is retained.'
+      });
+    }
+  }
+  return out;
+}
+
 export function arabicTopicGaps(domainKey) {
   const model = DOMAIN_MODELS[domainKey];
   if (!model) return [];
@@ -1106,6 +1202,7 @@ export function reviewDocument(documentId) {
     ...checkAuditability(loaded),
     ...checkCompliance(loaded),
     ...checkPolicyDesign(loaded),
+    ...checkTierDesign(loaded),
     ...checkConsistency(loaded.doc.domain_key)
   ]);
 
@@ -1127,7 +1224,8 @@ export function reviewDomain(domainKey) {
       ...checkCompleteness(loaded),
       ...checkAmbiguity(loaded),
       ...checkAccountability(loaded),
-      ...checkPolicyDesign(loaded)
+      ...checkPolicyDesign(loaded),
+      ...checkTierDesign(loaded)
     );
   }
   if (docs.length) {

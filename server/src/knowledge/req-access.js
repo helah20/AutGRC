@@ -7,6 +7,9 @@
 
 export const ACCESS_DOMAINS = {
   iam: {
+    // Who performs a procedure step without holding a role in the RACI:
+    // a requester, a platform, a board, or an owner named per asset.
+    outsideActors: ["Requester / Line Manager"],
     objectives: [
       'Ensure that every identity operating in the environment is uniquely attributable to an accountable person, service or device.',
       'Ensure that access is granted on the basis of Need-to-Know, Need-to-Use, Least Privilege and Segregation of Duties.',
@@ -139,7 +142,7 @@ export const ACCESS_DOMAINS = {
       {
         key: 'joiner_mover_leaver',
         title: 'Joiner, mover and leaver processing',
-        policy: 'Access rights shall be created, amended and revoked in line with changes to employment or engagement status. On termination or transfer, access shall be revoked within {{revocationSla}}.',
+        policy: 'Access rights shall be created, amended and revoked in line with changes to employment or engagement status. On termination or transfer, access shall be revoked within the period set in the accompanying Standard.',
         standard: 'On termination or transfer, all access shall be disabled within {{revocationSla}}. Movers shall have entitlements from the previous role removed at the same time new entitlements are granted; additive-only transfers are prohibited. Leaver processing shall cover the directory, business applications, privileged vaults, remote access, cloud tenancies and physical access.',
         clauseOwners: ['iam_specialist', 'iam_specialist', 'it_manager'],
         guidance: 'Drive revocation from the HR termination event rather than a manager-raised ticket. Run a weekly exception report comparing terminated employees against still-enabled accounts.',
@@ -160,8 +163,8 @@ export const ACCESS_DOMAINS = {
       {
         key: 'access_review',
         title: 'Periodic review of identities and access rights',
-        policy: 'User identities and access rights shall be reviewed at least {{accessReviewFrequency}}, and privileged access rights at least {{privAccessReviewFrequency}}, by the accountable Business or System Owner.',
-        standard: 'Each review cycle shall present the reviewer with the account, the entitlements held, the last logon date and the business justification. Reviewers shall certify, revoke or modify each entitlement; a non-response shall not be recorded as certification. Revocations arising from a review shall be actioned within {{provisioningSla}}, or within the shorter period set by the Privileged Access Management Standard where the entitlement is privileged. Cycles shall reach {{accessRecertCompletionTarget}}. Service and non-human accounts shall be reviewed at least {{serviceAccountReviewFrequency}}.',
+        policy: 'User identities and access rights, and privileged access rights more frequently, shall be reviewed periodically by the accountable Business or System Owner, at the frequencies set in the accompanying Standard.',
+        standard: 'Each review cycle, run at least {{accessReviewFrequency}} for user access and at least {{privAccessReviewFrequency}} for privileged access, shall present the reviewer with the account, the entitlements held, the last logon date and the business justification. Reviewers shall certify, revoke or modify each entitlement; a non-response shall not be recorded as certification. Revocations arising from a review shall be actioned within {{provisioningSla}}, or within the shorter period set by the Privileged Access Management Standard where the entitlement is privileged. Cycles shall reach {{accessRecertCompletionTarget}}. Service and non-human accounts shall be reviewed at least {{serviceAccountReviewFrequency}}.',
         clauseOwners: ['iam_specialist', 'system_owner', 'iam_specialist', 'grc_manager', 'system_owner'],
         guidance: 'Give reviewers usage data alongside entitlements; unused entitlements are the easiest legitimate revocation and build reviewer confidence. Track revocation closure separately from certification completion — an uncompleted revocation is an open finding.',
         controlName: 'Periodic access recertification',
@@ -352,6 +355,9 @@ export const ACCESS_DOMAINS = {
   },
 
   pam: {
+    // Who performs a procedure step without holding a role in the RACI:
+    // a requester, a platform, a board, or an owner named per asset.
+    outsideActors: ["Administrator", "Privileged Access Management platform"],
     objectives: [
       'Ensure that privileged access is granted only where a documented operational need exists, and only for the time that need persists.',
       'Ensure that every privileged session is individually attributable, brokered and recorded.',
@@ -500,8 +506,8 @@ export const ACCESS_DOMAINS = {
       {
         key: 'priv_access_review',
         title: 'Periodic review of privileged access',
-        policy: 'Privileged access rights shall be reviewed at least {{privAccessReviewFrequency}} by the CISO and the accountable System Owner.',
-        standard: 'The review shall cover every privileged account and entitlement in the inventory, including service accounts with privileged rights, cloud administrative roles and emergency accounts. Reviewers shall be presented with activation history alongside entitlements. Revocations shall be actioned within {{privRevocationSla}} of the review decision.',
+        policy: 'Privileged access rights shall be reviewed periodically by the CISO and the accountable System Owner, at the frequency set in the accompanying Standard.',
+        standard: 'The review, held at least {{privAccessReviewFrequency}}, shall cover every privileged account and entitlement in the inventory, including service accounts with privileged rights, cloud administrative roles and emergency accounts. Reviewers shall be presented with activation history alongside entitlements. Revocations shall be actioned within {{privRevocationSla}} of the review decision.',
         clauseOwners: ['grc_manager', 'iam_specialist', 'iam_specialist'],
         guidance: 'Review activation history rather than assignment alone; a privileged role never activated in a quarter is the clearest candidate for removal.',
         controlName: 'Privileged access recertification',

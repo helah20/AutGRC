@@ -157,3 +157,37 @@ test('a cloud tenant\'s policy does not quote the provider controls', () => {
   assert.match(body, /\[NCA-CCC \d-\d+-T-/);
   assert.match(body, /Cloud controls for the other party are not quoted/);
 });
+
+test('the quality engine holds a Standard and a Procedure to the reviewer\'s rules', async () => {
+  const { checkTierDesign } = await import('../src/services/review.js');
+  const doc = (type) => ({ id: 'd', reference: 'X-001', doc_type: type, domain_key: 'iam' });
+  const sec = (key, body) => ({ section_key: key, body });
+  const titles = (type, sections) => checkTierDesign({ doc: doc(type), sections }).map((f) => f.title);
+
+  assert.ok(titles('policy', [sec('statements', '<ol><li>Access shall be revoked within 4 hours.</li></ol>')])
+    .includes('The Policy states a measurable value'));
+  assert.deepEqual(titles('policy', [sec('statements', '<ol><li>Access shall be revoked within the period set in the accompanying Standard.</li><li class="subclause">within 4 hours [NCA-ECC 1-1-1]</li></ol>')]), [],
+    'a value quoted from the regulator is not the Policy\'s own');
+
+  const std = titles('standard', [
+    sec('mandatory', '<ol><li>3.1.1 Do it. Accountable: Not yet assigned</li></ol>'),
+    sec('monitoring', '<table><thead><tr><th>R</th><th>I</th></tr></thead><tbody><tr><td>Reviews</td><td>Reviews completed</td></tr></tbody></table>')
+  ]);
+  assert.ok(std.includes('1 Standard clause(s) have no accountable role'));
+  assert.ok(std.includes('1 indicator(s) have no target'));
+
+  const proc = titles('procedure', [
+    sec('steps', '<table><thead><tr><th>In</th><th>Step</th><th>Who</th><th>Out</th></tr></thead><tbody><tr><td>A request</td><td>1. Approve</td><td></td><td>—</td></tr></tbody></table>'),
+    sec('kpis', '<table><thead><tr><th>K</th><th>T</th></tr></thead><tbody><tr><td>Timeliness</td><td></td></tr></tbody></table>'),
+    sec('records', '<ul><li>Approval record</li><li>Access log (retained 3 years)</li></ul>')
+  ]);
+  assert.ok(proc.includes('1 procedure step(s) lack a responsible role, an input or an output'));
+  assert.ok(proc.includes('1 KPI(s) have no target'));
+  assert.ok(proc.includes('1 record(s) have no retention period'));
+
+  const fresh = previewPackage({ domainKey: 'iam', docTypes: ['policy', 'standard', 'procedure'], frameworkCodes: ['NCA-ECC'], org, language: 'en' });
+  for (const d of fresh.documents) {
+    assert.deepEqual(checkTierDesign({ doc: doc(d.docType), sections: d.sections.map((s) => ({ section_key: s.key, body: s.body })) }), [],
+      `a generated ${d.docType} passes the rules it is held to`);
+  }
+});

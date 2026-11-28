@@ -95,6 +95,7 @@ function assemble() {
         // requirements themselves.
         scope: raw.scope || null,
         guides: raw.guides || [],
+        outsideActors: raw.outsideActors || [],
         // The regulation written for this domain, which a document should cite
         // when the organisation is subject to it.
         principal: raw.principal || [],
@@ -105,7 +106,11 @@ function assemble() {
         procedure,
         kpisDerived,
         roles,
-        raciActivities: raw.raciActivities
+        // Every role answers for every activity: a role added to one activity
+        // is Informed of the others rather than left blank in the matrix.
+        raciActivities: raw.raciActivities.map((a) => ({
+          ...a, assign: Object.fromEntries(roles.map((r) => [r, a.assign[r] || 'I']))
+        }))
       };
     }
   }
@@ -331,6 +336,27 @@ export function validateKnowledgeBase() {
     if (values.size < 2) continue;
     const stated = [...values].map(([value, domains]) => `${domains.join(', ')} say "${value}"`);
     problems.push(`Parameter {{${name}}} has different values in different domains: ${stated.join('; ')}`);
+  }
+
+  // ------------------------------------------- procedure against RACI --
+  // A Procedure step performed by someone the RACI never names leaves the
+  // two documents disagreeing about who does the work. Every step's actor is
+  // a role in the domain's RACI, or a party declared as acting outside it.
+  {
+    const byName = new Map();
+    for (const role of ROLE_LIBRARY) {
+      byName.set(role.name.toLowerCase(), role.code);
+      if (role.shortName) byName.set(role.shortName.toLowerCase(), role.code);
+    }
+    for (const model of Object.values(DOMAIN_MODELS)) {
+      for (const step of model.procedure?.steps || []) {
+        if ((model.outsideActors || []).includes(step.actor)) continue;
+        const codes = step.actor.split(/\s*\/\s*/).map((part) => byName.get(part.toLowerCase()));
+        if (!codes.some((code) => code && model.roles.includes(code))) {
+          problems.push(`${model.key}: procedure step "${step.name}" is performed by "${step.actor}", who holds no role in the RACI`);
+        }
+      }
+    }
   }
 
   // ------------------------------------------------ catalogue coverage --
