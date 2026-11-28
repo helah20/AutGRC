@@ -124,11 +124,11 @@ export const TECH_DOMAINS = {
       raci('Implement encryption at rest and in transit', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
       raci('Manage cryptographic keys', 'Protect', 'A:ciso R:it_manager C:cyber_analyst I:internal_auditor R:security_architect'),
       raci('Manage certificates and renewals', 'Operate', 'A:it_manager R:system_owner C:cyber_analyst'),
-      raci('Scan for deprecated cryptography', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager'),
-      raci('Maintain the cryptographic inventory', 'Govern', 'A:grc_manager R:cyber_analyst C:it_manager'),
+      raci('Scan for deprecated cryptography', 'Assure', 'C:grc_manager R:cyber_analyst C:it_manager A:ciso'),
+      raci('Maintain the cryptographic inventory', 'Govern', 'C:grc_manager R:cyber_analyst C:it_manager A:ciso'),
       raci('Operate dual control over sensitive key operations', 'Protect', 'A:ciso R:it_manager C:grc_manager I:internal_auditor'),
-      raci('Verify cryptographic implementation by scanning', 'Assure', 'A:grc_manager R:cyber_analyst C:system_owner'),
-      raci('Audit cryptographic controls', 'Assure', 'A:risk_manager R:internal_auditor C:ciso')
+      raci('Verify cryptographic implementation by scanning', 'Assure', 'C:grc_manager R:cyber_analyst C:system_owner A:ciso'),
+      raci('Audit cryptographic controls', 'Assure', 'C:risk_manager R:internal_auditor C:ciso A:head_internal_audit')
     ]
   },
 
@@ -268,7 +268,7 @@ export const TECH_DOMAINS = {
       raci('Provide network resilience for internet-facing services', 'Resilience', 'A:it_manager R:system_owner C:business_owner I:ciso'),
       raci('Harden network devices and control their configuration', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Enforce network access control at the port', 'Protect', 'A:it_manager R:cyber_analyst C:system_owner'),
-      raci('Review the firewall rule base', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager C:internal_auditor R:security_architect')
+      raci('Review the firewall rule base', 'Assure', 'C:grc_manager R:cyber_analyst C:it_manager C:internal_auditor R:security_architect A:ciso')
     ]
   },
 
@@ -1120,14 +1120,14 @@ export const TECH_DOMAINS = {
     raciActivities: [
       raci('Define the endpoint hardening baseline', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst'),
       raci('Deploy and maintain endpoint protection', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
-      raci('Monitor baseline compliance and agent health', 'Detect', 'A:grc_manager R:cyber_analyst C:it_manager'),
+      raci('Monitor baseline compliance and agent health', 'Detect', 'C:grc_manager R:cyber_analyst A:it_manager'),
       raci('Control removable media use', 'Protect', 'A:it_manager R:cyber_analyst C:business_owner'),
       raci('Manage mobile device enrolment', 'Protect', 'A:it_manager R:system_owner C:business_owner'),
       raci('Maintain endpoint patch currency', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Operate application control', 'Protect', 'A:it_manager R:cyber_analyst C:system_owner'),
       raci('Restrict local administrator rights', 'Protect', 'A:ciso R:it_manager C:system_owner'),
       raci('Isolate a compromised endpoint', 'Respond', 'A:ciso R:cyber_analyst C:it_manager I:business_owner'),
-      raci('Audit endpoint controls', 'Assure', 'A:risk_manager R:internal_auditor C:ciso'),
+      raci('Audit endpoint controls', 'Assure', 'C:risk_manager R:internal_auditor C:ciso A:head_internal_audit'),
       raci('Build and administer servers to their baseline', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Secure the virtualization platform', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst I:ciso')
     ]
@@ -1250,8 +1250,8 @@ export const TECH_DOMAINS = {
     },
     raciActivities: [
       raci('Define application security requirements', 'Govern', 'A:ciso R:grc_manager C:system_owner C:it_manager'),
-      raci('Conduct security design review', 'Protect', 'A:grc_manager R:cyber_analyst C:system_owner'),
-      raci('Perform application security testing', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager'),
+      raci('Conduct security design review', 'Protect', 'C:grc_manager R:cyber_analyst C:system_owner A:ciso'),
+      raci('Perform application security testing', 'Assure', 'C:grc_manager R:cyber_analyst C:it_manager A:ciso'),
       raci('Remediate application findings', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
       raci('Operate application protection controls', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Enforce application authentication and session handling', 'Protect', 'A:system_owner R:it_manager C:security_architect'),
@@ -1395,10 +1395,10 @@ export const TECH_DOMAINS = {
       raci('Enforce code review and branch protection', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
       raci('Operate pipeline security gates', 'Protect', 'A:it_manager R:cyber_analyst C:system_owner'),
       raci('Maintain environment separation', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst I:ciso'),
-      raci('Assure outsourced development security', 'Assure', 'A:grc_manager R:cyber_analyst C:business_owner'),
+      raci('Assure outsourced development security', 'Assure', 'C:grc_manager R:cyber_analyst C:business_owner A:ciso'),
       raci('Govern test data in non-production environments', 'Protect', 'A:system_owner R:it_manager C:grc_manager'),
-      raci('Control developer access to production', 'Protect', 'A:grc_manager R:it_manager C:system_owner I:ciso'),
-      raci('Deliver secure development training', 'Govern', 'A:grc_manager R:security_architect C:system_owner'),
+      raci('Control developer access to production', 'Protect', 'C:grc_manager A:it_manager R:system_owner'),
+      raci('Deliver secure development training', 'Govern', 'C:grc_manager R:security_architect C:system_owner A:ciso'),
       raci('Approve release with residual risk', 'Govern', 'A:ciso R:system_owner C:risk_manager')
     ]
   },
@@ -1527,13 +1527,13 @@ export const TECH_DOMAINS = {
       raci('Authorise physical access', 'Protect', 'A:business_owner R:it_manager C:ciso'),
       raci('Manage visitor access', 'Operate', 'A:business_owner R:it_manager I:grc_manager'),
       raci('Monitor surveillance and environmental alerts', 'Detect', 'A:it_manager R:cyber_analyst I:ciso'),
-      raci('Review physical access rights', 'Assure', 'A:grc_manager R:business_owner C:it_manager C:internal_auditor'),
+      raci('Review physical access rights', 'Assure', 'C:grc_manager R:business_owner C:it_manager C:internal_auditor A:ciso'),
       raci('Assess equipment siting and environmental protection', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Protect cabling and distribution points', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Verify clear desk and secure area practice', 'Assure', 'A:grc_manager R:cyber_analyst C:business_owner'),
       raci('Escort and record maintenance visits', 'Operate', 'A:it_manager R:system_owner C:grc_manager'),
       raci('Protect facilities housing critical systems', 'Protect', 'A:ciso R:it_manager C:business_owner I:internal_auditor'),
-      raci('Audit physical security controls', 'Assure', 'A:risk_manager R:internal_auditor C:ciso')
+      raci('Audit physical security controls', 'Assure', 'C:risk_manager R:internal_auditor C:ciso A:head_internal_audit')
     ]
   }
 };

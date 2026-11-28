@@ -79,9 +79,10 @@ function assemble() {
       const kpisDerived = !raw.procedure && !raw.procedureSeed?.kpis;
 
       // Compact seeds do not list roles explicitly; derive them from the RACI.
-      const roles = raw.roles?.length
-        ? raw.roles
-        : [...new Set(raw.raciActivities.flatMap((a) => Object.keys(a.assign)))];
+      // A declared list keeps its order; a role the RACI assigns but the list
+      // omits is added rather than silently dropped from the matrix.
+      const assigned = raw.raciActivities.flatMap((a) => Object.keys(a.assign));
+      const roles = [...new Set([...(raw.roles || []), ...assigned])];
 
       models[key] = {
         key,
@@ -336,6 +337,18 @@ export function validateKnowledgeBase() {
     if (values.size < 2) continue;
     const stated = [...values].map(([value, domains]) => `${domains.join(', ')} say "${value}"`);
     problems.push(`Parameter {{${name}}} has different values in different domains: ${stated.join('; ')}`);
+  }
+
+  // ------------------------------------------------- audit independence --
+  // An audit of a domain's controls answers to the head of internal audit,
+  // never to the risk or GRC function whose work it examines.
+  for (const model of Object.values(DOMAIN_MODELS)) {
+    for (const activity of model.raciActivities) {
+      if (!/^(Audit|Conduct independent audit)\b/.test(activity.activity)) continue;
+      if (activity.assign.head_internal_audit !== 'A' || activity.assign.internal_auditor !== 'R') {
+        problems.push(`${model.key}: "${activity.activity}" must be accountable to the Head of Internal Audit and performed by Internal Audit`);
+      }
+    }
   }
 
   // ------------------------------------------- procedure against RACI --

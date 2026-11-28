@@ -497,6 +497,33 @@ export const ROLE_LIBRARY = [
     approvals: ['Audit finding closure following verification.', 'Audit scope and plan, subject to Audit Committee endorsement.'],
     escalations: ['Escalate findings not remediated by their due date to the Audit Committee.', 'Escalate any restriction of audit access to the Audit Committee immediately.', 'Escalate evidence of material control failure to the Audit Committee and CISO.'],
     domains: ['governance', 'risk_management']
+  },
+  {
+    code: 'head_internal_audit', name: 'Head of Internal Audit', shortName: 'Head of Internal Audit', category: 'Assurance',
+    purpose: 'To be accountable for independent assurance over cybersecurity, so that the conclusions reaching the Audit Committee are free of the influence of those who run the controls.',
+    reportingLine: 'Reports functionally to the Audit Committee and administratively to the head of the organisation, independent of the cybersecurity, technology and risk functions.',
+    authority: 'Authorised to set the audit plan with the Audit Committee, to direct internal auditors, to access any record, system or person needed for audit work, and to report to the Audit Committee without prior clearance by management.',
+    competencies: ['Leadership of an internal audit function to recognised professional standards', 'Cybersecurity and technology risk', 'Risk-based audit planning', 'Reporting to boards and audit committees'],
+    interfaces: [
+      { role: 'Audit Committee', nature: 'Agrees the audit plan and reports results and unresolved findings.' },
+      { role: 'Internal Auditor', nature: 'Directs audit engagements and reviews their conclusions.' },
+      { role: 'CISO', nature: 'Receives management responses and action plans for cybersecurity findings.' }
+    ],
+    responsibilities: [
+      'Set the risk-based cybersecurity audit plan and agree it with the Audit Committee.',
+      'Assign audit engagements and review their conclusions before they are issued.',
+      'Protect the independence of audit work from the functions it audits.',
+      'Report audit results and overdue findings to the Audit Committee.'
+    ],
+    accountabilities: [
+      'Accountable for the independence of cybersecurity audit conclusions.',
+      'Accountable for the coverage of the cybersecurity audit plan.',
+      'Accountable for reporting unresolved findings to the Audit Committee.'
+    ],
+    activities: ['Approve the annual cybersecurity audit plan.', 'Review engagement conclusions before issue.', 'Report to the Audit Committee on the agreed cycle.'],
+    approvals: ['Cybersecurity audit plan, subject to Audit Committee endorsement.', 'Issue of audit reports.'],
+    escalations: ['Escalate any restriction of audit scope or access to the Audit Committee immediately.', 'Escalate material control failures to the Audit Committee.'],
+    domains: ['governance', 'risk_management']
   }
 ];
 
