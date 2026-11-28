@@ -109,6 +109,7 @@ export default {
   },
 
   search: {
+    short: 'Search',
     title: 'Search',
     subtitle: 'One query across policies, standards, procedures, roles, controls, framework requirements, evidence, RACI activities and gap assessment rows.',
     placeholder: 'Search policies, controls, requirements, roles…',

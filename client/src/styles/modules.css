@@ -775,3 +775,11 @@ a.worklist-title:hover { color: var(--accent); }
 .methodology-cell.tone-medium .select   { background: var(--warn-soft); }
 .methodology-cell.tone-high .select     { background: color-mix(in srgb, var(--danger) 18%, var(--bg-raised)); }
 .methodology-cell.tone-critical .select { background: color-mix(in srgb, var(--danger) 38%, var(--bg-raised)); }
+
+/* Scale numbers beside the matrix, so a cell reads as "likelihood 4,
+   impact 3" without hovering. */
+.risk-matrix-frame { display: grid; grid-template-columns: 18px 1fr; gap: 3px; }
+.risk-matrix-rows { display: grid; grid-template-rows: repeat(5, 1fr); gap: 3px; }
+.risk-matrix-cols { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.risk-matrix-tick { display: grid; place-items: center; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.risk-band-figures { min-width: 64px; text-align: end; font-variant-numeric: tabular-nums; }

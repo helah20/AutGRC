@@ -14,7 +14,7 @@ import { useI18n } from '../i18n/index.jsx';
 
 export default function Risks() {
   const labels = useLabels();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, dir } = useI18n();
   const toast = useToast();
   const { can } = useAuth();
   const [search, setSearch] = useState('');
@@ -108,7 +108,7 @@ export default function Risks() {
                       <span className="risk-band-bar">
                         <span className="risk-band-fill" style={{ width: `${(inherent / Math.max(summary.total, 1)) * 100}%` }} />
                       </span>
-                      <span className="small mono">{inherent} → {residual}</span>
+                      <span className="small risk-band-figures">{formatNumber(inherent)} {dir === 'rtl' ? '←' : '→'} {formatNumber(residual)}</span>
                     </div>
                   );
                 })}
@@ -213,18 +213,31 @@ export default function Risks() {
 function RiskMatrix({ cells, onPick }) {
   const labels = useLabels();
   const { t, formatNumber } = useI18n();
+  // The server lists the cells row by row, so the first row names the
+  // likelihood of each column and the first cell of each row its impact.
+  const columns = cells.slice(0, 5).map((c) => c.likelihood);
+  const rows = [0, 1, 2, 3, 4].map((r) => cells[r * 5]?.impact);
   return (
     <div className="risk-matrix" role="group" aria-label={t('risks.matrix')}>
-      <div className="risk-matrix-grid">
-        {cells.map((cell) => (
-          <button key={`${cell.likelihood}-${cell.impact}`} type="button"
-            className={`risk-cell tone-${cell.rating} ${cell.count ? 'has-risks' : ''}`}
-            disabled={!cell.count}
-            title={`${t('risksUi.cellTitle', { likelihood: cell.likelihood, impact: cell.impact, rating: labels.rating(cell.rating) })}${cell.count ? `: ${cell.risks.map((r) => r.risk_id).join(', ')}` : ''}`}
-            onClick={() => cell.risks[0] && onPick(cell.risks[0].id)}>
-            {cell.count || ''}
-          </button>
-        ))}
+      <div className="risk-matrix-frame">
+        <div className="risk-matrix-rows" aria-hidden="true">
+          {rows.map((v, i) => <span key={i} className="risk-matrix-tick">{formatNumber(v)}</span>)}
+        </div>
+        <div className="risk-matrix-grid">
+          {cells.map((cell) => (
+            <button key={`${cell.likelihood}-${cell.impact}`} type="button"
+              className={`risk-cell tone-${cell.rating} ${cell.count ? 'has-risks' : ''}`}
+              disabled={!cell.count}
+              title={`${t('risksUi.cellTitle', { likelihood: cell.likelihood, impact: cell.impact, rating: labels.rating(cell.rating) })}${cell.count ? `: ${cell.risks.map((r) => r.risk_id).join(', ')}` : ''}`}
+              onClick={() => cell.risks[0] && onPick(cell.risks[0].id)}>
+              {cell.count ? formatNumber(cell.count) : ''}
+            </button>
+          ))}
+        </div>
+        <span />
+        <div className="risk-matrix-cols" aria-hidden="true">
+          {columns.map((v, i) => <span key={i} className="risk-matrix-tick">{formatNumber(v)}</span>)}
+        </div>
       </div>
       <div className="risk-matrix-axes">
         <span className="tiny muted">{t('risks.likelihoodAxis')}</span>

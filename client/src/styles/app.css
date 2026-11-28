@@ -278,7 +278,8 @@ p  { margin: 0 0 10px; }
   transition: border-color .15s, transform .15s;
 }
 .kpi:hover { border-color: var(--border-strong); }
-a.kpi:hover { text-decoration: none; transform: translateY(-1px); }
+a.kpi { color: inherit; text-decoration: none; }
+a.kpi:hover { text-decoration: none; transform: translateY(-1px); border-color: var(--accent); }
 .kpi-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
 .kpi-value { font-size: 27px; font-weight: 700; letter-spacing: -.025em; color: var(--text); line-height: 1.1; }
 .kpi-meta { font-size: 11.5px; color: var(--text-faint); }
@@ -709,4 +710,55 @@ table.data .cell-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 
    the document title on a phone; the detail page still shows it. */
 @media (max-width: 720px) {
   table.data .col-minor { display: none; }
+}
+
+/* ===================================================== navigation groups == */
+
+.nav-group-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  width: 100%; border: none; background: none; font-family: inherit; text-align: start;
+  cursor: pointer; border-radius: var(--radius-sm);
+}
+.nav-group-toggle:hover:not(:disabled) { color: #fff; }
+.nav-group-toggle:disabled { cursor: default; }
+.nav-group-toggle:focus-visible { outline: 2px solid #8FB8DE; outline-offset: -2px; }
+.nav-group-chevron { transform: rotate(90deg); transition: transform .15s; opacity: .7; }
+.nav-group-chevron:not(.open) { transform: rotate(0deg); }
+[dir="rtl"] .nav-group-chevron:not(.open) { transform: rotate(180deg); }
+.nav-count.tone-warn { background: color-mix(in srgb, var(--warn) 55%, transparent); color: #fff; }
+.nav-count.tone-danger { background: color-mix(in srgb, var(--danger) 70%, transparent); color: #fff; }
+
+/* The search box says less where there is less room. */
+.topbar-search-short { display: none; }
+@media (max-width: 760px) {
+  .topbar-search-long { display: none; }
+  .topbar-search-short { display: inline; }
+}
+
+/* Ten headline figures sit in two even rows rather than six and four. */
+@media (min-width: 1180px) {
+  .grid-kpi { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+/* Arabic is cursive: tracking pulls joined letters apart, and at the sizes
+   that suit uppercase Latin labels it is hard to read. Labels drop the
+   tracking and grow a step in Arabic. */
+[dir="rtl"] .nav-group-label,
+[dir="rtl"] .kpi-label,
+[dir="rtl"] .sidebar-brand-sub,
+[dir="rtl"] table.data th,
+[dir="rtl"] .definition dt {
+  letter-spacing: 0;
+  text-transform: none;
+}
+[dir="rtl"] .nav-group-label { font-size: 11.5px; }
+[dir="rtl"] .kpi-label { font-size: 12.5px; }
+[dir="rtl"] .sidebar-brand-sub { font-size: 11px; }
+[dir="rtl"] .nav-item { font-size: 14px; }
+[dir="rtl"] table.data th { font-size: 12px; }
+
+/* Behind the phone menu: dims the page and closes the menu when tapped. */
+.sidebar-backdrop { display: none; }
+@media (max-width: 1000px) {
+  .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 39; background: rgba(8, 18, 32, .45); }
 }

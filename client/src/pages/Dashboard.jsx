@@ -34,7 +34,7 @@ function ChartTooltip({ active, payload, label }) {
 export default function Dashboard() {
   const { data, loading, error, reload } = useFetch('/dashboard');
   const { user, org, can } = useAuth();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, formatPercent } = useI18n();
   const labels = useLabels();
 
   if (loading) return <Loading label={t('dashboard.loading')} />;
@@ -102,19 +102,19 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-kpi" style={{ marginBottom: 16 }}>
-        <Kpi label={t('dashboard.kpiTotalDocuments')} value={formatNumber(k.totalDocuments)}
+        <Kpi to="/documents" label={t('dashboard.kpiTotalDocuments')} value={formatNumber(k.totalDocuments)}
           meta={t('dashboard.kpiTotalDocumentsMeta', { published: formatNumber(k.published), draft: formatNumber(k.draft) })} />
-        <Kpi label={t('dashboard.kpiPolicies')} value={formatNumber(k.policies)} meta={t('dashboard.kpiPoliciesMeta')} />
-        <Kpi label={t('dashboard.kpiStandards')} value={formatNumber(k.standards)} meta={t('dashboard.kpiStandardsMeta')} />
-        <Kpi label={t('dashboard.kpiProcedures')} value={formatNumber(k.procedures)} meta={t('dashboard.kpiProceduresMeta')} />
-        <Kpi label={t('dashboard.kpiControls')} value={formatNumber(k.controls)} meta={t('dashboard.kpiControlsMeta', { evidence: formatNumber(k.evidence) })} />
-        <Kpi label={t('dashboard.kpiRoles')} value={formatNumber(k.roles)} meta={t('dashboard.kpiRolesMeta', { matrices: formatNumber(k.raciMatrices) })} />
-        <Kpi label={t('dashboard.kpiCoverage')} value={`${formatNumber(k.complianceCoverage)}%`} tone={coverageTone}
+        <Kpi to="/policies" label={t('dashboard.kpiPolicies')} value={formatNumber(k.policies)} meta={t('dashboard.kpiPoliciesMeta')} />
+        <Kpi to="/standards" label={t('dashboard.kpiStandards')} value={formatNumber(k.standards)} meta={t('dashboard.kpiStandardsMeta')} />
+        <Kpi to="/procedures" label={t('dashboard.kpiProcedures')} value={formatNumber(k.procedures)} meta={t('dashboard.kpiProceduresMeta')} />
+        <Kpi to="/controls" label={t('dashboard.kpiControls')} value={formatNumber(k.controls)} meta={t('dashboard.kpiControlsMeta', { evidence: formatNumber(k.evidence) })} />
+        <Kpi to="/roles" label={t('dashboard.kpiRoles')} value={formatNumber(k.roles)} meta={t('dashboard.kpiRolesMeta', { matrices: formatNumber(k.raciMatrices) })} />
+        <Kpi to="/frameworks" label={t('dashboard.kpiCoverage')} value={formatPercent(k.complianceCoverage)} tone={coverageTone}
           progress={k.complianceCoverage}
           meta={t('dashboard.kpiCoverageMeta', { count: formatNumber(mandatoryCount) })} />
-        <Kpi label={t('dashboard.kpiUnderReview')} value={formatNumber(k.underReview)} tone={k.underReview ? 'warn' : undefined} meta={t('dashboard.kpiUnderReviewMeta')} />
-        <Kpi label={t('dashboard.kpiReviewDue')} value={formatNumber(k.reviewDue)} tone={k.overdue ? 'danger' : 'warn'} meta={t('dashboard.kpiReviewDueMeta', { overdue: formatNumber(k.overdue) })} />
-        <Kpi label={t('dashboard.kpiOpenFindings')} value={formatNumber(k.openFindings)} tone={k.criticalFindings ? 'danger' : undefined}
+        <Kpi to="/documents" label={t('dashboard.kpiUnderReview')} value={formatNumber(k.underReview)} tone={k.underReview ? 'warn' : undefined} meta={t('dashboard.kpiUnderReviewMeta')} />
+        <Kpi to="/my-work" label={t('dashboard.kpiReviewDue')} value={formatNumber(k.reviewDue)} tone={k.overdue ? 'danger' : 'warn'} meta={t('dashboard.kpiReviewDueMeta', { overdue: formatNumber(k.overdue) })} />
+        <Kpi to="/findings" label={t('dashboard.kpiOpenFindings')} value={formatNumber(k.openFindings)} tone={k.criticalFindings ? 'danger' : undefined}
           meta={t('dashboard.kpiOpenFindingsMeta', { critical: formatNumber(k.criticalFindings) })} />
       </div>
 
@@ -147,7 +147,7 @@ export default function Dashboard() {
               <BarChart data={c.byStatus} margin={{ top: 6, right: 6, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="name" {...chartAxis} tickLine={false} axisLine={false} interval={0} angle={-14} textAnchor="end" height={54} />
-                <YAxis {...chartAxis} tickLine={false} axisLine={false} allowDecimals={false} />
+                <YAxis {...chartAxis} tickLine={false} axisLine={false} allowDecimals={false} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
                 <Bar dataKey="value" name={t('nav.allDocuments')} radius={[4, 4, 0, 0]}>
                   {c.byStatus.map((entry) => (
@@ -184,7 +184,7 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={c.controlsByRisk} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                <XAxis type="number" {...chartAxis} tickLine={false} axisLine={false} allowDecimals={false} />
+                <XAxis type="number" {...chartAxis} tickLine={false} axisLine={false} allowDecimals={false} tickFormatter={(v) => formatNumber(v)} />
                 <YAxis type="category" dataKey="name" {...chartAxis} tickLine={false} axisLine={false}
                   width={64} tickFormatter={titleCase} />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
@@ -204,7 +204,7 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="name" {...chartAxis} tickLine={false} axisLine={false}
                     angle={-28} textAnchor="end" height={62} interval={0} tickFormatter={titleCase} />
-                  <YAxis {...chartAxis} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <YAxis {...chartAxis} tickLine={false} axisLine={false} allowDecimals={false} tickFormatter={(v) => formatNumber(v)} />
                   <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
                   <Bar dataKey="value" name={t('nav.findings')} fill={TONE_COLORS.warn} radius={[4, 4, 0, 0]} />
                 </BarChart>

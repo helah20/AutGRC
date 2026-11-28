@@ -105,8 +105,8 @@ export default function Controls() {
                 key: 'operating_effectiveness', header: t('controlsUi.colOperating'), nowrap: true,
                 render: (c) => <Badge tone={EFFECTIVENESS_TONE[c.operating_effectiveness] || 'neutral'}>{labels.effectiveness(c.operating_effectiveness)}</Badge>
               },
-              { key: 'evidence_count', header: t('controlsUi.colEvidence'), align: 'right', render: (c) => c.evidence_count || <span className="muted">0</span> },
-              { key: 'mapping_count', header: t('controlsUi.colMappings'), align: 'right', render: (c) => c.mapping_count || <span className="muted">0</span> }
+              { key: 'evidence_count', header: t('controlsUi.colEvidence'), align: 'right', render: (c) => (c.evidence_count ? formatNumber(c.evidence_count) : <span className="muted">{formatNumber(0)}</span>) },
+              { key: 'mapping_count', header: t('controlsUi.colMappings'), align: 'right', render: (c) => (c.mapping_count ? formatNumber(c.mapping_count) : <span className="muted">{formatNumber(0)}</span>) }
             ]}
             rows={data?.items || []}
             onRowClick={open}

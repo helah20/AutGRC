@@ -86,6 +86,16 @@ export default function Shell({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('autgrc-theme') || 'light');
+  // Folded navigation groups, remembered per browser. Storage can be blocked,
+  // so the sidebar works without it.
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('autgrc-nav-collapsed') || '[]'); } catch { return []; }
+  });
+  const toggleGroup = (key) => setCollapsed((list) => {
+    const next = list.includes(key) ? list.filter((k) => k !== key) : [...list, key];
+    try { localStorage.setItem('autgrc-nav-collapsed', JSON.stringify(next)); } catch { /* not remembered */ }
+    return next;
+  });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -134,20 +144,30 @@ export default function Shell({ children }) {
           {NAV.map((group) => {
             const items = group.items.filter((i) => !i.permission || can(i.permission));
             if (!items.length) return null;
+            const hasActive = items.some((i) => location.pathname === i.to || location.pathname.startsWith(`${i.to}/`));
+            // A group holding the current page always shows it, whatever was folded.
+            const open = hasActive || !collapsed.includes(group.labelKey);
+            const id = `nav-${group.labelKey.replace(/\W/g, '-')}`;
             return (
-              <div key={group.label}>
-                <div className="nav-group-label">{t(group.labelKey)}</div>
-                {items.map((item) => {
-                  const Icon = item.icon;
-                  const count = item.countKey ? counts[item.countKey] : undefined;
-                  return (
-                    <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                      <Icon />
-                      <span className="nav-item-label">{t(item.labelKey)}</span>
-                      {count > 0 && <span className="nav-count">{formatNumber(count)}</span>}
-                    </NavLink>
-                  );
-                })}
+              <div key={group.labelKey} className="nav-group">
+                <button type="button" className="nav-group-label nav-group-toggle" aria-expanded={open} aria-controls={id}
+                  disabled={hasActive} onClick={() => toggleGroup(group.labelKey)}>
+                  <span>{t(group.labelKey)}</span>
+                  {!hasActive && <IconChevronRight className={`nav-group-chevron ${open ? 'open' : ''}`} width={12} height={12} />}
+                </button>
+                <div id={id} hidden={!open}>
+                  {items.map((item) => {
+                    const Icon = item.icon;
+                    const count = item.countKey ? counts[item.countKey] : undefined;
+                    return (
+                      <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                        <Icon />
+                        <span className="nav-item-label">{t(item.labelKey)}</span>
+                        {count > 0 && <span className={`nav-count ${item.tone ? `tone-${item.tone}` : ''}`}>{formatNumber(count)}</span>}
+                      </NavLink>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -163,6 +183,8 @@ export default function Shell({ children }) {
         </div>
       </nav>
 
+      {menuOpen && <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} aria-hidden="true" />}
+
       <div className="main-area">
         <header className="topbar">
           <button className="btn btn-ghost btn-icon menu-toggle" onClick={() => setMenuOpen((o) => !o)} aria-label={t('nav.toggleNavigation')}>
@@ -174,7 +196,10 @@ export default function Shell({ children }) {
             <IconSearch width={14} height={14} />
             {/* A span, not an input: an input inside a button is two controls in one, and
                 screen readers announce neither correctly. The button opens the palette. */}
-            <span className="topbar-search-field">{t('search.placeholder')}</span>
+            <span className="topbar-search-field">
+              <span className="topbar-search-long">{t('search.placeholder')}</span>
+              <span className="topbar-search-short">{t('search.short')}</span>
+            </span>
             <kbd>⌘K</kbd>
           </button>
 
