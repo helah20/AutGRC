@@ -356,7 +356,10 @@ test('Arabic package generation', async (t) => {
          JOIN controls c ON c.id = cm.control_id
          JOIN documents d ON d.id = c.standard_id
          JOIN framework_requirements fr ON fr.id = cm.requirement_id
-        WHERE d.package_id = ? LIMIT 1`, arPkg.packageId);
+        JOIN frameworks f ON f.id = fr.framework_id
+        -- CSCC-2:2026, NCNICC-1:2025 and the PDPL are published in Arabic only:
+        -- Arabic there is the publisher's wording, not a paraphrase.
+        WHERE d.package_id = ? AND f.code NOT IN ('NCA-CSCC', 'NCA-NCNICC', 'SDAIA-PDPL') LIMIT 1`, arPkg.packageId);
     assert.ok(mapping, 'the Arabic package still carries framework mappings');
     assert.equal(hasArabic(`${mapping.title} ${mapping.statement || ''}`), false,
       'framework requirement text must not be paraphrased into Arabic');
@@ -391,7 +394,8 @@ const PLANTED = {
   incident_management: { docType: 'procedure', agreed: '١٠ أيام عمل', wrong: '٣٠ يوم عمل', parameter: 'lessonsLearnedSla' },
   asset_management: { docType: 'procedure', agreed: '٤٨ ساعة', wrong: '٧٢ ساعة', parameter: 'unauthorisedAssetSla' },
   third_party: { docType: 'procedure', agreed: '٢٤ ساعة', wrong: '٤٨ ساعة', parameter: 'supplierIncidentNotificationSla' },
-  governance: { docType: 'policy', agreed: 'بتكرار سنوي', wrong: 'بتكرار نصف سنوي', parameter: 'policyReviewFrequency' },
+  // The review frequency is the Standard's: a Policy states no measurable value.
+  governance: { docType: 'standard', agreed: 'بتكرار سنوي', wrong: 'بتكرار نصف سنوي', parameter: 'policyReviewFrequency' },
   // Against the adjectival form in the Roles document — "المراجعة ربع السنوية" —
   // which the frequency vocabulary read as annual until it learned the pattern.
   risk_management: { docType: 'standard', agreed: 'ربع سنوي', wrong: 'سنوي', parameter: 'riskRegisterReviewFrequency' },

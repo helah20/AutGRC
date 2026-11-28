@@ -141,14 +141,14 @@ export const DATA_DOMAINS = {
       records: ['Supplier register and tiering rationale (retained for contract life plus 3 years)', 'Due diligence assessments (retained {{dueDiligenceValidity}} plus 3 years)', 'Certificates of destruction (retained 7 years)'],
       kpis: [{ name: 'Due diligence coverage', target: '100% of Critical and High tier suppliers' }, { name: 'Contract clause compliance', target: '100% of Critical and High tier contracts' }, { name: 'Reassessment completion', target: '100% of Critical suppliers {{criticalSupplierReviewFrequency}}' }, { name: 'Offboarding timeliness', target: '100% within {{offboardingSla}}' }]
     },
-    roles: ['ciso', 'grc_manager', 'cyber_analyst', 'risk_manager', 'business_owner', 'it_manager', 'internal_auditor'],
+    roles: ['ciso', 'grc_manager', 'cyber_analyst', 'risk_manager', 'business_owner', 'it_manager', 'iam_specialist', 'internal_auditor'],
     raciActivities: [
       { activity: 'Define and approve the Third-Party Security Policy', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', cyber_analyst: 'C', risk_manager: 'C', business_owner: 'I', it_manager: 'I', internal_auditor: 'I' } },
       { activity: 'Classify supplier risk tier', phase: 'Govern', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'R', risk_manager: 'C', business_owner: 'C', it_manager: 'I', internal_auditor: 'I' } },
       { activity: 'Conduct pre-contract due diligence', phase: 'Protect', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'R', risk_manager: 'C', business_owner: 'C', it_manager: 'I', internal_auditor: 'I' } },
       { activity: 'Negotiate cybersecurity contract clauses', phase: 'Protect', assign: { ciso: 'C', grc_manager: 'R', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'A', it_manager: 'I', internal_auditor: 'I' } },
       { activity: 'Accept residual supplier risk', phase: 'Govern', assign: { ciso: 'A', grc_manager: 'R', cyber_analyst: 'C', risk_manager: 'R', business_owner: 'R', it_manager: 'I', internal_auditor: 'I' } },
-      { activity: 'Provision and manage supplier access', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'C', it_manager: 'R', internal_auditor: 'I' } },
+      { activity: 'Provision and manage supplier access', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'C', it_manager: 'R', internal_auditor: 'I', iam_specialist: 'R' } },
       { activity: 'Reassess critical suppliers', phase: 'Assure', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'R', risk_manager: 'C', business_owner: 'C', it_manager: 'I', internal_auditor: 'C' } },
       { activity: 'Manage supplier security incidents', phase: 'Respond', assign: { ciso: 'A', grc_manager: 'R', cyber_analyst: 'R', risk_manager: 'C', business_owner: 'C', it_manager: 'C', internal_auditor: 'I' } },
       { activity: 'Offboard suppliers and confirm data destruction', phase: 'Operate', assign: { ciso: 'I', grc_manager: 'A', cyber_analyst: 'C', risk_manager: 'I', business_owner: 'R', it_manager: 'R', internal_auditor: 'C' } },
@@ -160,6 +160,9 @@ export const DATA_DOMAINS = {
   },
 
   data_protection: {
+    // Who performs a procedure step without holding a role in the RACI:
+    // a requester, a platform, a board, or an owner named per asset.
+    outsideActors: ["Information Owner", "Information Owner / Custodian"],
     principal: ['NCA-DCC'],
     scope: ["The organisation's data in every form, structured and unstructured, wherever it is created, stored, processed, transmitted or disposed of.", "Data at every classification level, with the controls each level requires.", "The personnel, contractors, third parties and consultancy services who create, handle, share or dispose of the data.", "The systems, devices, removable media, printers, scanners and copy machines that store, process or reproduce the data.", "Data shared with third parties or transferred outside the Kingdom."],
     objectives: [

@@ -3,6 +3,9 @@ import { raci } from './req-helpers.js';
 
 export const GOVERN_DOMAINS = {
   governance: {
+    // Who performs a procedure step without holding a role in the RACI:
+    // a requester, a platform, a board, or an owner named per asset.
+    outsideActors: ["Domain stakeholders", "{{policyApprovalAuthority}}", "Document Owner"],
     objectives: [
       'Establish executive direction, authority and accountability for cybersecurity.',
       'Maintain a coherent, approved and current policy framework.',
@@ -21,8 +24,8 @@ export const GOVERN_DOMAINS = {
         evidence: ['Approved cybersecurity strategy document', 'Roadmap with owners and milestone status', 'Steering Committee minutes recording approval'],
         refs: { 'NCA-ECC': ['1-1', '1-1-1', '1-1-2', '1-1-3'], 'ISO-27001': ['5.2', '6'], 'NIST-CSF': ['GV.OC', 'GV.RM'], 'SAMA-CSF': ['1.2'], 'COBIT-2019': ['EDM01', 'APO13'], 'NCA-CSCC': ['1-1-1'], 'NIST-800-171': ['03.12.03'], 'AICPA-SOC2': ['CC1.1', 'CC5.1', 'CC5.3'], 'SAMA-ITGF': ['1.3', '1.4'] } },
       { key: 'policy_framework', title: 'Cybersecurity policy framework',
-        policy: 'Cybersecurity policies, standards and procedures shall be defined, documented, approved by {{policyApprovalAuthority}}, communicated to relevant parties and reviewed at least {{policyReviewFrequency}}.',
-        standard: 'The framework shall follow the hierarchy of Policy, Standard, Procedure and Work Instruction, with each lower tier traceable to the tier above. Every document shall record an owner, approver, version, effective date, review date and classification. Documents overdue for review shall be reported to {{policyApprovalAuthority}}.',
+        policy: 'Cybersecurity policies, standards and procedures shall be defined, documented, approved by {{policyApprovalAuthority}}, communicated to relevant parties and reviewed periodically, at the frequency set in the accompanying Standard.',
+        standard: 'The framework shall follow the hierarchy of Policy, Standard, Procedure and Work Instruction, with each lower tier traceable to the tier above. Every document shall record an owner, approver, version, effective date, review date and classification, and shall be reviewed at least {{policyReviewFrequency}}. Documents overdue for review shall be reported to {{policyApprovalAuthority}}.',
         clauseOwners: ['grc_manager', 'grc_manager', 'grc_manager'],
         guidance: 'Keep normative obligations in the policy and measurable parameters in the standard; mixing them causes the two to drift apart at the next review.',
         controlName: 'Cybersecurity policy framework management', controlType: 'directive', controlNature: 'administrative',
@@ -173,6 +176,9 @@ export const GOVERN_DOMAINS = {
   },
 
   risk_management: {
+    // Who performs a procedure step without holding a role in the RACI:
+    // a requester, a platform, a board, or an owner named per asset.
+    outsideActors: ["Risk Owner"],
     objectives: [
       'Identify and assess cybersecurity risk consistently across the organisation.',
       'Treat risk in line with the approved risk appetite.',
@@ -191,8 +197,8 @@ export const GOVERN_DOMAINS = {
         evidence: ['Approved risk methodology document', 'Risk evaluation criteria and appetite statement', 'Sample assessments demonstrating consistent application'],
         refs: { 'NCA-ECC': ['1-5-1', '1-5-2', '1-5-4'], 'ISO-27001': ['6.1.2', '6.1.3'], 'ISO-27005': ['7'], 'NIST-CSF': ['GV.RM'], 'COBIT-2019': ['APO12'], 'SAMA-CSF': ['2.1'], 'NCA-NCNICC': ['1-3-1', '1-3-2', '1-3-3'], 'AICPA-SOC2': ['CC3.3'] } },
       { key: 'risk_assessment', title: 'Cybersecurity risk assessment',
-        policy: 'Cybersecurity risk assessments shall be conducted {{riskAssessmentFrequency}}, and before a technology change classed as major under Change Management, new projects and outsourcing arrangements.',
-        standard: 'Assessments shall identify assets in scope, applicable threats, existing controls, vulnerabilities, and the resulting inherent and residual risk. Results shall be recorded in the risk register with a named risk owner. Assessment shall precede go-live, not follow it.',
+        policy: 'Cybersecurity risk assessments shall be conducted periodically, at the frequency set in the accompanying Standard, and before a technology change classed as major under Change Management, new projects and outsourcing arrangements.',
+        standard: 'Assessments, conducted {{riskAssessmentFrequency}}, shall identify assets in scope, applicable threats, existing controls, vulnerabilities, and the resulting inherent and residual risk. Results shall be recorded in the risk register with a named risk owner. Assessment shall precede go-live, not follow it.',
         clauseOwners: ['risk_manager', 'risk_manager', 'system_owner'],
         guidance: 'Embed the assessment trigger in project gating and change approval workflows; assessments required by policy alone are routinely skipped under delivery pressure.',
         controlName: 'Cybersecurity risk assessment', controlType: 'detective', controlNature: 'administrative',
@@ -317,6 +323,9 @@ export const GOVERN_DOMAINS = {
   },
 
   security_awareness: {
+    // Who performs a procedure step without holding a role in the RACI:
+    // a requester, a platform, a board, or an owner named per asset.
+    outsideActors: ["Human Resources"],
     objectives: [
       'Ensure personnel understand their cybersecurity responsibilities.',
       'Provide role-specific training for higher-risk roles.',
@@ -582,6 +591,9 @@ export const GOVERN_DOMAINS = {
   },
 
   change_management: {
+    // Who performs a procedure step without holding a role in the RACI:
+    // a requester, a platform, a board, or an owner named per asset.
+    outsideActors: ["Change Advisory Board"],
     objectives: [
       'Ensure changes are assessed for security impact before implementation.',
       'Maintain approved configuration baselines.',

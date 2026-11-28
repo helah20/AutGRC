@@ -120,9 +120,9 @@ export const TECH_DOMAINS = {
     ]
     },
     raciActivities: [
-      raci('Define approved cryptographic standards', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst'),
+      raci('Define approved cryptographic standards', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst R:security_architect'),
       raci('Implement encryption at rest and in transit', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
-      raci('Manage cryptographic keys', 'Protect', 'A:ciso R:it_manager C:cyber_analyst I:internal_auditor'),
+      raci('Manage cryptographic keys', 'Protect', 'A:ciso R:it_manager C:cyber_analyst I:internal_auditor R:security_architect'),
       raci('Manage certificates and renewals', 'Operate', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Scan for deprecated cryptography', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager'),
       raci('Maintain the cryptographic inventory', 'Govern', 'A:grc_manager R:cyber_analyst C:it_manager'),
@@ -258,7 +258,7 @@ export const TECH_DOMAINS = {
     ]
     },
     raciActivities: [
-      raci('Define the network security architecture', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst'),
+      raci('Define the network security architecture', 'Govern', 'A:ciso R:grc_manager C:it_manager C:cyber_analyst R:security_architect'),
       raci('Approve firewall rule changes', 'Protect', 'A:it_manager R:cyber_analyst C:system_owner'),
       raci('Implement network segmentation', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst I:ciso'),
       raci('Operate secure remote access', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
@@ -268,7 +268,7 @@ export const TECH_DOMAINS = {
       raci('Provide network resilience for internet-facing services', 'Resilience', 'A:it_manager R:system_owner C:business_owner I:ciso'),
       raci('Harden network devices and control their configuration', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Enforce network access control at the port', 'Protect', 'A:it_manager R:cyber_analyst C:system_owner'),
-      raci('Review the firewall rule base', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager C:internal_auditor')
+      raci('Review the firewall rule base', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager C:internal_auditor R:security_architect')
     ]
   },
 
@@ -416,7 +416,7 @@ export const TECH_DOMAINS = {
       raci('Archive email and test recovery', 'Resilience', 'A:it_manager R:system_owner C:grc_manager'),
       raci('Protect sensitive information sent by email', 'Protect', 'A:it_manager R:cyber_analyst C:business_owner'),
       raci('Verify payment requests received by email', 'Protect', 'A:ciso R:business_owner C:cyber_analyst'),
-      raci('Triage phishing reports', 'Detect', 'A:ciso R:cyber_analyst I:business_owner'),
+      raci('Triage phishing reports', 'Detect', 'A:ciso R:cyber_analyst I:business_owner R:soc_analyst'),
       raci('Review email protection', 'Assure', 'A:grc_manager R:cyber_analyst C:it_manager I:internal_auditor')
     ]
   },
@@ -561,7 +561,7 @@ export const TECH_DOMAINS = {
       raci('Maintain the database register', 'Govern', 'A:it_manager R:system_owner C:grc_manager'),
       raci('Harden databases and their placement', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Restrict direct database access', 'Protect', 'A:it_manager R:system_owner C:business_owner'),
-      raci('Control database administrator access', 'Protect', 'A:ciso R:it_manager C:grc_manager I:internal_auditor'),
+      raci('Control database administrator access', 'Protect', 'A:ciso R:it_manager C:grc_manager I:internal_auditor R:iam_specialist'),
       raci('Monitor database activity', 'Detect', 'A:ciso R:cyber_analyst C:it_manager'),
       raci('Encrypt databases and their backups', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Patch database platforms', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
@@ -742,14 +742,14 @@ export const TECH_DOMAINS = {
       raci('Assign facility levels and manage OT/ICS risk', 'Govern', 'A:ciso R:risk_manager C:business_owner C:system_owner'),
       raci('Build cybersecurity into OT/ICS projects', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
       raci('Control changes to OT/ICS', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
-      raci('Maintain the OT/ICS asset inventory', 'Govern', 'A:system_owner R:it_manager C:grc_manager'),
+      raci('Maintain the OT/ICS asset inventory', 'Govern', 'A:system_owner R:it_manager C:grc_manager R:asset_owner'),
       raci('Manage OT/ICS identities and access', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Approve and monitor remote access to OT/ICS', 'Protect', 'A:ciso R:it_manager C:system_owner'),
-      raci('Segment OT/ICS networks', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst I:ciso'),
+      raci('Segment OT/ICS networks', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst I:ciso R:security_architect'),
       raci('Harden and patch OT/ICS systems', 'Protect', 'A:system_owner R:it_manager C:cyber_analyst'),
       raci('Control removable media in OT/ICS', 'Protect', 'A:it_manager R:system_owner C:cyber_analyst'),
       raci('Assess OT/ICS vulnerabilities', 'Assure', 'A:ciso R:cyber_analyst C:system_owner'),
-      raci('Monitor OT/ICS events', 'Detect', 'A:ciso R:cyber_analyst C:it_manager'),
+      raci('Monitor OT/ICS events', 'Detect', 'A:ciso R:cyber_analyst C:it_manager R:soc_analyst'),
       raci('Exercise OT/ICS continuity and safe mode', 'Resilience', 'A:business_owner R:system_owner C:it_manager C:grc_manager'),
       raci('Review OT/ICS controls', 'Assure', 'A:grc_manager R:cyber_analyst C:system_owner I:internal_auditor')
     ]
@@ -817,7 +817,7 @@ export const TECH_DOMAINS = {
         evidence: ['Multi-factor authentication status per account', 'Vault records for account credentials', 'Password change records'],
         refs: { 'NCA-OSMACC': ['2-2-1-4', '2-2-1-5', '2-3-1-3'], 'NCA-ECC': ['2-2-3-2'], 'ISO-27001': ['A.5.17', 'A.8.5'] } },
       { key: 'sm_shared_access', title: 'Shared accounts and leavers',
-        policy: 'Where a platform does not support named individual access, the shared credentials shall be issued only through the password vault to named people, and never sent by email, chat or any other channel. When a person with access leaves the role or the organisation, their access shall be removed, and any shared credentials they knew changed, {{smLeaverRevocation}}.',
+        policy: 'Where a platform does not support named individual access, the shared credentials shall be issued only through the password vault to named people, and never sent by email, chat or any other channel. When a person with access leaves the role or the organisation, their access shall be removed, and any shared credentials they knew changed, within the period set in the accompanying Standard.',
         standard: 'Platform roles for named individuals shall be used wherever the platform offers them. Where an account must be shared, the vault shall record each person who can retrieve its credentials. Shared credentials shall never be transmitted outside the vault. Access shall be removed, and shared credentials and recovery information changed, {{smLeaverRevocation}}.',
         clauseOwners: ['system_owner', 'it_manager', 'system_owner', 'it_manager'],
         guidance: 'Leaving dates come from Human Resources. Subscribe the account access list to the leaver feed rather than waiting for the line manager to remember.',
@@ -827,7 +827,7 @@ export const TECH_DOMAINS = {
         evidence: ['Vault access records for shared accounts', 'Leaver revocation records with timings', 'Credential change records after leavers'],
         refs: { 'NCA-OSMACC': ['2-2-1-4', '2-2-1-7'], 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.18', 'A.5.17'] } },
       { key: 'sm_access_rights', title: 'Access to social media accounts',
-        policy: 'Access to official accounts shall be approved by the Business Owner on business need, granted only on specific devices, kept to what each person and provider needs, and reviewed {{smAccessReviewFrequency}}.',
+        policy: 'Access to official accounts shall be approved by the Business Owner on business need, granted only on specific devices, kept to what each person and provider needs, and reviewed periodically.',
         standard: 'Access rights shall be granted on business need, considering the sensitivity of the account, the level of rights and the devices and systems used. Access shall be restricted to specific devices. The access of social media management, monitoring and brand protection providers shall be restricted to what their service needs. Access rights shall be reviewed {{smAccessReviewFrequency}}.',
         clauseOwners: ['business_owner', 'it_manager', 'business_owner', 'business_owner'],
         guidance: 'Use the platform\'s business manager or delegated roles rather than sharing the account password; it lets you remove one person without changing the credentials for everyone.',
@@ -867,7 +867,7 @@ export const TECH_DOMAINS = {
         evidence: ['Vault entries for recovery information per account', 'Vault backup records', 'Recovery information checks at access review'],
         refs: { 'NCA-OSMACC': ['2-2-1-6', '2-7-1-1'], 'ISO-27001': ['A.8.13'] } },
       { key: 'sm_monitoring', title: 'Monitoring of accounts and impersonation',
-        policy: 'Official accounts shall be monitored for unauthorised logins and posts, and the platforms for impersonation of the organisation. Impersonation shall be reported to the platform, documented and handled {{smImpersonationResponse}}.',
+        policy: 'Official accounts shall be monitored for unauthorised logins and posts, and the platforms for impersonation of the organisation. Impersonation shall be reported to the platform, documented and handled within the period set in the accompanying Standard.',
         standard: 'All security notifications and alerts shall be enabled on every account, and event logs enabled on related technology assets. The accounts shall be followed and monitored for unauthorised content or logins. Social media networks shall be monitored for impersonation of the organisation. Automated monitoring shall detect changes in account behaviour, indicators of compromise, unauthorised content and impersonation. Each impersonation case shall be recorded with its evidence, reported to the platform through its official channel, and tracked to closure {{smImpersonationResponse}}.',
         clauseOwners: ['system_owner', 'cyber_analyst', 'cyber_analyst', 'cyber_analyst', 'cyber_analyst'],
         guidance: 'Route the platform\'s security alerts to a shared monitored mailbox, not to the person who happens to manage the account this month.',
@@ -922,7 +922,7 @@ export const TECH_DOMAINS = {
       { name: 'Register and inventory', actor: 'Business Owner', detail: 'Register the account with the corporate social media email and official mobile number, verify it through the platform’s own verification where the platform offers one, and add it to the inventory with its Business Owner.' },
       { name: 'Secure access', actor: 'System Owner', detail: 'Set a unique password held in the vault, enable multi-factor authentication, store the recovery information in the vault and restrict access to named people on dedicated devices.' },
       { name: 'Monitor', actor: 'Cybersecurity Analyst', detail: 'Monitor the accounts for unauthorised posts and logins and the platforms for impersonation, and record each impersonation case.' },
-      { name: 'Respond and recover', actor: 'Incident Response Analyst', detail: 'On a suspected takeover, follow the recovery plan through the platform\'s verified support channel and handle it as a cybersecurity incident.' },
+      { name: 'Respond and recover', actor: 'Cybersecurity Analyst', detail: 'On a suspected takeover, follow the recovery plan through the platform\'s verified support channel and handle it as a cybersecurity incident.' },
       { name: 'Review', actor: 'Cybersecurity GRC Manager', detail: 'Confirm that access was reviewed {{smAccessReviewFrequency}} and account configuration {{smConfigReviewFrequency}}, and report compliance.' }
     ],
     inputs: [
@@ -1262,6 +1262,9 @@ export const TECH_DOMAINS = {
   },
 
   secure_sdlc: {
+    // Who performs a procedure step without holding a role in the RACI:
+    // a requester, a platform, a board, or an owner named per asset.
+    outsideActors: ["Development team", "Build pipeline"],
     objectives: ['Embed security throughout the development lifecycle.', 'Separate environments and control access to source code.', 'Assure the security of outsourced development.'],
     parameters: { codeReviewCoverage: '100% of changes to production code', secretScanFrequency: 'on every commit', envSeparation: 'physically or logically separate development, test and production environments with no shared credentials', trainingFrequency: 'annually for all developers', pipelineGate: 'a mandatory security gate that blocks promotion on critical findings' , projectSecurityGate: 'a security requirements review at initiation and a security sign-off before go-live', sbomRequirement: 'a software bill of materials produced at build and retained with the release', buildIntegrity: 'builds produced only by the pipeline from a protected branch, with artefacts signed', changeFreezeRule: 'no unreviewed change to production outside the emergency path' },
 
@@ -1401,6 +1404,9 @@ export const TECH_DOMAINS = {
   },
 
   physical_security: {
+    // Who performs a procedure step without holding a role in the RACI:
+    // a requester, a platform, a board, or an owner named per asset.
+    outsideActors: ["Facility Owner", "Reception / Host"],
     objectives: ['Protect facilities housing information processing from unauthorised physical access.', 'Protect equipment from environmental threats.', 'Control physical access records and visitors.'],
     parameters: { accessReviewFrequency: 'quarterly', visitorEscortRequirement: 'continuous escort within secure areas', cctvRetention: '90 days', environmentalMonitoring: 'temperature, humidity, water ingress, smoke and power monitoring with alerting', badgeRevocationSla: 'the effective leaving time' , equipmentSiting: 'away from external windows, unattended corridors and areas subject to water ingress, with screens not visible from outside the zone', cablingProtection: 'power and data cabling in conduit or a protected route, with patch panels and cabinets locked and labelled', deliveryAreaRule: 'deliveries received in a separate area, inspected before entering a secure zone, and never left unattended', cleanDeskRule: 'Confidential and Secret material secured when unattended and at the end of the working day', maintenanceSupervision: 'escorted and supervised for the duration of the visit, with work recorded' },
 
