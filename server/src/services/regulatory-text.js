@@ -31,7 +31,7 @@ export function loadRegulatoryText(frameworkCodes = []) {
   const out = {};
   for (const code of codes) {
     const rows = q.all(
-      `SELECT r.ref, r.parent_ref, r.title, r.statement, r.statement_ar, r.level, r.source_status
+      `SELECT r.ref, r.parent_ref, r.title, r.statement, r.statement_ar, r.level, r.source_status, r.applicability
          FROM framework_requirements r JOIN frameworks f ON f.id = r.framework_id
         WHERE f.code = ? AND f.edition_status != 'superseded'`, code);
     if (!rows.length) continue;
@@ -103,6 +103,7 @@ export function regulatoryClauses(requirement, regulatory, used, language = 'en'
           framework: code,
           ref: row.ref,
           text: arabic || row.statement,
+          applicability: row.applicability || null,
           // An Arabic Policy quoting a control the organisation holds only in
           // English says so, rather than presenting a translation as the text.
           englishOnly: language === 'ar' && !arabic

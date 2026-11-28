@@ -22,6 +22,7 @@ import {
 } from '../knowledge/index.js';
 import { startingPosition, suggestedEffectiveness } from '../services/risk.js';
 import { nextDue } from '../services/cadence.js';
+import { shippedApplicability } from '../services/applicability.js';
 import { requirementStatus } from '../services/compliance.js';
 import { generatePackage } from '../services/generator.js';
 import { indexFrameworkRequirement } from '../services/search.js';
@@ -85,8 +86,24 @@ export function syncCatalogueDomains() {
     // The catalogue's own description of a framework, corrected in the
     // knowledge base, reaches installations already seeded.
     changed += q.run('UPDATE frameworks SET description = ? WHERE id = ? AND description != ?', f.description, fw.id, f.description).changes;
-    for (const [ref, title, domainKey, level, , statement] of REQUIREMENTS[f.code] || []) {
+    for (const [ref, title, domainKey, level, , statement, extra] of REQUIREMENTS[f.code] || []) {
       const status = shippedStatus(f, level, title, statement);
+      // The publisher's Arabic wording, where the catalogue carries it.
+      if (extra?.ar) {
+        changed += q.run(
+          `UPDATE framework_requirements SET statement_ar = ?
+            WHERE framework_id = ? AND ref = ? AND source_status != 'user_imported' AND COALESCE(statement_ar, '') != ?`,
+          extra.ar, fw.id, ref, extra.ar
+        ).changes;
+      }
+      const app = shippedApplicability(f.code, ref, extra);
+      if (app) {
+        changed += q.run(
+          `UPDATE framework_requirements SET applicability = ?
+            WHERE framework_id = ? AND ref = ? AND source_status != 'user_imported' AND COALESCE(applicability, '') != ?`,
+          JSON.stringify(app), fw.id, ref, JSON.stringify(app)
+        ).changes;
+      }
       changed += q.run(
         `UPDATE framework_requirements SET source_status = ?
           WHERE framework_id = ? AND ref = ? AND source_status != 'user_imported' AND source_status != ?`,
@@ -171,14 +188,15 @@ export function seedFrameworks() {
       }
       byCode[f.code] = fwId;
 
-      for (const [ref, title, domainKey, level, parentRef, statement] of REQUIREMENTS[f.code] || []) {
+      for (const [ref, title, domainKey, level, parentRef, statement, extra] of REQUIREMENTS[f.code] || []) {
         if (q.get('SELECT id FROM framework_requirements WHERE framework_id = ? AND ref = ?', fwId, ref)) continue;
         const reqId = id('frq');
+        const app = shippedApplicability(f.code, ref, extra);
         q.run(
-          `INSERT INTO framework_requirements (id, framework_id, ref, parent_ref, title, statement, domain_key, level, provenance, source_status, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-          reqId, fwId, ref, parentRef || null, title, statement || title, domainKey || null, level || 1,
-          f.provenance || 'framework_guidance', shippedStatus(f, level || 1, title, statement), at
+          `INSERT INTO framework_requirements (id, framework_id, ref, parent_ref, title, statement, statement_ar, domain_key, level, provenance, source_status, applicability, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          reqId, fwId, ref, parentRef || null, title, statement || title, extra?.ar || null, domainKey || null, level || 1,
+          f.provenance || 'framework_guidance', shippedStatus(f, level || 1, title, statement), app ? JSON.stringify(app) : null, at
         );
         indexFrameworkRequirement(
           { id: reqId, ref, title, statement: title, domain_key: domainKey }, f.code

@@ -170,6 +170,15 @@ function OrgSettings({ canEdit }) {
               { value: 'L3', label: t('settingsUi.org.otL3') }
             ]} />
         </Field>
+        <Field label={t('settingsUi.org.ncniccCategory')}
+          hint={t('settingsUi.org.ncniccCategoryHint')}>
+          <Select value={form.ncnicc_category || ''} disabled={!canEdit} placeholder={t('settingsUi.org.notSet')}
+            onChange={(v) => setForm((f) => ({ ...f, ncnicc_category: v || null }))}
+            options={[
+              { value: 'A', label: t('settingsUi.org.ncniccA') },
+              { value: 'B', label: t('settingsUi.org.ncniccB') }
+            ]} />
+        </Field>
         <Field label={t('settingsUi.org.cloudRole')}
           hint={t('settingsUi.org.cloudRoleHint')}>
           <div className="checkbox-row">
