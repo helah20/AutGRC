@@ -49,7 +49,7 @@ export const ACCESS_DOMAINS = {
           'Monthly HR-to-directory reconciliation report',
           'Register of approved shared-account exceptions with compensating controls'
         ],
-        refs: { 'NCA-ECC': ['2-2-1', '2-2-3-1'], 'ISO-27001': ['A.5.16'], 'NIST-CSF': ['PR.AA-01'], 'NIST-800-53': ['IA-2'], 'CIS-V8': ['5.1', '6.7'], 'SAMA-CSF': ['3.5'] }
+        refs: { 'NCA-ECC': ['2-2-1', '2-2-3-1'], 'ISO-27001': ['A.5.16'], 'NIST-CSF': ['PR.AA-01'], 'NIST-800-53': ['IA-2'], 'CIS-V8': ['5.1', '6.7'], 'SAMA-CSF': ['3.5'], 'NIST-800-171': ['03.01.01', '03.01.03', '03.01.06', '03.01.07', '03.01.08', '03.01.10', '03.05.01', '03.05.02', '03.05.05', '03.05.12'], 'AICPA-SOC2': ['CC6.2'], 'HIPAA-SECURITY': ['164.308(a)(5)(ii)(D)', '164.312(a)(2)(i)'], 'PCI-DSS': ['8'] }
       },
       {
         key: 'access_authorisation',
@@ -70,7 +70,7 @@ export const ACCESS_DOMAINS = {
           'Role-to-entitlement catalogue (current version)',
           'Sample reconciliation of granted entitlements against approvals'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-1'], 'NCA-OTCC': ['2-2'] }
+        refs: { 'NCA-ECC': ['2-2-3-3', '2-2-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-1'], 'NCA-OTCC': ['2-2'], 'NCA-CSCC': ['2-2-1-8'], 'NCA-NCNICC': ['2-2-1-3', '2-2-2', '2-2-3'], 'NIST-800-171': ['03.01.02', '03.01.04', '03.01.09', '03.01.18'], 'AICPA-SOC2': ['CC6.1', 'CC6.3'], 'PCI-DSS': ['7'] }
       },
       {
         key: 'segregation_of_duties',
@@ -113,7 +113,7 @@ export const ACCESS_DOMAINS = {
           'MFA enrolment report reconciled to the privileged account inventory',
           'Break-glass account usage alerts for the reporting period'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-2', '2-2-3-4'], 'ISO-27001': ['A.8.5', 'A.8.2'], 'NIST-CSF': ['PR.AA-03'], 'NIST-800-53': ['IA-2', 'AC-17'], 'CIS-V8': ['6.3', '6.5'], 'SAMA-CSF': ['3.5'], 'ISO-27002': ['8.5'] }
+        refs: { 'NCA-ECC': ['2-2-3-2', '2-2-3-4'], 'ISO-27001': ['A.8.5', 'A.8.2'], 'NIST-CSF': ['PR.AA-03'], 'NIST-800-53': ['IA-2', 'AC-17'], 'CIS-V8': ['6.3', '6.5'], 'SAMA-CSF': ['3.5'], 'ISO-27002': ['8.5'], 'NCA-CSCC': ['2-2-1-3', '2-2-1-4'], 'NCA-NCNICC': ['2-2-1-2'], 'NIST-800-171': ['03.01.12', '03.01.16', '03.05.03', '03.05.04', '03.05.11'], 'HIPAA-SECURITY': ['164.308(a)(3)(ii)(A)', '164.308(a)(3)(ii)(B)', '164.308(a)(4)(ii)(A)', '164.308(a)(4)(ii)(B)', '164.312(a)(2)(ii)', '164.312(d)'] }
       },
       {
         key: 'authentication_credentials',
@@ -134,7 +134,7 @@ export const ACCESS_DOMAINS = {
           'Breached-password screening service configuration',
           'Account lockout configuration evidence'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-1'], 'ISO-27001': ['A.5.17', 'A.8.5'], 'NIST-800-53': ['IA-5'], 'NIST-CSF': ['PR.AA-01'], 'NCA-OSMACC': ['2-2'] }
+        refs: { 'NCA-ECC': ['2-2-3-1'], 'ISO-27001': ['A.5.17', 'A.8.5'], 'NIST-800-53': ['IA-5'], 'NIST-CSF': ['PR.AA-01'], 'NCA-OSMACC': ['2-2'], 'NCA-CSCC': ['2-2-1-5', '2-2-1-6'], 'NCA-NCNICC': ['2-2-1-1'] }
       },
       {
         key: 'joiner_mover_leaver',
@@ -177,7 +177,7 @@ export const ACCESS_DOMAINS = {
           'Sign-off from each accountable owner for the completed cycle',
           'Privileged account review records for the cycle'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-5', '2-2-4'], 'ISO-27001': ['A.5.18'], 'NIST-800-53': ['AC-2'], 'NIST-CSF': ['PR.AA-05'], 'CIS-V8': ['5.1'], 'SAMA-CSF': ['3.5'], 'NCA-CSCC': ['2-2'] }
+        refs: { 'NCA-ECC': ['2-2-3-5', '2-2-4'], 'ISO-27001': ['A.5.18'], 'NIST-800-53': ['AC-2'], 'NIST-CSF': ['PR.AA-05'], 'CIS-V8': ['5.1'], 'SAMA-CSF': ['3.5'], 'NCA-CSCC': ['2-2', '2-2-2'], 'NCA-NCNICC': ['2-2-1-5'], 'NIST-800-171': ['03.01.05', '03.01.22'], 'HIPAA-SECURITY': ['164.308(a)(4)(ii)(C)'] }
       },
       {
         key: 'dormant_accounts',
@@ -219,7 +219,7 @@ export const ACCESS_DOMAINS = {
           'Evidence of interactive logon denial for service accounts',
           'Credential rotation records or managed-identity configuration'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.16', 'A.8.2'], 'NIST-800-53': ['AC-2', 'IA-5'], 'CIS-V8': ['5.1'] }
+        refs: { 'NCA-ECC': ['2-2-3-3'], 'ISO-27001': ['A.5.16', 'A.8.2'], 'NIST-800-53': ['AC-2', 'IA-5'], 'CIS-V8': ['5.1'], 'NCA-CSCC': ['2-2-1-7'], 'NIST-800-171': ['03.05.07'] }
       },
       {
         key: 'session_management',
@@ -239,7 +239,7 @@ export const ACCESS_DOMAINS = {
           'Session timeout configuration per system',
           'Screen lock policy applied via endpoint management'
         ],
-        refs: { 'ISO-27001': ['A.8.5', 'A.7.7'], 'NIST-800-53': ['AC-3'], 'NCA-ECC': ['2-2-2'] }
+        refs: { 'ISO-27001': ['A.8.5', 'A.7.7'], 'NIST-800-53': ['AC-3'], 'NCA-ECC': ['2-2-2'], 'NIST-800-171': ['03.01.11'], 'HIPAA-SECURITY': ['164.312(a)(2)(iii)'] }
       },
       {
         key: 'third_party_access',
@@ -260,7 +260,7 @@ export const ACCESS_DOMAINS = {
           'Remote access gateway logs for third-party sessions',
           'Privileged session recordings for third-party administrative access'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-2', '4-1-1'], 'ISO-27001': ['A.5.19', 'A.8.2'], 'NIST-800-53': ['AC-17'], 'NCA-TCC': ['2-2'] }
+        refs: { 'NCA-ECC': ['2-2-3-2', '4-1-1'], 'ISO-27001': ['A.5.19', 'A.8.2'], 'NIST-800-53': ['AC-17'], 'NCA-TCC': ['2-2'], 'NCA-CSCC': ['2-2-1-1', '2-2-1-2'] }
       },
       {
         key: 'iam_logging',
@@ -388,7 +388,7 @@ export const ACCESS_DOMAINS = {
           'Monthly discovery reconciliation report',
           'Exemption register with justification and compensating controls'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-4'], 'ISO-27001': ['A.8.2'], 'NIST-800-53': ['AC-6'], 'CIS-V8': ['5.4'] }
+        refs: { 'NCA-ECC': ['2-2-3-4'], 'ISO-27001': ['A.8.2'], 'NIST-800-53': ['AC-6'], 'CIS-V8': ['5.4'], 'NCA-NCNICC': ['2-2-1-4'] }
       },
       {
         key: 'separate_admin_accounts',

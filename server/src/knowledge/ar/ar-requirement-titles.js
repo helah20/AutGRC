@@ -13,6 +13,11 @@
 export const AR_REQUIREMENT_TITLES = {
   // ------------------------------------------------- NCA frameworks -------
   'Cybersecurity Governance': 'حوكمة الأمن السيبراني',
+  'Asset Management': 'إدارة الأصول',
+  'Cryptography': 'التشفير',
+  'Physical Security': 'الأمن المادي',
+  'Application Security': 'حماية التطبيقات',
+  'Cybersecurity Resilience Aspects of Business Continuity Management (BCM)': 'جوانب صمود الأمن السيبراني في إدارة استمرارية الأعمال',
   'Cybersecurity Strategy': 'استراتيجية الأمن السيبراني',
   'Cybersecurity Management': 'إدارة الأمن السيبراني',
   'Cybersecurity Policies and Procedures': 'سياسات وإجراءات الأمن السيبراني',
@@ -23,6 +28,8 @@ export const AR_REQUIREMENT_TITLES = {
   'Compliance with Cybersecurity Standards, Laws and Regulations': 'الالتزام بتشريعات وتنظيمات ومعايير الأمن السيبراني',
   'Compliance with Cybersecurity Standards, Laws, and Regulations': 'الالتزام بتشريعات وتنظيمات ومعايير الأمن السيبراني',
   'Periodical Cybersecurity Review and Audit': 'المراجعة والتدقيق الدوري للأمن السيبراني',
+  'Cybersecurity Periodical Assessment and Audit': 'المراجعة والتدقيق الدوري للأمن السيبراني',
+  'Cybersecurity in Information Technology Projects': 'الأمن السيبراني ضمن إدارة المشاريع المعلوماتية والتقنية',
   'Cybersecurity in Human Resources': 'الأمن السيبراني المتعلق بالموارد البشرية',
   'Cybersecurity Awareness and Training Program': 'برنامج التوعية والتدريب بالأمن السيبراني',
   'Cybersecurity Defense': 'تعزيز الأمن السيبراني',
@@ -31,6 +38,9 @@ export const AR_REQUIREMENT_TITLES = {
   'Privileged access management.': 'إدارة الصلاحيات الهامة والحساسة.',
   'Periodic review of identities and access rights.': 'المراجعة الدورية لهويات الدخول والصلاحيات.',
   'Information System and Processing Facilities Protection': 'حماية الأنظمة وأجهزة معالجة المعلومات',
+  // ECC-2:2024 wording of subdomains 2-3 and 2-10.
+  'Information Systems and Information Processing Facilities Protection': 'حماية الأنظمة وأجهزة معالجة المعلومات',
+  'Vulnerability Management': 'إدارة الثغرات',
   'Information System and Information Processing Facilities Protection': 'حماية الأنظمة وأجهزة معالجة المعلومات',
   'System and Processing Facilities Protection': 'حماية الأنظمة وأجهزة المعالجة',
   'Email Protection': 'حماية البريد الإلكتروني',

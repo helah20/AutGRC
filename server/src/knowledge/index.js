@@ -90,6 +90,14 @@ function assemble() {
         category: meta.category,
         description: meta.description,
         objectives: raw.objectives,
+        // Optional: the estate this domain governs, and the implementation
+        // guides that help apply its regulatory controls without being
+        // requirements themselves.
+        scope: raw.scope || null,
+        guides: raw.guides || [],
+        // The regulation written for this domain, which a document should cite
+        // when the organisation is subject to it.
+        principal: raw.principal || [],
         parameters: raw.parameters || {},
         requirements: raw.requirements.map((r, i) => ({
           ...r, index: i + 1, clauses: clausesFor(key, r, r.standard)
@@ -758,6 +766,7 @@ export function localisedModel(domainKey, language = 'en') {
     // Arabic parameter wording for the same commitment, never a different one.
     parameters: { ...model.parameters, ...(arParameters(domainKey) || {}) },
     objectives: arObjectives(domainKey) || model.objectives,
+    scope: AR_DOMAINS[domainKey]?.scope || model.scope,
     name: arDomainName(domainKey) || model.name,
     // The description is rendered inside the generated policy, so it is
     // document content rather than interface chrome.

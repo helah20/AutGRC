@@ -15,6 +15,9 @@ import { getOrgProfile, listParam, paginate } from './_shared.js';
 import { providerInfo } from '../services/ai.js';
 import { PALETTES, FONTS, DEFAULT_BRAND, colourProblem, parseLogo, brandFrom } from '../services/brand.js';
 import { validateKnowledgeBase, DOMAIN_META, FRAMEWORKS } from '../knowledge/index.js';
+import {
+  loadMethodology, saveMethodology, DEFAULT_METHODOLOGY, getAutomation, saveAutomation, DEFAULT_AUTOMATION
+} from '../services/risk-methodology.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -301,6 +304,49 @@ router.put('/org/brand', requirePermission('settings:write'), validate(z.object(
     summary: `Updated the document identity: ${b.palette} palette, ${b.font} fonts${b.logo === null ? ', logo removed' : b.logo ? ', new logo' : ''}`
   });
   res.json(brandSettings());
+}));
+
+/**
+ * The risk methodology: scales, matrix, appetite, review cycles and how far
+ * control effectiveness lowers likelihood. Read by anyone who can read the
+ * register; changed by whoever holds the settings.
+ */
+router.get('/risk-methodology', requirePermission('risk:read'), asyncHandler(async (req, res) => {
+  res.json({ methodology: loadMethodology(), defaults: DEFAULT_METHODOLOGY });
+}));
+
+router.put('/risk-methodology', requirePermission('settings:write'), asyncHandler(async (req, res) => {
+  if (!q.get('SELECT id FROM org_profile WHERE id = 1')) {
+    throw new HttpError(409, 'Set the organisation profile before its risk methodology.');
+  }
+  const result = saveMethodology(req.body);
+  if (result.problems) throw new HttpError(400, `The methodology is not consistent: ${result.problems.join(' ')}`);
+  audit(req, {
+    action: 'settings:risk_methodology', entityType: 'org_profile', entityId: '1',
+    summary: `Risk methodology updated: acceptable up to ${result.methodology.acceptableUpTo}`,
+    detail: { acceptableUpTo: result.methodology.acceptableUpTo, reviewDays: result.methodology.reviewDays, effectivenessReduction: result.methodology.effectivenessReduction }
+  });
+  res.json({ methodology: result.methodology });
+}));
+
+/** When owners are reminded of a deadline, and when overdue work is escalated. */
+router.get('/automation', asyncHandler(async (req, res) => {
+  res.json({ automation: getAutomation(), defaults: DEFAULT_AUTOMATION });
+}));
+
+router.put('/automation', requirePermission('settings:write'), validate(z.object({
+  reminderDays: z.array(z.number().int().min(1).max(365)).min(1).max(6),
+  escalateAfterDays: z.number().int().min(0).max(90)
+})), asyncHandler(async (req, res) => {
+  if (!q.get('SELECT id FROM org_profile WHERE id = 1')) {
+    throw new HttpError(409, 'Set the organisation profile before its reminder schedule.');
+  }
+  const automation = saveAutomation(req.body);
+  audit(req, {
+    action: 'settings:automation', entityType: 'org_profile', entityId: '1',
+    summary: `Reminders at ${automation.reminderDays.join(', ')} days; escalation after ${automation.escalateAfterDays} days overdue`
+  });
+  res.json({ automation });
 }));
 
 /** The organisation's default for what exported documents carry. */

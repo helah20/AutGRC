@@ -89,6 +89,7 @@ cleared.
 | --- | --- | --- |
 | GET | `/controls`, `/controls/:id` | `document:read` |
 | POST/PATCH/DELETE | `/controls…` | `control:write` |
+| POST | `/controls/:id/assessment` (`design_effectiveness`, `operating_effectiveness`: `ineffective`, `partially_effective`, `effective`; optional `note`, `next_assessment_date`; operation may not exceed design) | `control:write` |
 | GET | `/frameworks` | — |
 | GET | `/frameworks/:code/requirements` | — |
 | GET | `/frameworks/requirements/:id/trace` | — |
@@ -98,6 +99,30 @@ cleared.
 | POST/DELETE | `/frameworks/mappings…` | `mapping:write` |
 | POST | `/frameworks/requirements/:id/suggest` | `ai:use` |
 | GET/PATCH/DELETE | `/evidence…` | `evidence:write` to write |
+
+`PATCH /controls/:id` also takes `owner_id` (an active user) and
+`next_assessment_date`. `GET /controls/:id` returns the risks the control
+treats and its owner.
+
+## Risk
+
+| Method | Path | Permission |
+| --- | --- | --- |
+| GET | `/risks`, `/risks/:id` | `risk:read` |
+| POST/PATCH/DELETE | `/risks…` | `risk:write` |
+| POST | `/risks/:id/review` (sets `last_reviewed_at`; the next review falls due on the cycle the methodology sets for the residual rating) | `risk:write` |
+| POST | `/risks/:id/accept`, `/risks/:id/withdraw-acceptance` (refused above the risk appetite, and for the risk's own owner) | `risk:accept` |
+| GET | `/admin/risk-methodology` | `risk:read` |
+| PUT | `/admin/risk-methodology` (scales, `matrix[impact-1][likelihood-1]`, `acceptableUpTo`, `reviewDays`, `effectivenessReduction`; refused if a worse cell rates lower) | `settings:write` |
+| GET/PUT | `/admin/automation` (`reminderDays`, `escalateAfterDays`) | `settings:write` to write |
+
+A risk carries `risk_source`, `control_effectiveness`, `action_owner_id`,
+`target_date`, `last_reviewed_at` and `review_date` (the next review). Each
+risk returned has `inherent`, `current` (inherent likelihood lowered by the
+methodology's steps for the existing controls' effectiveness; null while
+unassessed) and `residual` positions, and `withinAppetite`. `GET /risks/:id`
+adds `suggestedEffectiveness`, the weakest operating effectiveness among the
+linked controls.
 
 `GET /frameworks/requirements/:id/trace` returns the full chain — source
 requirement, mapped controls, policy, standard, procedure, evidence — plus

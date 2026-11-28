@@ -197,6 +197,11 @@ export function generatePackage(opts) {
 
   const controlDrafts = model.requirements.map((req, i) => {
     const mappings = applicableRefs(req, frameworkCodes);
+    // The control's link to every framework the requirement cites, adopted or
+    // not: which requirement a control answers is a fact, and an organisation
+    // that adopts a framework later finds it already mapped. Documents still
+    // cite only the adopted frameworks (mappings above).
+    const allMappings = applicableRefs(req, []);
     return {
       id: id('ctl'),
       control_id: (documentsOnly && existingByRequirement[req.key]) || controlIdFor(i + 1),
@@ -206,6 +211,7 @@ export function generatePackage(opts) {
       control_nature: req.controlNature,
       risk_rating: req.riskRating,
       mappings,
+      allMappings,
       mappingLabel: mappings.map((m) => `${m.framework} ${m.ref}`).join('; ')
     };
   });
@@ -367,7 +373,7 @@ export function generatePackage(opts) {
       }
 
       // Map the control to the authoritative requirements it addresses.
-      for (const m of c.mappings) {
+      for (const m of c.allMappings || c.mappings) {
         const fw = q.get('SELECT id FROM frameworks WHERE code = ?', m.framework);
         if (!fw) continue;
         const fr = q.get('SELECT id FROM framework_requirements WHERE framework_id = ? AND ref = ?', fw.id, m.ref);

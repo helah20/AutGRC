@@ -14,6 +14,10 @@
 
 export const AR_FREQUENCY = {
   'Continuous': 'مستمر',
+  'Every post': 'لكل منشور',
+  'Per closure': 'عند كل إغلاق',
+  'On every leaver and role change': 'عند كل مغادرة أو تغيير دور',
+  'Checked at each access review': 'يُفحص عند كل مراجعة للوصول',
   'Continuous, with monthly reconciliation': 'مستمر، مع مطابقة شهرية',
   'Continuous, reviewed {{accessReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{accessReviewFrequency}}',
   'Continuous, reviewed {{baselineReviewFrequency}}': 'مستمر، ويُراجَع بتكرار {{baselineReviewFrequency}}',
@@ -299,6 +303,8 @@ export const AR_PARAMETER_LABELS = {
   smPatchFrequency: 'تكرار تحديث أجهزة حسابات التواصل الاجتماعي',
   smConfigReviewFrequency: 'تكرار مراجعة إعدادات حسابات التواصل الاجتماعي',
   smPasswordRotation: 'تكرار تغيير كلمات مرور حسابات التواصل الاجتماعي',
+  smLeaverRevocation: 'مهلة إلغاء وصول المغادرين إلى حسابات التواصل الاجتماعي',
+  smImpersonationResponse: 'مهلة معالجة انتحال هوية المنظمة في التواصل الاجتماعي',
   // operational technology
   otVulnAssessmentFrequency: 'تكرار تقييم ثغرات التقنيات التشغيلية',
   otAssetInventoryReview: 'تكرار مراجعة جرد أصول التقنيات التشغيلية',

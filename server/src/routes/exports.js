@@ -22,6 +22,7 @@ import { enrichRisk } from '../services/risk.js';
 import { validateMatrix } from '../services/review.js';
 import { domainName } from '../knowledge/index.js';
 import { getOrgProfile, listParam, enrichDocuments } from './_shared.js';
+import { sortByRef } from '../utils/refs.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -275,7 +276,7 @@ router.get('/mappings.xlsx', asyncHandler(async (req, res) => {
   const rows = [];
   const summary = [];
   for (const f of frameworks) {
-    const reqs = q.all('SELECT * FROM framework_requirements WHERE framework_id = ? ORDER BY level, id', f.id);
+    const reqs = sortByRef(q.all('SELECT * FROM framework_requirements WHERE framework_id = ?', f.id));
     let covered = 0, partial = 0, notApplicable = 0;
     for (const r of reqs) {
       const maps = q.all(
@@ -368,7 +369,7 @@ router.get('/soa.xlsx', asyncHandler(async (req, res) => {
     q.all('SELECT * FROM soa_decisions WHERE framework_id = ?', framework.id).map((d) => [d.requirement_id, d])
   );
   const org = getOrgProfile();
-  const rows = q.all('SELECT * FROM framework_requirements WHERE framework_id = ? ORDER BY ref', framework.id)
+  const rows = sortByRef(q.all('SELECT * FROM framework_requirements WHERE framework_id = ?', framework.id))
     .map((requirement) => {
       const controls = q.all(
         `SELECT c.id, c.control_id, c.status FROM control_mappings cm

@@ -66,6 +66,7 @@ export function useLabels() {
     changeType: (key, serverLabel) => label('changeType', key, serverLabel),
     riskCategory: (key, serverLabel) => label('riskCategory', key, serverLabel),
     riskEffect: (key, serverLabel) => label('riskEffect', key, serverLabel),
+    effectiveness: (key, serverLabel) => label('effectiveness', key || 'not_assessed', serverLabel),
     findingScope: (key, serverLabel) => label('findingScope', key, serverLabel),
     searchType: (key, serverLabel) => label('searchType', key, serverLabel),
     frameworkKind: (key, serverLabel) => label('frameworkKind', key, serverLabel),

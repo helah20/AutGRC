@@ -89,7 +89,16 @@ export function regulatoryClauses(requirement, regulatory, used, language = 'en'
           out.push({ framework: code, ref: row.ref, missing: true });
           continue;
         }
-        const arabic = language === 'ar' ? row.statement_ar : null;
+        // A control published only in Arabic (CSCC-2:2026, NCNICC-1:2025, the
+        // PDPL) is already the publisher's Arabic text.
+        const inArabic = /[\u0600-\u06FF]/.test(row.statement || '');
+        const arabic = language === 'ar' ? (row.statement_ar || (inArabic ? row.statement : null)) : null;
+        // An English Policy does not quote Arabic mid-document; it names the
+        // control and points to the Arabic edition, where it is quoted.
+        if (language !== 'ar' && inArabic) {
+          out.push({ framework: code, ref: row.ref, arabicOnly: true });
+          continue;
+        }
         out.push({
           framework: code,
           ref: row.ref,

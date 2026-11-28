@@ -14,7 +14,7 @@ import {
 import { htmlToBlocks, runsToText } from './html-to-blocks.js';
 import { exportHeading } from './export-layout.js';
 import { currentBrand, fitWithin } from './brand.js';
-import { arDomainName } from '../knowledge/index.js';
+import { arDomainName, roleName } from '../knowledge/index.js';
 import { paragraphDirection } from './bidi.js';
 
 // The organisation's colours, set at the start of each build from its brand
@@ -43,6 +43,24 @@ const STATUS_LABEL = {
  * and the text stays joined. That is why Word carries the Arabic export and
  * the PDF path does not.
  */
+/**
+ * The document roles shown in document control, the same ones the Policy's
+ * Governance section names: the CISO owns a Policy, the person maintaining it
+ * is its custodian, and the Cybersecurity Steering Committee approves it. Other
+ * documents show the people recorded against them.
+ */
+export function controlRoles({ doc, owner, approver, L, lang, sep }) {
+  const person = (u) => (u?.name ? `${u.name}${u.job_title ? `${sep}${u.job_title}` : ''}` : L.notAssigned);
+  if (doc.doc_type === 'policy') {
+    return [
+      [L.policyOwner, roleName('ciso', lang)],
+      [L.owner, person(owner)],
+      [L.approvingAuthority, approver?.name ? `${L.committee} (${L.signedBy} ${approver.name})` : L.committee]
+    ];
+  }
+  return [[L.owner, person(owner)], [L.approver, person(approver)]];
+}
+
 export const FURNITURE = {
   en: {
     documentControl: 'Document Control',
@@ -53,8 +71,12 @@ export const FURNITURE = {
     version: 'Version',
     status: 'Status',
     classification: 'Classification',
-    owner: 'Document owner',
+    owner: 'Document custodian',
     approver: 'Approver',
+    policyOwner: 'Policy owner',
+    approvingAuthority: 'Approving authority',
+    committee: 'Cybersecurity Steering Committee',
+    signedBy: 'signed by',
     effective: 'Effective date',
     nextReview: 'Next review date',
     reviewCycle: 'Review cycle',
@@ -73,7 +95,7 @@ export const FURNITURE = {
     prepared: 'Prepared',
     reviewed: 'Reviewed',
     approved: 'Approved',
-    documentOwner: 'Document Owner',
+    documentOwner: 'Document custodian',
     approverRole: 'Approver',
     versionHistory: 'Version History',
     author: 'Author',
@@ -101,8 +123,12 @@ export const FURNITURE = {
     version: 'الإصدار',
     status: 'الحالة',
     classification: 'التصنيف',
-    owner: 'مالك الوثيقة',
+    owner: 'أمين الوثيقة',
     approver: 'المعتمِد',
+    policyOwner: 'مالك السياسة',
+    approvingAuthority: 'جهة الاعتماد',
+    committee: 'اللجنة الإشرافية للأمن السيبراني',
+    signedBy: 'وقّعها',
     effective: 'تاريخ السريان',
     nextReview: 'تاريخ المراجعة القادمة',
     reviewCycle: 'دورية المراجعة',
@@ -121,7 +147,7 @@ export const FURNITURE = {
     prepared: 'أُعدّت',
     reviewed: 'رُوجعت',
     approved: 'اعتُمدت',
-    documentOwner: 'مالك الوثيقة',
+    documentOwner: 'أمين الوثيقة',
     approverRole: 'المعتمِد',
     versionHistory: 'سجل الإصدارات',
     author: 'المُعِد',
@@ -441,8 +467,7 @@ export async function buildDocx(data) {
       [L.version, doc.version],
       [L.status, L.statusLabel[doc.status] || doc.status],
       [L.classification, classification],
-      [L.owner, owner?.name ? `${owner.name}${owner.job_title ? `, ${owner.job_title}` : ''}` : L.notAssigned],
-      [L.approver, approver?.name ? `${approver.name}${approver.job_title ? `, ${approver.job_title}` : ''}` : L.notAssigned],
+      ...controlRoles({ doc, owner, approver, L, lang: rtl ? 'ar' : 'en', sep: rtl ? '، ' : ', ' }),
       [L.effective, doc.effective_date || L.onApproval],
       [L.reviewCycle, L.reviewCycleValue],
       [L.lastReviewed, lastReviewed(approvals) || L.notYetReviewed],

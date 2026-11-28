@@ -5,10 +5,10 @@ import { useFetch, useDebounced } from '../lib/useApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import {
   Card, Loading, ErrorNote, Empty, Badge, DataTable, Drawer, SearchInput,
-  Select, useToast, ProvenanceTag
+  Select, useToast, ProvenanceTag, Field
 } from '../components/ui.jsx';
 import { IconShield, IconDownload, IconX, IconLink, IconArchive } from '../components/Icons.jsx';
-import { titleCase, RISK_TONE, COVERAGE_TONE } from '../lib/format.js';
+import { titleCase, RISK_TONE, COVERAGE_TONE, formatDate } from '../lib/format.js';
 import { useLabels } from '../i18n/labels.js';
 import { useI18n } from '../i18n/index.jsx';
 
@@ -101,8 +101,12 @@ export default function Controls() {
               { key: 'control_type', header: t('controlsUi.colType'), nowrap: true, render: (c) => <Badge tone="neutral">{controlTypeLabel(t, c.control_type)}</Badge> },
               { key: 'risk_rating', header: t('controlsUi.colRisk'), nowrap: true, render: (c) => <Badge tone={RISK_TONE[c.risk_rating] || 'neutral'}>{labels.rating(c.risk_rating)}</Badge> },
               { key: 'responsible_role', header: t('controlsUi.colResponsible'), nowrap: true, render: (c) => <span className="small">{c.responsible_role || '—'}</span> },
-              { key: 'evidence_count', header: t('controlsUi.colEvidence'), align: 'right', render: (c) => c.evidence_count || <span className="muted">0</span> },
-              { key: 'mapping_count', header: t('controlsUi.colMappings'), align: 'right', render: (c) => c.mapping_count || <span className="muted">0</span> }
+              {
+                key: 'operating_effectiveness', header: t('controlsUi.colOperating'), nowrap: true,
+                render: (c) => <Badge tone={EFFECTIVENESS_TONE[c.operating_effectiveness] || 'neutral'}>{labels.effectiveness(c.operating_effectiveness)}</Badge>
+              },
+              { key: 'evidence_count', header: t('controlsUi.colEvidence'), align: 'right', render: (c) => (c.evidence_count ? formatNumber(c.evidence_count) : <span className="muted">{formatNumber(0)}</span>) },
+              { key: 'mapping_count', header: t('controlsUi.colMappings'), align: 'right', render: (c) => (c.mapping_count ? formatNumber(c.mapping_count) : <span className="muted">{formatNumber(0)}</span>) }
             ]}
             rows={data?.items || []}
             onRowClick={open}
@@ -113,16 +117,47 @@ export default function Controls() {
 
       <Drawer open={Boolean(selected)} onClose={() => setSelected(null)} wide
         title={selected ? `${selected.control.control_id} — ${selected.control.name}` : ''}>
-        {selected && <ControlDetail data={selected} />}
+        {selected && <ControlDetail key={selected.control.id} data={selected} canWrite={can('control:write')} toast={toast}
+          onUpdated={async () => { await open(selected.control); reload(); }} />}
       </Drawer>
     </>
   );
 }
 
-function ControlDetail({ data }) {
+const EFFECTIVENESS_TONE = { effective: 'ok', partially_effective: 'warn', ineffective: 'danger', not_assessed: 'neutral' };
+const ASSESSED = ['effective', 'partially_effective', 'ineffective'];
+
+function ControlDetail({ data, canWrite, toast, onUpdated }) {
   const labels = useLabels();
   const { t } = useI18n();
   const c = data.control;
+  const { data: directory } = useFetch(canWrite ? '/admin/directory' : null);
+  const [form, setForm] = useState({ design_effectiveness: c.design_effectiveness || 'effective', operating_effectiveness: c.operating_effectiveness || 'effective', note: '', next_assessment_date: '' });
+  const [busy, setBusy] = useState(false);
+  // A control cannot operate better than it is designed.
+  const inconsistent = ASSESSED.indexOf(form.operating_effectiveness) < ASSESSED.indexOf(form.design_effectiveness);
+
+  async function setOwner(ownerId) {
+    try {
+      await api.patch(`/controls/${c.id}`, { owner_id: ownerId || null });
+      toast.success(t('controlsUi.ownerSaved'));
+      await onUpdated();
+    } catch (err) { toast.error(t('common.couldNotSave'), err.message); }
+  }
+
+  async function assess() {
+    setBusy(true);
+    try {
+      const res = await api.post(`/controls/${c.id}/assessment`, {
+        design_effectiveness: form.design_effectiveness, operating_effectiveness: form.operating_effectiveness,
+        note: form.note || undefined, next_assessment_date: form.next_assessment_date || undefined
+      });
+      toast.success(t('controlsUi.assessmentRecorded'), t('controlsUi.nextAssessmentOn', { date: formatDate(res.control.next_assessment_date) }));
+      setForm((f) => ({ ...f, note: '', next_assessment_date: '' }));
+      await onUpdated();
+    } catch (err) { toast.error(t('common.couldNotSave'), err.message); } finally { setBusy(false); }
+  }
+
   return (
     <div className="stack">
       <div className="row-tight">
@@ -161,6 +196,64 @@ function ControlDetail({ data }) {
           <dt>{t('controlsUi.status')}</dt><dd><Badge tone={c.status === 'implemented' ? 'ok' : c.status === 'approved' ? 'info' : 'neutral'}>{labels.status(c.status)}</Badge></dd>
         </dl>
       </section>
+
+      <section>
+        <h4>{t('controlsUi.ownershipEffectiveness')}</h4>
+        <div className="kv-grid small">
+          <span className="muted">{t('controlsUi.owner')}</span>
+          <span>
+            {canWrite ? (
+              <Select value={c.owner_id || ''} onChange={setOwner} placeholder={t('controlsUi.noOwnerNamed')}
+                options={(directory || []).map((u) => ({ value: u.id, label: `${u.name} — ${u.job_title || labels.role(u.role)}` }))} />
+            ) : (data.owner?.name || t('controlsUi.noOwnerNamed'))}
+          </span>
+          <span className="muted">{t('controlsUi.design')}</span>
+          <span><Badge tone={EFFECTIVENESS_TONE[c.design_effectiveness] || 'neutral'}>{labels.effectiveness(c.design_effectiveness)}</Badge></span>
+          <span className="muted">{t('controlsUi.operating')}</span>
+          <span><Badge tone={EFFECTIVENESS_TONE[c.operating_effectiveness] || 'neutral'}>{labels.effectiveness(c.operating_effectiveness)}</Badge></span>
+          <span className="muted">{t('controlsUi.lastAssessed')}</span><span>{c.last_assessed_at ? formatDate(c.last_assessed_at) : t('controlsUi.neverAssessed')}</span>
+          <span className="muted">{t('controlsUi.nextAssessment')}</span><span>{c.next_assessment_date ? formatDate(c.next_assessment_date) : '—'}</span>
+          {c.assessment_note && <><span className="muted">{t('controlsUi.assessorNote')}</span><span>{c.assessment_note}</span></>}
+        </div>
+        {canWrite && (
+          <div className="card" style={{ padding: 12, marginTop: 10 }}>
+            <div className="strong small" style={{ marginBottom: 8 }}>{t('controlsUi.recordAssessment')}</div>
+            <div className="field-row">
+              <Field label={t('controlsUi.design')}>
+                <Select value={form.design_effectiveness} onChange={(v) => setForm((f) => ({ ...f, design_effectiveness: v }))}
+                  options={ASSESSED.map((e) => ({ value: e, label: labels.effectiveness(e) }))} />
+              </Field>
+              <Field label={t('controlsUi.operating')}>
+                <Select value={form.operating_effectiveness} onChange={(v) => setForm((f) => ({ ...f, operating_effectiveness: v }))}
+                  options={ASSESSED.map((e) => ({ value: e, label: labels.effectiveness(e) }))} />
+              </Field>
+              <Field label={t('controlsUi.nextAssessment')} hint={t('controlsUi.nextAssessmentHint')}>
+                <input className="input" type="date" value={form.next_assessment_date} onChange={(e) => setForm((f) => ({ ...f, next_assessment_date: e.target.value }))} />
+              </Field>
+            </div>
+            <Field label={t('controlsUi.assessorNote')} hint={t('controlsUi.assessorNoteHint')}>
+              <textarea className="textarea" rows={2} value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
+            </Field>
+            {inconsistent && <p className="small text-danger" style={{ margin: '0 0 8px' }}>{t('controlsUi.operatingAboveDesign')}</p>}
+            <button className="btn btn-primary btn-sm" disabled={busy || inconsistent} onClick={assess}>{t('controlsUi.recordAssessment')}</button>
+          </div>
+        )}
+      </section>
+
+      {data.risks?.length > 0 && (
+        <section>
+          <h4>{t('controlsUi.relatedRisks')} <span className="muted small">({data.risks.length})</span></h4>
+          <div className="stack-sm">
+            {data.risks.map((r) => (
+              <Link key={r.id} to={`/risks?open=${r.id}`} className="between"
+                style={{ padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 7, color: 'inherit' }}>
+                <span className="row-tight"><span className="ref-tag">{r.risk_id}</span><span className="small">{r.title}</span></span>
+                <Badge tone={RISK_TONE[(r.current || r.inherent).rating]}>{labels.rating((r.current || r.inherent).rating)}</Badge>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h4>{t('controlsUi.riskAddressed')}</h4>

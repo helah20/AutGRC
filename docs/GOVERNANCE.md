@@ -188,6 +188,39 @@ policy with no standard or no procedure as an incomplete chain, because a
 position that is never translated into measurable requirements cannot be
 evidenced.
 
+### Design rules for every generated package
+
+- **The Policy says what the organisation commits to.** Measurable values,
+  frequencies and indicator targets belong in the Standard, never in the
+  Policy.
+- **The Standard says what is measurable.** Every Policy statement has
+  Standard clauses with a named owner, and every control a KPI the Standard
+  publishes.
+- **The Procedure says how.** Steps, actors, inputs, outputs and escalation.
+- **The RACI says who does it and who answers for it.** One Accountable per
+  activity. The business owns the asset and its content, IT runs the technical
+  controls, cybersecurity owns the security requirements, monitoring and
+  response, GRC measures compliance, and Internal Audit gives assurance
+  without taking part in delivery.
+- **The control mapping ties every statement to its source.** A domain that
+  has a regulation written for it (`principal`, such as OSMACC for social
+  media accounts) cites that regulation's own controls, and the Policy warns
+  when the organisation has not adopted it rather than citing nothing.
+- **The evidence matrix names the proof for every control.**
+- **One set of document roles.** The Policy owner (CISO), the document
+  custodian (GRC Manager) and the approver (Cybersecurity Steering Committee)
+  are named the same way in document control and in the Governance section.
+- **Scope is the domain's estate.** A domain that states its scope is not
+  given the organisation's whole technology stack.
+- **Sources are kept apart by kind.** Regulatory requirements, implementation
+  guides (which explain how to apply a requirement and are not requirements)
+  and international standards are listed separately, and a source the Policy
+  never cites is not listed at all.
+- **No control number is ever created.** A reference must exist in the
+  catalogue (`npm run verify:knowledge` fails otherwise), and a control's
+  text is quoted only when the catalogue holds the publisher's own words
+  (`verified_official` or `user_imported`).
+
 ## What the quality engine checks
 
 | Check | Question |

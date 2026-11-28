@@ -15,6 +15,7 @@ import { suggestMappings } from '../services/ai.js';
 import { analyseCatalogue, applyCatalogue } from '../services/import-framework.js';
 import { listParam, getOrgProfile } from './_shared.js';
 import { evaluateApplicability } from '../services/applicability.js';
+import { sortByRef } from '../utils/refs.js';
 
 const router = express.Router();
 router.use(authenticate);
@@ -44,18 +45,65 @@ const catalogueUpload = multer({
   }
 });
 
+/**
+ * The requirements a framework is assessed on: the most detailed ones the
+ * catalogue holds. A domain or subdomain with controls below it is a heading;
+ * counting it would report an uncovered requirement where every control
+ * under it is covered. A subdomain the catalogue holds no controls for is
+ * assessed itself.
+ */
+function assessableRequirements(frameworkId) {
+  const all = q.all('SELECT id, ref, parent_ref, domain_key FROM framework_requirements WHERE framework_id = ?', frameworkId);
+  const parents = new Set(all.map((r) => r.parent_ref).filter(Boolean));
+  return all.filter((r) => !parents.has(r.ref));
+}
+
+/**
+ * Each requirement's coverage as the register reads it: its own mappings, or,
+ * with none, the coverage of the nearest mapped requirement it belongs to. A
+ * subcontrol is part of its control's text ("shall include at least: …"), so a
+ * control mapped to 2-4-3 answers 2-4-3-1 to 2-4-3-5; a control mapped to a
+ * subdomain (2-14 Physical Security) is mapped to the topic its controls make
+ * up. A requirement mapped differently keeps its own. Inheritance stops below
+ * the main domains (Governance, Defense …), which are too broad to vouch for
+ * what is under them, and the inherited source is always shown.
+ * Returns Map id -> { coverage, inheritedFrom }.
+ */
+function effectiveCoverage(frameworkId) {
+  const reqs = q.all('SELECT id, ref, parent_ref, level FROM framework_requirements WHERE framework_id = ?', frameworkId);
+  const own = {};
+  for (const m of q.all(
+    `SELECT cm.requirement_id, cm.coverage FROM control_mappings cm
+       JOIN framework_requirements fr ON fr.id = cm.requirement_id WHERE fr.framework_id = ?`, frameworkId)) {
+    (own[m.requirement_id] = own[m.requirement_id] || []).push(m);
+  }
+  const byRef = new Map(reqs.map((r) => [r.ref, r]));
+  const out = new Map();
+  for (const r of reqs) {
+    if (own[r.id]) { out.set(r.id, { coverage: coverageOf(own[r.id]), inheritedFrom: null }); continue; }
+    let parent = byRef.get(r.parent_ref);
+    let found = null;
+    while (parent && parent.level >= 2 && !found) {
+      if (own[parent.id]) found = parent;
+      else parent = byRef.get(parent.parent_ref);
+    }
+    out.set(r.id, found ? { coverage: coverageOf(own[found.id]), inheritedFrom: found.ref } : { coverage: 'not_covered', inheritedFrom: null });
+  }
+  return out;
+}
+
 router.get('/', asyncHandler(async (req, res) => {
   const rows = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code');
-  const counts = Object.fromEntries(
-    q.all('SELECT framework_id, COUNT(*) AS n FROM framework_requirements GROUP BY framework_id').map((r) => [r.framework_id, r.n])
-  );
-  const mapped = Object.fromEntries(
-    q.all(`SELECT fr.framework_id, COUNT(DISTINCT fr.id) AS n
-             FROM framework_requirements fr
-             JOIN control_mappings cm ON cm.requirement_id = fr.id
-            WHERE cm.coverage IN ('covered','partial')
-            GROUP BY fr.framework_id`).map((r) => [r.framework_id, r.n])
-  );
+  // Counted over the most detailed requirements held (see assessableRequirements),
+  // each with its effective coverage (see effectiveCoverage).
+  const counts = {};
+  const mapped = {};
+  for (const f of rows) {
+    const reqs = assessableRequirements(f.id);
+    const effective = effectiveCoverage(f.id);
+    counts[f.id] = reqs.length;
+    mapped[f.id] = reqs.filter((r) => ['covered', 'partial'].includes(effective.get(r.id)?.coverage)).length;
+  }
   const byId = Object.fromEntries(rows.map((f) => [f.id, f]));
   // How completely the reference catalogue represents each publication. A
   // mapping to a subdomain the catalogue carries no controls for reads exactly
@@ -131,7 +179,7 @@ router.post('/editions', requirePermission('settings:write'), validate(z.object(
     if (req.body.copyRequirements) {
       // Copied, not moved. The old edition keeps its requirements and their
       // control mappings, so an assessment against it stays readable.
-      const requirements = q.all('SELECT * FROM framework_requirements WHERE framework_id = ? ORDER BY ref', previous.id);
+      const requirements = sortByRef(q.all('SELECT * FROM framework_requirements WHERE framework_id = ?', previous.id));
       const idMap = new Map();
       for (const r of requirements) {
         const newId = id('req');
@@ -207,9 +255,10 @@ router.get('/:code/requirements', asyncHandler(async (req, res) => {
     args.push(like, like, like);
   }
 
-  const rows = q.all(
-    `SELECT fr.* FROM framework_requirements fr WHERE ${filters.join(' AND ')} ORDER BY fr.level, fr.id`, ...args
-  );
+  // In the publication's order: 1, 1-1, 1-1-1, 1-2 … not by level or text.
+  const rows = sortByRef(q.all(
+    `SELECT fr.* FROM framework_requirements fr WHERE ${filters.join(' AND ')}`, ...args
+  ));
 
   const mappings = q.all(
     `SELECT cm.requirement_id, cm.coverage, cm.confidence, c.id AS control_pk, c.control_id, c.name AS control_name,
@@ -225,6 +274,7 @@ router.get('/:code/requirements', asyncHandler(async (req, res) => {
   }
 
   const org = getOrgProfile();
+  const effective = effectiveCoverage(fw.id);
   res.json({
     framework: fw,
     sourceNote: SOURCE_NOTE,
@@ -233,7 +283,9 @@ router.get('/:code/requirements', asyncHandler(async (req, res) => {
       applicability: evaluateApplicability(r.applicability, org),
       domain_label: r.domain_key ? domainName(r.domain_key) : null,
       controls: byReq[r.id] || [],
-      coverage: coverageOf(byReq[r.id] || [])
+      coverage: effective.get(r.id)?.coverage || 'not_covered',
+      // The control this subcontrol takes its coverage from, when it has no mapping of its own.
+      coverage_inherited_from: effective.get(r.id)?.inheritedFrom || null
     })),
     domains: DOMAIN_META.filter((d) => rows.some((r) => r.domain_key === d.key))
   });
@@ -475,14 +527,12 @@ router.post('/requirements/:id/suggest', requirePermission('ai:use'), asyncHandl
 router.get('/coverage', asyncHandler(async (req, res) => {
   const frameworks = q.all('SELECT * FROM frameworks ORDER BY kind DESC, code');
   const summary = frameworks.map((f) => {
-    const reqs = q.all('SELECT id, domain_key FROM framework_requirements WHERE framework_id = ?', f.id);
-    const mapped = q.all(
-      `SELECT DISTINCT cm.requirement_id, cm.coverage
-         FROM control_mappings cm
-         JOIN framework_requirements fr ON fr.id = cm.requirement_id
-        WHERE fr.framework_id = ?`, f.id
-    );
-    const byId = Object.fromEntries(mapped.map((m) => [m.requirement_id, m.coverage]));
+    // Only the most detailed requirements held count: a domain or subdomain
+    // with its controls below it is a heading, and counting it would report
+    // an uncovered requirement where every control under it is covered.
+    const reqs = assessableRequirements(f.id);
+    const effective = effectiveCoverage(f.id);
+    const byId = Object.fromEntries(reqs.map((r) => [r.id, effective.get(r.id)?.coverage]));
     const covered = reqs.filter((r) => byId[r.id] === 'covered').length;
     const partial = reqs.filter((r) => byId[r.id] === 'partial').length;
     const notApplicable = reqs.filter((r) => byId[r.id] === 'not_applicable').length;

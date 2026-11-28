@@ -15,6 +15,8 @@
 import { q, nowIso } from '../db/index.js';
 import { id } from '../utils/ids.js';
 import { PERMISSIONS } from '../middleware/auth.js';
+import { getAutomation } from './risk-methodology.js';
+import { cycleDays } from './cadence.js';
 
 /** Raise one notification. A dedupeKey makes repeated raising idempotent. */
 export function notify({
@@ -245,10 +247,137 @@ export function sweepEvidenceVerification() {
   return { examined: rows.length, raised };
 }
 
+// ------------------------------------------------------------- deadlines ---
+
+/** Whole days from today to a date (negative once it has passed). */
+export function daysUntil(date, today = new Date()) {
+  const start = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const [y, m, d] = String(date).slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return Math.round((Date.UTC(y, m - 1, d) - start) / 86400000);
+}
+
+/**
+ * One deadline, worked through the organisation's reminder schedule. Before
+ * it, the owner is reminded once at each interval it crosses (30, 15, 5 days
+ * by default), and only at the nearest one, so a task created three days out
+ * gets one reminder, not three. Once it passes, the owner is told it is
+ * overdue, and after the escalation period the people who answer for the work
+ * are told too. Every notice carries the deadline in its key, so moving the
+ * date starts the schedule again and running the sweep twice raises nothing.
+ */
+export function remindDeadline({
+  due, ownerIds, escalationPermission, key, entityType, entityId, url, what, automation, today
+}) {
+  const days = daysUntil(due, today);
+  if (days === null) return 0;
+  const owners = [...new Set(ownerIds.filter(Boolean))];
+  let raised = 0;
+  const send = (userId, stage, severity, title, body) => {
+    if (notify({ userId, kind: 'deadline', severity, entityType, entityId, url, title, body, dedupeKey: `${key}:${due}:${stage}` })) raised += 1;
+  };
+  if (days >= 0) {
+    const stage = [...automation.reminderDays].sort((a, b) => a - b).find((d) => days <= d);
+    if (stage === undefined) return 0;
+    for (const userId of owners) {
+      send(userId, `r${stage}`, days <= 5 ? 'warn' : 'info',
+        `Due in ${days} day(s): ${what}`, `The deadline is ${due}.`);
+    }
+    return raised;
+  }
+  for (const userId of owners) {
+    send(userId, 'overdue', 'danger', `Overdue: ${what}`, `The deadline was ${due}.`);
+  }
+  if (-days >= automation.escalateAfterDays && escalationPermission) {
+    for (const user of usersWithPermission(escalationPermission)) {
+      if (owners.includes(user.id)) continue;
+      send(user.id, 'escalated', 'danger', `Escalated, ${-days} day(s) overdue: ${what}`,
+        `The deadline was ${due}. It is escalated to you because it is ${-days} day(s) overdue.`);
+    }
+  }
+  return raised;
+}
+
+/**
+ * Every dated obligation the platform holds: corrective actions, risk
+ * reviews, risk treatment target dates, risk acceptance expiries, control
+ * assessments and evidence collection. Escalation goes to the people whose
+ * permission covers the work, since the platform holds no reporting lines.
+ */
+export function sweepDeadlines(today = new Date()) {
+  const automation = getAutomation();
+  const common = { automation, today };
+  let raised = 0;
+  let examined = 0;
+
+  for (const a of q.all(`SELECT id, action_id, title, owner_id, due_date FROM corrective_actions
+      WHERE due_date IS NOT NULL AND status IN ('open','in_progress','blocked')`)) {
+    examined += 1;
+    raised += remindDeadline({
+      ...common, due: a.due_date, ownerIds: [a.owner_id], escalationPermission: 'action:verify',
+      key: `action:${a.id}`, entityType: 'action', entityId: a.id, url: '/actions',
+      what: `corrective action ${a.action_id} — ${a.title}`
+    });
+  }
+
+  for (const r of q.all(`SELECT id, risk_id, title, owner_id, action_owner_id, review_date, target_date, status,
+        accepted_at, accepted_by, acceptance_expires FROM risks WHERE status != 'closed'`)) {
+    examined += 1;
+    const url = `/risks?open=${r.id}`;
+    if (r.review_date && r.owner_id) {
+      raised += remindDeadline({
+        ...common, due: r.review_date, ownerIds: [r.owner_id], escalationPermission: 'settings:write',
+        key: `risk-review:${r.id}`, entityType: 'risk', entityId: r.id, url, what: `review of risk ${r.risk_id} — ${r.title}`
+      });
+    }
+    if (r.target_date && !['treated', 'accepted'].includes(r.status)) {
+      raised += remindDeadline({
+        ...common, due: r.target_date, ownerIds: [r.action_owner_id || r.owner_id], escalationPermission: 'settings:write',
+        key: `risk-treatment:${r.id}`, entityType: 'risk', entityId: r.id, url, what: `treatment of risk ${r.risk_id} — ${r.title}`
+      });
+    }
+    if (r.accepted_at && r.acceptance_expires) {
+      raised += remindDeadline({
+        ...common, due: r.acceptance_expires, ownerIds: [r.owner_id, r.accepted_by], escalationPermission: 'risk:accept',
+        key: `risk-acceptance:${r.id}`, entityType: 'risk', entityId: r.id, url, what: `acceptance of risk ${r.risk_id} — ${r.title}`
+      });
+    }
+  }
+
+  for (const c of q.all(`SELECT id, control_id, name, owner_id, next_assessment_date FROM controls
+      WHERE status != 'retired' AND owner_id IS NOT NULL AND next_assessment_date IS NOT NULL`)) {
+    examined += 1;
+    raised += remindDeadline({
+      ...common, due: c.next_assessment_date, ownerIds: [c.owner_id], escalationPermission: 'settings:write',
+      key: `control-assessment:${c.id}`, entityType: 'control', entityId: c.id, url: '/controls',
+      what: `assessment of control ${c.control_id} — ${c.name}`
+    });
+  }
+
+  // Evidence falls due one cycle after it was last collected, and is chased
+  // with the owner of the control it demonstrates.
+  for (const e of q.all(`SELECT e.id, e.evidence_id, e.name, e.frequency, e.last_collected, c.owner_id
+      FROM evidence e JOIN controls c ON c.id = e.control_id
+      WHERE c.owner_id IS NOT NULL AND e.last_collected IS NOT NULL AND c.status != 'retired'`)) {
+    const cycle = cycleDays(e.frequency);
+    if (!cycle) continue;
+    examined += 1;
+    const due = new Date(`${String(e.last_collected).slice(0, 10)}T00:00:00Z`);
+    due.setUTCDate(due.getUTCDate() + cycle);
+    raised += remindDeadline({
+      ...common, due: due.toISOString().slice(0, 10), ownerIds: [e.owner_id], escalationPermission: 'settings:write',
+      key: `evidence-due:${e.id}`, entityType: 'evidence', entityId: e.id, url: '/evidence',
+      what: `collection of evidence ${e.evidence_id} — ${e.name}`
+    });
+  }
+  return { examined, raised };
+}
+
 export function runSweeps() {
   const review = sweepReviewDue();
   const evidence = sweepEvidenceVerification();
-  return { review, evidence };
+  const deadlines = sweepDeadlines();
+  return { review, evidence, deadlines };
 }
 
 // ------------------------------------------------------------- scheduling ---
@@ -264,8 +393,8 @@ export function startSweepSchedule() {
   if (timer) return timer;
   try {
     const first = runSweeps();
-    if (first.review.raised || first.evidence.raised) {
-      console.log(`[AutGRC] Notifications raised at startup: ${first.review.raised} review, ${first.evidence.raised} evidence`);
+    if (first.review.raised || first.evidence.raised || first.deadlines.raised) {
+      console.log(`[AutGRC] Notifications raised at startup: ${first.review.raised} review, ${first.evidence.raised} evidence, ${first.deadlines.raised} deadline`);
     }
   } catch (err) {
     console.warn(`[AutGRC] Notification sweep failed: ${err.message}`);

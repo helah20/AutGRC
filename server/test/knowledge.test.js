@@ -23,10 +23,14 @@ function leafRequirements() {
   const out = [];
   for (const [code, list] of Object.entries(REQUIREMENTS)) {
     const refs = list.map((r) => String(r[0]));
+    const parents = new Set(list.map((r) => r[4]).filter(Boolean).map(String));
     for (const [ref, title, domain] of list) {
-      const isHeading = refs.some((other) =>
+      // A heading has rows beneath it: named as their parent, or sharing its
+      // ref as a prefix. A row with no domain (a definition, a penalty, a
+      // repealed article) states no obligation a control could meet.
+      const isHeading = parents.has(String(ref)) || refs.some((other) =>
         other !== ref && (other.startsWith(`${ref}-`) || other.startsWith(`${ref}.`)));
-      if (!isHeading) out.push({ code, ref, title, domain });
+      if (!isHeading && domain) out.push({ code, ref, title, domain });
     }
   }
   return out;

@@ -150,7 +150,7 @@ export default function Soa() {
               {
                 key: 'title', header: t('soa.columnControl'),
                 render: (r) => (<>
-                  <div className={`${r.level <= 2 ? 'cell-title' : ''} ltr-content`}>{r.title}</div>
+                  <div className={`${r.level <= 2 ? 'cell-title' : ''} source-text`} dir="auto">{r.title}</div>
                   {r.domain_label && <div className="cell-sub">{labels.domain(r.domain_key, r.domain_label)}</div>}
                 </>)
               },
@@ -249,7 +249,7 @@ function DecisionModal({ row, code, onClose, onSave }) {
       }>
       {row && (
         <div className="stack">
-          {row.statement && <p className="small muted ltr-content">{row.statement}</p>}
+          {row.statement && <p className="small muted source-text" dir="auto">{row.statement}</p>}
 
           {row.publication && (
             <div className="callout" data-callout="decision">

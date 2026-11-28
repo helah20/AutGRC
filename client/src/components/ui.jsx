@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, createContext, useContext, useCallback, useMemo, useId, Children, isValidElement, cloneElement } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import {
   IconX, IconCheck, IconAlert, IconInfo, IconChevronDown, IconSearch, IconChevronRight
 } from './Icons.jsx';
@@ -64,8 +65,8 @@ export function Card({ title, subtitle, actions, children, flush, footer, classN
 
 export function Kpi({ label, value, meta, tone, progress, to, onClick }) {
   const { formatNumber } = useI18n();
-  const Tag = to ? 'a' : onClick ? 'button' : 'div';
-  const props = to ? { href: to } : onClick ? { onClick, type: 'button' } : {};
+  const Tag = to ? Link : onClick ? 'button' : 'div';
+  const props = to ? { to } : onClick ? { onClick, type: 'button' } : {};
   return (
     <Tag className="kpi" style={Tag === 'button' ? { textAlign: 'start', font: 'inherit', cursor: 'pointer' } : undefined} {...props}>
       {tone && <span className={`kpi-accent ${tone}`} />}
@@ -383,12 +384,13 @@ export function ScoreRing({ score, size = 76 }) {
 }
 
 export function CoverageBar({ value, label }) {
+  const { formatPercent } = useI18n();
   const tone = value >= 80 ? 'ok' : value >= 50 ? 'warn' : 'danger';
   return (
     <div style={{ minWidth: 118 }}>
       <div className="between" style={{ marginBottom: 2 }}>
         {label && <span className="tiny muted">{label}</span>}
-        <span className="tiny strong">{value}%</span>
+        <span className="tiny strong">{formatPercent(value)}</span>
       </div>
       <div className={`meter ${tone}`}><span style={{ width: `${value}%` }} /></div>
     </div>

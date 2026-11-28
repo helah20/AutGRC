@@ -105,12 +105,17 @@ export function LanguageProvider({ children }) {
     (value, options) => new Intl.NumberFormat(locale, options).format(Number(value) || 0),
     [locale]
   );
+  /** A whole percentage: "١٠٠٪" in Arabic, "100%" in English. */
+  const formatPercent = useCallback(
+    (value) => new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format((Number(value) || 0) / 100),
+    [locale]
+  );
 
   const value = useMemo(() => ({
-    language, dir, locale, setLanguage, t, formatNumber,
+    language, dir, locale, setLanguage, t, formatNumber, formatPercent,
     isRtl: dir === 'rtl',
     languages: LANGUAGES
-  }), [language, dir, locale, setLanguage, t, formatNumber]);
+  }), [language, dir, locale, setLanguage, t, formatNumber, formatPercent]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

@@ -4,12 +4,31 @@
  * GOVERNANCE RULE (see docs/GOVERNANCE.md): entries in this file represent
  * *source* material — regulatory requirements and framework guidance. The
  * platform never generates entries here; the generation engine may only
- * reference them. Every record is stamped `source_status: 'reference'`,
- * meaning the identifier and title are reproduced as reference metadata for
- * mapping purposes and must be verified against the official publication
- * before being relied upon for audit or regulatory attestation. Customers
- * replace these with `user_imported` records from their licensed copies.
+ * reference them. A framework marked `officialText` holds its controls in the
+ * publisher's own words, taken from the official publication named in its
+ * catalogue file, and those rows are stamped `verified_official` and quoted in
+ * generated policies. Every other record is stamped `source_status:
+ * 'reference'`: the identifier and title are reference metadata for mapping and
+ * must be verified against the official publication before being relied upon.
+ * Customers replace either with `user_imported` records from their licensed
+ * copies, which the catalogue sync never overwrites.
  */
+
+import { ECC_2024_CONTROLS } from './catalogue/ecc-2024.js';
+import { CSCC_2026_CONTROLS } from './catalogue/cscc-2026.js';
+import { NCNICC_2025_CONTROLS } from './catalogue/ncnicc-2025.js';
+import { NIST_800_171_R3 } from './catalogue/nist-800-171r3.js';
+import { SOC2_TSC } from './catalogue/soc2-tsc.js';
+import { PDPL_ARTICLES } from './catalogue/sdaia-pdpl.js';
+import { HIPAA_SECURITY_RULE } from './catalogue/hipaa-security-rule.js';
+import { NCA_NCS_2020 } from './catalogue/nca-ncs-2020.js';
+import { SAMA_CSF_TEXT } from './catalogue/sama-csf-text.js';
+import { SAMA_ITGF } from './catalogue/sama-itgf.js';
+import { SAMA_BCM } from './catalogue/sama-bcm.js';
+import { OSMACC_2021_CONTROLS } from './catalogue/osmacc-2021.js';
+import { PCI_DSS_4 } from './catalogue/pci-dss-4.js';
+import { EU_GDPR } from './catalogue/eu-gdpr.js';
+import { ISO_27017 } from './catalogue/iso-27017.js';
 
 export const FRAMEWORKS = [
   {
@@ -29,18 +48,24 @@ export const FRAMEWORKS = [
     // ECC numbers its controls at the third and fourth levels; the first two are
     // domains and subdomains, so counting those would overstate what is held.
     controlLevels: [3, 4],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
     code: 'NCA-CSCC',
-    name: 'NCA Critical Systems Cybersecurity Controls (CSCC-1:2019)',
+    name: 'NCA Critical Systems Cybersecurity Controls (CSCC-2:2026)',
     publisher: 'National Cybersecurity Authority (Saudi Arabia)',
-    version: 'CSCC-1:2019',
+    version: 'CSCC-2:2026',
     kind: 'regulation',
     jurisdiction: 'Saudi Arabia',
     isMandatory: 1,
     description:
-      'Additional controls applicable to systems whose failure would have a significant national impact. Applied on top of the ECC.',
+      'Controls for systems whose failure would have a significant national impact, applied on top of the ECC. The 2026 edition supersedes CSCC-1:2019; the authority publishes it in Arabic only.',
+    // The publication's summary counts 32 main controls and 73 subcontrols;
+    // its body numbers 33 main controls (2-3-4 is the one beyond the count).
+    publishedControls: 106,
+    controlLevels: [3, 4],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -100,6 +125,24 @@ export const FRAMEWORKS = [
     isMandatory: 1,
     description:
       'Cybersecurity controls for an organisation\'s official social media accounts, applied on top of the ECC.',
+    publishedControls: 53,
+    controlLevels: [3, 4],
+    officialText: true,
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'NCA-NCNICC',
+    name: 'NCA Non-CNI Private Sector Entities Cybersecurity Controls (NCNICC-1:2025)',
+    publisher: 'National Cybersecurity Authority (Saudi Arabia)',
+    version: 'NCNICC-1:2025',
+    kind: 'regulation',
+    jurisdiction: 'Saudi Arabia',
+    isMandatory: 1,
+    description:
+      'Cybersecurity controls for private-sector entities that are not critical national infrastructure. Category A (large entities) is bound by all 65 main controls, category B (small and medium entities) by 26. The authority publishes it in Arabic only.',
+    publishedControls: 112,
+    controlLevels: [3, 4],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -112,6 +155,7 @@ export const FRAMEWORKS = [
     isMandatory: 1,
     description:
       'Cyber security framework for member organisations of the Saudi financial sector, organised in four domains with a defined maturity model.',
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -197,7 +241,7 @@ export const FRAMEWORKS = [
     jurisdiction: 'International',
     isMandatory: 0,
     description:
-      'Prioritised set of 18 safeguard groups for defending against the most prevalent attacks.',
+      'Prioritised set of 18 Controls, comprising 153 Safeguards grouped into Implementation Groups IG1 to IG3, for defending against the most prevalent attacks.',
     provenance: 'framework_guidance'
   },
   {
@@ -211,33 +255,170 @@ export const FRAMEWORKS = [
     description:
       'Governance framework for enterprise information and technology, comprising 40 governance and management objectives.',
     provenance: 'framework_guidance'
+  },
+  {
+    code: 'NIST-800-171',
+    name: "NIST SP 800-171 Rev. 3 — Protecting Controlled Unclassified Information",
+    publisher: "NIST",
+    version: "Rev. 3 (May 2024)",
+    kind: "framework",
+    jurisdiction: "United States",
+    isMandatory: 0,
+    description:
+      "Security requirements for protecting the confidentiality of Controlled Unclassified Information in nonfederal systems: 17 families and 97 requirements.",
+    publishedControls: 97,
+    controlLevels: [2],
+    officialText: true,
+    provenance: 'framework_guidance'
+  },
+  {
+    code: 'AICPA-SOC2',
+    name: "SOC 2 — AICPA Trust Services Criteria (2017, revised points of focus 2022)",
+    publisher: "AICPA",
+    version: "TSC 2017 (2022 points of focus)",
+    kind: "framework",
+    jurisdiction: "International",
+    isMandatory: 0,
+    description:
+      "Criteria a SOC 2 examination reports against: security (common criteria CC1 to CC9), availability, confidentiality, processing integrity and privacy. Held as identifiers and topic names; the criteria text is the AICPA's.",
+    publishedControls: 61,
+    controlLevels: [2],
+    provenance: 'framework_guidance'
+  },
+  {
+    code: 'SDAIA-PDPL',
+    name: "Saudi Personal Data Protection Law (PDPL)",
+    publisher: "Saudi Data & AI Authority (SDAIA)",
+    version: "Royal Decree M/19 (1443H), amended M/148 (1444H)",
+    kind: "regulation",
+    jurisdiction: "Saudi Arabia",
+    isMandatory: 1,
+    description:
+      "The Kingdom's law on the processing of personal data: data-subject rights, consent, purpose limitation, disclosure, retention, security, breach notification, transfer outside the Kingdom. Held in the official Arabic text.",
+    publishedControls: 43,
+    controlLevels: [1],
+    officialText: true,
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'HIPAA-SECURITY',
+    name: "HIPAA Security Rule (45 CFR Part 164, Subpart C)",
+    publisher: "U.S. Department of Health and Human Services",
+    version: "eCFR, amended to 19 Nov 2026",
+    kind: "regulation",
+    jurisdiction: "United States",
+    isMandatory: 0,
+    description:
+      "Administrative, physical and technical safeguards for electronic protected health information, with Required and Addressable implementation specifications.",
+    publishedControls: 61,
+    controlLevels: [2, 3],
+    officialText: true,
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'NCA-NCS',
+    name: "NCA National Cryptographic Standards (NCS-1:2020)",
+    publisher: "National Cybersecurity Authority (Saudi Arabia)",
+    version: "NCS-1:2020",
+    kind: "standard",
+    jurisdiction: "Saudi Arabia",
+    isMandatory: 1,
+    description:
+      "The accepted cryptographic algorithms, schemes, protocols, certificate parameters and key lifecycle requirements for national entities, at MODERATE and ADVANCED levels. ECC 2-8 and the other NCA controls refer to it.",
+    publishedControls: 30,
+    controlLevels: [2, 3],
+    officialText: true,
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'SAMA-ITGF',
+    name: "SAMA Information Technology Governance Framework",
+    publisher: "Saudi Central Bank (SAMA)",
+    version: "November 2021",
+    kind: "regulation",
+    jurisdiction: "Saudi Arabia",
+    isMandatory: 0,
+    description:
+      "IT governance requirements for SAMA-regulated Member Organizations: IT governance and leadership, IT risk management, operations management and system change management.",
+    publishedControls: 35,
+    controlLevels: [2],
+    officialText: true,
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'SAMA-BCM',
+    name: "SAMA Business Continuity Management Framework",
+    publisher: "Saudi Central Bank (SAMA)",
+    version: "1/6/1438H (27 Feb 2017)",
+    kind: "regulation",
+    jurisdiction: "Saudi Arabia",
+    isMandatory: 0,
+    description:
+      "Business continuity requirements for SAMA-regulated Member Organizations: governance, strategy, policy, BIA and risk assessment, BCP, IT DRP, cyber resilience, crisis management, testing, awareness, communication, review and assurance.",
+    publishedControls: 15,
+    controlLevels: [2, 3],
+    officialText: true,
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'PCI-DSS',
+    name: "PCI DSS v4.0.1 — Payment Card Industry Data Security Standard",
+    publisher: "PCI Security Standards Council",
+    version: "v4.0.1",
+    kind: "standard",
+    jurisdiction: "International",
+    isMandatory: 0,
+    description:
+      "Security requirements for any entity that stores, processes or transmits payment card account data. Held as the twelve principal requirements; the requirement text is released under the Council's licence.",
+    provenance: 'framework_guidance'
+  },
+  {
+    code: 'EU-GDPR',
+    name: "EU General Data Protection Regulation (GDPR)",
+    publisher: "European Union",
+    version: "Regulation (EU) 2016/679",
+    kind: "regulation",
+    jurisdiction: "European Union",
+    isMandatory: 0,
+    description:
+      "The EU regulation on the processing of personal data, for organisations that process the personal data of people in the European Union. Held as the articles that place obligations a control can meet, with their titles.",
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'ISO-27017',
+    name: "ISO/IEC 27017:2015 — Information security controls for cloud services",
+    publisher: "ISO/IEC",
+    version: "2015",
+    kind: "standard",
+    jurisdiction: "International",
+    isMandatory: 0,
+    description:
+      "Code of practice for cloud services. Held as the seven cloud-specific controls it adds to ISO/IEC 27002.",
+    provenance: 'framework_guidance'
   }
 ];
 
 /**
  * Requirement entries. `d` is the AutGRC domain key used for auto-mapping.
- * Tuple shape: [ref, title, domainKey, level, parentRef?]
+ * Tuple shape: [ref, title, domainKey, level, parentRef?, statement?]
+ * `statement` is the requirement's full wording where the catalogue holds it;
+ * without it the title is the statement.
  */
+/** Adds the publisher's text, keyed by ref, as each row's statement. */
+function withText(text, rows) {
+  return rows.map((row) => (text[row[0]] ? [row[0], row[1], row[2], row[3], row[4] ?? null, text[row[0]]] : row));
+}
+
 export const REQUIREMENTS = {
-  // ECC-2:2024. Titles are the publication's own words: subdomain titles, and the
-  // first sentence of each control (knowledge-base/frameworks). The rows are those
-  // the ECC-1:2018 catalogue held, renumbered where 2024 moved them.
+  // ECC-2:2024: the four domains and 28 subdomains here, and every main
+  // control and subcontrol from the publication (catalogue/ecc-2024.js).
   'NCA-ECC': [
     ['1', 'Cybersecurity Governance', 'governance', 1],
     ['1-1', 'Cybersecurity Strategy', 'governance', 2, '1'],
     ['1-2', 'Cybersecurity Management', 'governance', 2, '1'],
     ['1-3', 'Cybersecurity Policies and Procedures', 'governance', 2, '1'],
-    ['1-3-1', 'The cybersecurity department of the entity shall identify and document cybersecurity policies and procedures, including the cybersecurity controls and requirements, and have them approved by the entity’s Authorized…', 'governance', 3, '1-3'],
-    ['1-3-2', 'The cybersecurity department shall ensure that the cybersecurity policies and procedures, including the relevant controls and requirements, are implemented at the entity.', 'governance', 3, '1-3'],
-    ['1-3-3', 'The cybersecurity policies and procedures shall be supported by technical security standards (e.g. technical security standards for firewall, databases, operating systems, etc.).', 'governance', 3, '1-3'],
-    ['1-3-4', 'The cybersecurity policies and procedures shall be reviewed and updated at planned intervals (or in case of changes to the relevant legislative and regulatory requirements and standards).', 'governance', 3, '1-3'],
     ['1-4', 'Cybersecurity Roles and Responsibilities', 'governance', 2, '1'],
-    ['1-4-1', 'The Authorized Official shall identify, document, and approve the governance organizational structure, roles, and responsibilities of the entity’s cybersecurity, and assign the persons concerned therewith.', 'governance', 3, '1-4'],
-    ['1-4-2', 'The cybersecurity roles and responsibilities within the entity shall be reviewed and updated at planned intervals (or in case of changes to the relevant legislative and regulatory requirements).', 'governance', 3, '1-4'],
     ['1-5', 'Cybersecurity Risk Management', 'risk_management', 2, '1'],
-    ['1-5-1', 'The cybersecurity department of the entity shall identify, document, and approve the cybersecurity risk management methodology and procedures within the entity, in accordance with considerations of confidentiality, and…', 'risk_management', 3, '1-5'],
-    ['1-5-2', 'The cybersecurity department shall implement the cybersecurity risk management methodology and procedures within the entity.', 'risk_management', 3, '1-5'],
-    ['1-5-3', 'The cybersecurity risk assessment procedures shall be implemented at least in the following cases:', 'risk_management', 3, '1-5'],
     ['1-6', 'Cybersecurity in Information and Technology Project Management', 'change_management', 2, '1'],
     ['1-7', 'Compliance with Cybersecurity Standards, Laws and Regulations', 'governance', 2, '1'],
     ['1-8', 'Periodical Cybersecurity Review and Audit', 'governance', 2, '1'],
@@ -245,92 +426,38 @@ export const REQUIREMENTS = {
     ['1-10', 'Cybersecurity Awareness and Training Program', 'security_awareness', 2, '1'],
     ['2', 'Cybersecurity Defense', 'security_operations', 1],
     ['2-1', 'Asset Management', 'asset_management', 2, '2'],
-    ['2-1-1', 'Cybersecurity requirements for managing information and technology assets of the entity shall be identified, documented, and approved.', 'asset_management', 3, '2-1'],
-    ['2-1-2', 'Cybersecurity requirements for managing information and technology assets of the entity shall be implemented.', 'asset_management', 3, '2-1'],
-    ['2-1-3', 'The policy of acceptable use of information and technology assets of the entity shall be identified, documented, approved, and communicated.', 'asset_management', 3, '2-1'],
-    ['2-1-5', 'Information and technology assets of the entity shall be classified, labeled, and handled as per the relevant legislative and regulatory requirements.', 'asset_management', 3, '2-1'],
-    ['2-1-6', 'Cybersecurity requirements for managing information and technology assets of the entity shall be periodically reviewed.', 'asset_management', 3, '2-1'],
     ['2-2', 'Identity and Access Management', 'iam', 2, '2'],
-    ['2-2-1', 'Cybersecurity requirements for identity and access management of the entity shall be identified, documented, and approved.', 'iam', 3, '2-2'],
-    ['2-2-2', 'Cybersecurity requirements for identity and access management of the entity shall be implemented.', 'iam', 3, '2-2'],
-    ['2-2-3', 'Cybersecurity requirements for identity and access management of the entity shall include the following as a minimum:', 'iam', 3, '2-2'],
-    ['2-2-3-1', 'Single-factor authentication based on username and password.', 'iam', 4, '2-2-3'],
-    ['2-2-3-2', 'Multi-factor authentication, and defining the suitable authentication factors and their numbers as well as the suitable authentication techniques based on the result of impact assessment of authentication failure and…', 'iam', 4, '2-2-3'],
-    ['2-2-3-3', 'User authorization based on identity and access control principles (Need-to- Know and Need-to-Use principle, Least Privilege principle, and Segregation of Duties principle).', 'iam', 4, '2-2-3'],
-    ['2-2-3-4', 'Privileged access management.', 'pam', 4, '2-2-3'],
-    ['2-2-3-5', 'Periodic review of identities and access rights.', 'iam', 4, '2-2-3'],
-    ['2-2-4', 'The implementation of cybersecurity requirements for identity and access management of the entity shall be periodically reviewed.', 'iam', 3, '2-2'],
-    ['2-3', 'Information System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
-    ['2-3-1', 'Cybersecurity requirements for protection of information system and processing facilities of the entity shall be identified, documented, and approved.', 'endpoint_security', 3, '2-3'],
-    ['2-3-2', 'Cybersecurity requirements for protection of information systems and processing facilities of the entity shall be implemented.', 'endpoint_security', 3, '2-3'],
-    ['2-3-3', 'Cybersecurity requirements for protection of information systems and processing facilities of the entity shall include the following as a minimum:', 'endpoint_security', 3, '2-3'],
-    ['2-3-4', 'The implementation of cybersecurity requirements for protection of the information system and processing facilities of the entity shall be periodically reviewed.', 'endpoint_security', 3, '2-3'],
+    ['2-3', 'Information Systems and Information Processing Facilities Protection', 'endpoint_security', 2, '2'],
     ['2-4', 'Email Protection', 'email_security', 2, '2'],
-    ['2-4-1', 'Cybersecurity requirements for protection of the email service of the entity shall be identified, documented, and approved.', 'email_security', 3, '2-4'],
-    ['2-4-2', 'Cybersecurity requirements for protection of email service of the entity shall be implemented.', 'email_security', 3, '2-4'],
-    ['2-4-3', 'Cybersecurity requirements for protection of the email service of the entity shall include the following as a minimum:', 'email_security', 3, '2-4'],
-    ['2-4-3-1', 'Analyzing and filtering email messages (specifically phishing emails and spam emails) using modern and advanced email protection techniques and mechanisms.', 'email_security', 4, '2-4-3'],
-    ['2-4-3-2', 'Multi-factor authentication, and defining the suitable authentication factors and their numbers as well as the suitable authentication techniques based on the result of impact assessment of authentication failure and…', 'email_security', 4, '2-4-3'],
-    ['2-4-3-3', 'Email archiving and backup.', 'email_security', 4, '2-4-3'],
-    ['2-4-3-4', 'Secure management and protection against Advanced Persistent Threats (APT), which normally utilize zero-day malware and viruses.', 'email_security', 4, '2-4-3'],
-    ['2-4-3-5', 'Validation of the entity’s email service domains by using Sender Policy Framework (SPF), Domain Keys Identified Mail (DKIM), and Domain Message Authentication Reporting and Conformance (DMARC).', 'email_security', 4, '2-4-3'],
-    ['2-4-4', 'The implementation of cybersecurity requirements for email service of the entity shall be periodically reviewed.', 'email_security', 3, '2-4'],
     ['2-5', 'Networks Security Management', 'network_security', 2, '2'],
-    ['2-5-1', 'Cybersecurity requirements for the entity’s network security management shall be identified, documented, and approved.', 'network_security', 3, '2-5'],
-    ['2-5-3', 'Cybersecurity requirements for the entity’s network security management shall include the following as a minimum:', 'network_security', 3, '2-5'],
     ['2-6', 'Mobile Devices Security', 'endpoint_security', 2, '2'],
     ['2-7', 'Data and Information Protection', 'data_protection', 2, '2'],
-    ['2-7-1', 'Cybersecurity requirements for protecting and handling data and information of the entity shall be identified, documented, and approved, as per the relevant legislative and regulatory requirements.', 'data_protection', 3, '2-7'],
-    ['2-7-2', 'Cybersecurity requirements for protecting data and information of the entity shall be implemented, based on its classification level.', 'data_protection', 3, '2-7'],
     ['2-8', 'Cryptography', 'cryptography', 2, '2'],
-    ['2-8-1', 'Cybersecurity requirements for cryptography within the entity shall be identified, documented, and approved.', 'cryptography', 3, '2-8'],
-    ['2-8-3', 'Cybersecurity requirements for cryptography shall include at least the requirements in the National Cryptographic Standards, published by NCA.', 'cryptography', 3, '2-8'],
     ['2-9', 'Backup and Recovery Management', 'backup_recovery', 2, '2'],
-    ['2-9-1', 'Cybersecurity requirements for backup and recovery management within the entity shall be identified, documented, and approved.', 'backup_recovery', 3, '2-9'],
-    ['2-9-3', 'Cybersecurity requirements for backup and recovery management shall include the following as a minimum:', 'backup_recovery', 3, '2-9'],
-    ['2-10', 'Vulnerabilities Management', 'vulnerability_management', 2, '2'],
-    ['2-10-1', 'Cybersecurity requirements for technical vulnerabilities management within the entity shall be identified, documented, and approved.', 'vulnerability_management', 3, '2-10'],
-    ['2-10-2', 'Cybersecurity requirements for technical vulnerabilities management within the entity shall be implemented.', 'vulnerability_management', 3, '2-10'],
-    ['2-10-3', 'Cybersecurity requirements for technical vulnerabilities management shall include the following as a minimum:', 'vulnerability_management', 3, '2-10'],
+    ['2-10', 'Vulnerability Management', 'vulnerability_management', 2, '2'],
     ['2-11', 'Penetration Testing', 'vulnerability_management', 2, '2'],
     ['2-12', 'Cybersecurity Event Logs and Monitoring Management', 'logging_monitoring', 2, '2'],
-    ['2-12-1', 'Cybersecurity requirements for cybersecurity event logs and monitoring management within the entity shall be identified, documented, and approved.', 'logging_monitoring', 3, '2-12'],
-    ['2-12-2', 'Cybersecurity requirements for cybersecurity event logs and monitoring management within the entity shall be implemented.', 'logging_monitoring', 3, '2-12'],
-    ['2-12-3', 'Cybersecurity requirements for cybersecurity event logs and monitoring management shall include the following as a minimum:', 'logging_monitoring', 3, '2-12'],
     ['2-13', 'Cybersecurity Incident and Threat Management', 'incident_management', 2, '2'],
-    ['2-13-1', 'Requirements for cybersecurity incident and threat management within the entity shall be identified, documented, and approved.', 'incident_management', 3, '2-13'],
-    ['2-13-2', 'Requirements for cybersecurity incident and threat management within the entity shall be implemented.', 'incident_management', 3, '2-13'],
-    ['2-13-3', 'Requirements for cybersecurity incident and threat management shall include the following as a minimum:', 'incident_management', 3, '2-13'],
     ['2-14', 'Physical Security', 'physical_security', 2, '2'],
     ['2-15', 'Web Application Security', 'application_security', 2, '2'],
     ['3', 'Cybersecurity Resilience', 'business_continuity', 1],
     ['3-1', 'Cybersecurity Resilience Aspects of Business Continuity Management (BCM)', 'business_continuity', 2, '3'],
-    ['3-1-1', 'Cybersecurity requirements for business continuity management within the entity shall be identified, documented, and approved.', 'business_continuity', 3, '3-1'],
-    ['3-1-3', 'Cybersecurity requirements for business continuity management within the entity shall include the following as a minimum:', 'disaster_recovery', 3, '3-1'],
     ['4', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
     ['4-1', 'Third-Party Cybersecurity', 'third_party', 2, '4'],
-    ['4-1-1', 'Cybersecurity requirements for the entity’s contracts and agreements with third parties shall be identified, documented, and approved.', 'third_party', 3, '4-1'],
-    ['4-1-2', 'Cybersecurity requirements for contracts and agreements with third parties, e.g. Service Level Agreement (SLA), which, if impaired, may affect the entity\'s data or services shall include the following as a minimum:', 'third_party', 3, '4-1'],
-    ['4-1-3', 'Cybersecurity requirements for contracts and agreements with third parties providing IT or cybersecurity outsourcing or managed services shall include the following as a minimum:', 'third_party', 3, '4-1'],
     ['4-2', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '4'],
-    ['4-2-1', 'Cybersecurity requirements for use of cloud computing and hosting services shall be identified, documented, and approved.', 'cloud_security', 3, '4-2'],
-    ['4-2-3', 'In accordance with the relevant legislative and regulatory requirements, and in addition to the applicable controls in the Main Domains (1), (2), and (3) and Subdomain (4.1) that are necessary to protect the entity’s…', 'cloud_security', 3, '4-2']
+    ...ECC_2024_CONTROLS
   ],
-
-  // CSCC, DCC, TCC and CCC: domain and subdomain titles as printed in the NCA
-  // publications (knowledge-base/frameworks). Only subdomain level is held;
-  // the controls beneath them come from an import of the licensed copy.
   'NCA-CSCC': [
     ['1', 'Cybersecurity Governance', 'governance', 1],
     ['1-1', 'Cybersecurity Strategy', 'governance', 2, '1'],
     ['1-2', 'Cybersecurity Risk Management', 'risk_management', 2, '1'],
-    ['1-3', 'Cybersecurity in Information Technology Project Management', 'secure_sdlc', 2, '1'],
-    ['1-4', 'Periodical Cybersecurity Review and Audit', 'governance', 2, '1'],
+    ['1-3', 'Cybersecurity in Information Technology Projects', 'secure_sdlc', 2, '1'],
+    ['1-4', 'Cybersecurity Periodical Assessment and Audit', 'governance', 2, '1'],
     ['1-5', 'Cybersecurity in Human Resources', 'hr_security', 2, '1'],
     ['2', 'Cybersecurity Defense', 'security_operations', 1],
     ['2-1', 'Asset Management', 'asset_management', 2, '2'],
     ['2-2', 'Identity and Access Management', 'iam', 2, '2'],
-    ['2-3', 'Information System and Information Processing Facilities Protection', 'endpoint_security', 2, '2'],
+    ['2-3', 'Information System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
     ['2-4', 'Networks Security Management', 'network_security', 2, '2'],
     ['2-5', 'Mobile Devices Security', 'endpoint_security', 2, '2'],
     ['2-6', 'Data and Information Protection', 'data_protection', 2, '2'],
@@ -345,7 +472,8 @@ export const REQUIREMENTS = {
     ['3-1', 'Cybersecurity Resilience Aspects of Business Continuity Management (BCM)', 'business_continuity', 2, '3'],
     ['4', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
     ['4-1', 'Third-Party Cybersecurity', 'third_party', 2, '4'],
-    ['4-2', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '4']
+    ['4-2', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '4'],
+    ...CSCC_2026_CONTROLS
   ],
 
   'NCA-DCC': [
@@ -448,6 +576,34 @@ export const REQUIREMENTS = {
     ['4-1', 'Third-Party Cybersecurity', 'third_party', 2, '4']
   ],
 
+  'NCA-NCNICC': [
+    ['1', 'Cybersecurity Governance', 'governance', 1],
+    ['1-1', 'Cybersecurity Management', 'governance', 2, '1'],
+    ['1-2', 'Cybersecurity Policies and Procedures', 'governance', 2, '1'],
+    ['1-3', 'Cybersecurity Risk Management', 'risk_management', 2, '1'],
+    ['1-4', 'Periodical Cybersecurity Review and Audit', 'governance', 2, '1'],
+    ['1-5', 'Cybersecurity Awareness and Training Program', 'security_awareness', 2, '1'],
+    ['2', 'Cybersecurity Defense', 'security_operations', 1],
+    ['2-1', 'Asset Management', 'asset_management', 2, '2'],
+    ['2-2', 'Identity and Access Management', 'iam', 2, '2'],
+    ['2-3', 'Information System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
+    ['2-4', 'Email Protection', 'email_security', 2, '2'],
+    ['2-5', 'Networks Security Management', 'network_security', 2, '2'],
+    ['2-6', 'Mobile Devices Security', 'endpoint_security', 2, '2'],
+    ['2-7', 'Data and Information Protection', 'data_protection', 2, '2'],
+    ['2-8', 'Cryptography', 'cryptography', 2, '2'],
+    ['2-9', 'Backup and Recovery Management', 'backup_recovery', 2, '2'],
+    ['2-10', 'Vulnerabilities Management', 'vulnerability_management', 2, '2'],
+    ['2-11', 'Penetration Testing', 'vulnerability_management', 2, '2'],
+    ['2-12', 'Cybersecurity Event Logs and Monitoring Management', 'logging_monitoring', 2, '2'],
+    ['2-13', 'Cybersecurity Incident and Threat Management', 'incident_management', 2, '2'],
+    ['2-14', 'Physical Security', 'physical_security', 2, '2'],
+    ['2-15', 'Web Application Security', 'application_security', 2, '2'],
+    ['3', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
+    ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3'],
+    ['3-2', 'Cloud Computing and Hosting Cybersecurity', 'cloud_security', 2, '3'],
+    ...NCNICC_2025_CONTROLS
+  ],
   'NCA-OSMACC': [
     ['1', 'Cybersecurity Governance', 'governance', 1],
     ['1-1', 'Cybersecurity Policies and Procedures', 'governance', 2, '1'],
@@ -460,13 +616,14 @@ export const REQUIREMENTS = {
     ['2-3', 'Information System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
     ['2-4', 'Mobile Device Security', 'endpoint_security', 2, '2'],
     ['2-5', 'Data and Information Protection', 'data_protection', 2, '2'],
-    ['2-6', 'Cybersecurity Events Logs and Monitoring Management', 'social_media_security', 2, '2'],
+    ['2-6', 'Cybersecurity Events Logs and Monitoring Management', 'logging_monitoring', 2, '2'],
     ['2-7', 'Cybersecurity Incident and Threat Management', 'incident_management', 2, '2'],
     ['3', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
-    ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3']
+    ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3'],
+    ...OSMACC_2021_CONTROLS
   ],
 
-  'SAMA-CSF': [
+  'SAMA-CSF': withText(SAMA_CSF_TEXT, [
     ['1', 'Cyber Security Leadership and Governance', 'governance', 1],
     ['1.1', 'Cyber Security Governance', 'governance', 2, '1'],
     ['1.2', 'Cyber Security Strategy', 'governance', 2, '1'],
@@ -503,7 +660,7 @@ export const REQUIREMENTS = {
     ['4.1', 'Contract and Vendor Management', 'third_party', 2, '4'],
     ['4.2', 'Outsourcing', 'third_party', 2, '4'],
     ['4.3', 'Cloud Computing', 'cloud_security', 2, '4']
-  ],
+  ]),
 
   'ISO-27001': [
     ['4', 'Context of the organization', 'governance', 1],
@@ -814,7 +971,17 @@ export const REQUIREMENTS = {
     ['MEA02', 'Managed System of Internal Control', 'governance', 1],
     ['MEA03', 'Managed Compliance With External Requirements', 'governance', 1],
     ['MEA04', 'Managed Assurance', 'governance', 1]
-  ]
+  ],
+  'NIST-800-171': [...NIST_800_171_R3],
+  'AICPA-SOC2': [...SOC2_TSC],
+  'SDAIA-PDPL': [...PDPL_ARTICLES],
+  'HIPAA-SECURITY': [...HIPAA_SECURITY_RULE],
+  'NCA-NCS': [...NCA_NCS_2020],
+  'SAMA-ITGF': [...SAMA_ITGF],
+  'SAMA-BCM': [...SAMA_BCM],
+  'PCI-DSS': [...PCI_DSS_4],
+  'EU-GDPR': [...EU_GDPR],
+  'ISO-27017': [...ISO_27017]
 };
 
 /**
