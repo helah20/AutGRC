@@ -25,8 +25,9 @@ are missing), **Missing**.
 | | Current risk (after existing controls), control effectiveness, risk source, action owner, target date, last and next review | Built (increment 1) |
 | | Configurable methodology (scales, matrix, appetite, review cycles) | Built (increment 1) |
 | | Separate enterprise, cyber and operational registers | Partial: one register with categories and domains |
-| Compliance | Framework library (NCA ECC, CCC, DCC, CSCC, TCC, OTCC, OSMACC, NCNICC, SAMA CSF, ISO/IEC 27001, 27002, 27005, ISO 22301, NIST CSF, 800-53, CIS v8, COBIT) | Built (reference text; publishers' full text imported under licence) |
-| | Full control text from the official NCA publications: ECC-2:2024 (English edition), CSCC-2:2026 and NCNICC-1:2025 (published in Arabic only, held in Arabic) | Built |
+| Compliance | Framework library: Saudi (NCA ECC, CCC, DCC, CSCC, TCC, OTCC, OSMACC, NCNICC, NCS; SAMA CSF, IT Governance, BCM; SDAIA PDPL) and international (ISO/IEC 27001, 27002, 27005, ISO 22301, NIST CSF, 800-53, 800-171, CIS v8, COBIT, SOC 2, HIPAA Security Rule) | Built (reference text; publishers' full text imported under licence) |
+| | Full control text from the official publications: ECC-2:2024 (English edition), CSCC-2:2026 and NCNICC-1:2025 (Arabic only), NCS-1:2020, SAMA CSF, ITGF and BCM, PDPL (Arabic), NIST SP 800-171 r3, HIPAA Security Rule. SOC 2 held as criterion identifiers with topic names (the AICPA text needs an account) | Built |
+| | Still to add: GDPR (EUR-Lex blocks automated access), PCI DSS v4.0.1 (needs one more host), CSA CCM v4, ISO/IEC 27701, 27017, 27018, CST Cybersecurity Regulatory Framework | Missing |
 | | Cross-framework mapping and crosswalks, one control answering many frameworks | Built |
 | | Gap assessment, Statement of Applicability, evidence with collection and verification | Built |
 | | Control owner (a person), design and operating effectiveness, last and next assessment | Built (increment 1) |

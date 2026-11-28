@@ -14,6 +14,14 @@
 import { ECC_2024_CONTROLS } from './catalogue/ecc-2024.js';
 import { CSCC_2026_CONTROLS } from './catalogue/cscc-2026.js';
 import { NCNICC_2025_CONTROLS } from './catalogue/ncnicc-2025.js';
+import { NIST_800_171_R3 } from './catalogue/nist-800-171r3.js';
+import { SOC2_TSC } from './catalogue/soc2-tsc.js';
+import { PDPL_ARTICLES } from './catalogue/sdaia-pdpl.js';
+import { HIPAA_SECURITY_RULE } from './catalogue/hipaa-security-rule.js';
+import { NCA_NCS_2020 } from './catalogue/nca-ncs-2020.js';
+import { SAMA_CSF_TEXT } from './catalogue/sama-csf-text.js';
+import { SAMA_ITGF } from './catalogue/sama-itgf.js';
+import { SAMA_BCM } from './catalogue/sama-bcm.js';
 
 export const FRAMEWORKS = [
   {
@@ -233,6 +241,104 @@ export const FRAMEWORKS = [
     description:
       'Governance framework for enterprise information and technology, comprising 40 governance and management objectives.',
     provenance: 'framework_guidance'
+  },
+  {
+    code: 'NIST-800-171',
+    name: "NIST SP 800-171 Rev. 3 — Protecting Controlled Unclassified Information",
+    publisher: "NIST",
+    version: "Rev. 3 (May 2024)",
+    kind: "framework",
+    jurisdiction: "United States",
+    isMandatory: 0,
+    description:
+      "Security requirements for protecting the confidentiality of Controlled Unclassified Information in nonfederal systems: 17 families and 97 requirements.",
+    publishedControls: 97,
+    controlLevels: [2],
+    provenance: 'framework_guidance'
+  },
+  {
+    code: 'AICPA-SOC2',
+    name: "SOC 2 — AICPA Trust Services Criteria (2017, revised points of focus 2022)",
+    publisher: "AICPA",
+    version: "TSC 2017 (2022 points of focus)",
+    kind: "framework",
+    jurisdiction: "International",
+    isMandatory: 0,
+    description:
+      "Criteria a SOC 2 examination reports against: security (common criteria CC1 to CC9), availability, confidentiality, processing integrity and privacy. Held as identifiers and topic names; the criteria text is the AICPA's.",
+    publishedControls: 61,
+    controlLevels: [2],
+    provenance: 'framework_guidance'
+  },
+  {
+    code: 'SDAIA-PDPL',
+    name: "Saudi Personal Data Protection Law (PDPL)",
+    publisher: "Saudi Data & AI Authority (SDAIA)",
+    version: "Royal Decree M/19 (1443H), amended M/148 (1444H)",
+    kind: "regulation",
+    jurisdiction: "Saudi Arabia",
+    isMandatory: 1,
+    description:
+      "The Kingdom's law on the processing of personal data: data-subject rights, consent, purpose limitation, disclosure, retention, security, breach notification, transfer outside the Kingdom. Held in the official Arabic text.",
+    publishedControls: 43,
+    controlLevels: [1],
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'HIPAA-SECURITY',
+    name: "HIPAA Security Rule (45 CFR Part 164, Subpart C)",
+    publisher: "U.S. Department of Health and Human Services",
+    version: "eCFR, amended to 19 Nov 2026",
+    kind: "regulation",
+    jurisdiction: "United States",
+    isMandatory: 0,
+    description:
+      "Administrative, physical and technical safeguards for electronic protected health information, with Required and Addressable implementation specifications.",
+    publishedControls: 61,
+    controlLevels: [2, 3],
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'NCA-NCS',
+    name: "NCA National Cryptographic Standards (NCS-1:2020)",
+    publisher: "National Cybersecurity Authority (Saudi Arabia)",
+    version: "NCS-1:2020",
+    kind: "standard",
+    jurisdiction: "Saudi Arabia",
+    isMandatory: 1,
+    description:
+      "The accepted cryptographic algorithms, schemes, protocols, certificate parameters and key lifecycle requirements for national entities, at MODERATE and ADVANCED levels. ECC 2-8 and the other NCA controls refer to it.",
+    publishedControls: 30,
+    controlLevels: [2, 3],
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'SAMA-ITGF',
+    name: "SAMA Information Technology Governance Framework",
+    publisher: "Saudi Central Bank (SAMA)",
+    version: "November 2021",
+    kind: "regulation",
+    jurisdiction: "Saudi Arabia",
+    isMandatory: 0,
+    description:
+      "IT governance requirements for SAMA-regulated Member Organizations: IT governance and leadership, IT risk management, operations management and system change management.",
+    publishedControls: 35,
+    controlLevels: [2],
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'SAMA-BCM',
+    name: "SAMA Business Continuity Management Framework",
+    publisher: "Saudi Central Bank (SAMA)",
+    version: "1/6/1438H (27 Feb 2017)",
+    kind: "regulation",
+    jurisdiction: "Saudi Arabia",
+    isMandatory: 0,
+    description:
+      "Business continuity requirements for SAMA-regulated Member Organizations: governance, strategy, policy, BIA and risk assessment, BCP, IT DRP, cyber resilience, crisis management, testing, awareness, communication, review and assurance.",
+    publishedControls: 15,
+    controlLevels: [2, 3],
+    provenance: 'regulatory_requirement'
   }
 ];
 
@@ -242,6 +348,11 @@ export const FRAMEWORKS = [
  * `statement` is the requirement's full wording where the catalogue holds it;
  * without it the title is the statement.
  */
+/** Adds the publisher's text, keyed by ref, as each row's statement. */
+function withText(text, rows) {
+  return rows.map((row) => (text[row[0]] ? [row[0], row[1], row[2], row[3], row[4] ?? null, text[row[0]]] : row));
+}
+
 export const REQUIREMENTS = {
   // ECC-2:2024: the four domains and 28 subdomains here, and every main
   // control and subcontrol from the publication (catalogue/ecc-2024.js).
@@ -455,7 +566,7 @@ export const REQUIREMENTS = {
     ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3']
   ],
 
-  'SAMA-CSF': [
+  'SAMA-CSF': withText(SAMA_CSF_TEXT, [
     ['1', 'Cyber Security Leadership and Governance', 'governance', 1],
     ['1.1', 'Cyber Security Governance', 'governance', 2, '1'],
     ['1.2', 'Cyber Security Strategy', 'governance', 2, '1'],
@@ -492,7 +603,7 @@ export const REQUIREMENTS = {
     ['4.1', 'Contract and Vendor Management', 'third_party', 2, '4'],
     ['4.2', 'Outsourcing', 'third_party', 2, '4'],
     ['4.3', 'Cloud Computing', 'cloud_security', 2, '4']
-  ],
+  ]),
 
   'ISO-27001': [
     ['4', 'Context of the organization', 'governance', 1],
@@ -803,7 +914,14 @@ export const REQUIREMENTS = {
     ['MEA02', 'Managed System of Internal Control', 'governance', 1],
     ['MEA03', 'Managed Compliance With External Requirements', 'governance', 1],
     ['MEA04', 'Managed Assurance', 'governance', 1]
-  ]
+  ],
+  'NIST-800-171': [...NIST_800_171_R3],
+  'AICPA-SOC2': [...SOC2_TSC],
+  'SDAIA-PDPL': [...PDPL_ARTICLES],
+  'HIPAA-SECURITY': [...HIPAA_SECURITY_RULE],
+  'NCA-NCS': [...NCA_NCS_2020],
+  'SAMA-ITGF': [...SAMA_ITGF],
+  'SAMA-BCM': [...SAMA_BCM]
 };
 
 /**
