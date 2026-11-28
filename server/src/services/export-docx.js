@@ -101,7 +101,7 @@ export const FURNITURE = {
     author: 'Author',
     change: 'Change',
     initialIssue: 'Initial issue',
-    changeLabel: { generated: 'First draft', published: 'Approved and published' },
+    changeLabel: { generated: 'First draft', published: 'Approved and published', regenerated: 'Updated to the current content' },
     actionLabel: {
       submitted: 'Submitted', approved: 'Approved', published: 'Published', returned: 'Returned',
       rejected: 'Rejected', retired: 'Retired', revised: 'Opened for revision', reopened: 'Opened for revision'
@@ -153,7 +153,7 @@ export const FURNITURE = {
     author: 'المُعِد',
     change: 'التغيير',
     initialIssue: 'الإصدار الأول',
-    changeLabel: { generated: 'المسودة الأولى', published: 'اعتُمدت ونُشرت' },
+    changeLabel: { generated: 'المسودة الأولى', published: 'اعتُمدت ونُشرت', regenerated: 'حُدِّثت إلى المحتوى الحالي' },
     contents: 'المحتويات',
     organisation: 'المنظمة',
     actionLabel: {

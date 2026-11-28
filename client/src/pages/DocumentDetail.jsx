@@ -355,6 +355,25 @@ export default function DocumentDetail() {
         </div>
       </div>
 
+      {doc.generation_meta?.updateAvailable && (
+        // The platform's content has improved since this controlled document
+        // was approved. Its text does not change on its own; applying the
+        // update opens a revision that is approved like any other.
+        <div className="callout" data-callout="note">
+          <strong>{t('documentDetailUi.updateTitle')}</strong>
+          <p>{t('documentDetailUi.updateBody')}</p>
+          {can('document:update') && doc.status === 'published' && (
+            <button className="btn btn-primary btn-sm" onClick={async () => {
+              try {
+                const res = await api.post(`/documents/${id}/refresh`, {});
+                toast.success(t('documentDetailUi.updateApplied'), t('documentDetailUi.updateAppliedBody', { count: res.changed }));
+                reload();
+              } catch (err) { toast.error(t('documentDetailUi.updateFailed'), err.message); }
+            }}>{t('documentDetailUi.updateApply')}</button>
+          )}
+        </div>
+      )}
+
       {doc.language && doc.language !== language && (() => {
         // The reader works in one language and this document is in the other.
         const counterpart = (data.otherLanguages || []).find((d) => d.language === language);

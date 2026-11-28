@@ -23,6 +23,7 @@ import {
   applicableRefs, defaultResponsible, defaultAccountable, PROVENANCE, POLICY_STATEMENTS_SECTION
 } from './doc-builders.js';
 import { loadRegulatoryText } from './regulatory-text.js';
+import { contentRevision } from './content-revision.js';
 import { indexDocument, indexControl, indexRole, indexEvidence, indexRaciActivity } from './search.js';
 
 export const DOC_TYPE_PREFIX = {
@@ -256,7 +257,10 @@ export function generatePackage(opts) {
         // commitments (routes/exports.js).
         parameterOverrides,
         assumptions,
-        docTypes: ordered
+        docTypes: ordered,
+        // What the text was built from, so a later improvement can rebuild it
+        // (services/refresh.js).
+        contentRevision: contentRevision()
       };
 
       q.run(

@@ -5,3 +5,6 @@ server/data/
 .env
 .DS_Store
 .vite/
+
+# Documents exported for review; regenerated from the platform on demand.
+review/
