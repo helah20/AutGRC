@@ -49,7 +49,7 @@ export const ACCESS_DOMAINS = {
           'Monthly HR-to-directory reconciliation report',
           'Register of approved shared-account exceptions with compensating controls'
         ],
-        refs: { 'NCA-ECC': ['2-2-1', '2-2-3-1'], 'ISO-27001': ['A.5.16'], 'NIST-CSF': ['PR.AA-01'], 'NIST-800-53': ['IA-2'], 'CIS-V8': ['5.1', '6.7'], 'SAMA-CSF': ['3.5'], 'NIST-800-171': ['03.01.01', '03.01.03', '03.01.06', '03.01.07', '03.01.08', '03.01.10', '03.05.01', '03.05.02', '03.05.05', '03.05.12'], 'AICPA-SOC2': ['CC6.2'], 'HIPAA-SECURITY': ['164.308(a)(5)(ii)(D)', '164.312(a)(2)(i)'] }
+        refs: { 'NCA-ECC': ['2-2-1', '2-2-3-1'], 'ISO-27001': ['A.5.16'], 'NIST-CSF': ['PR.AA-01'], 'NIST-800-53': ['IA-2'], 'CIS-V8': ['5.1', '6.7'], 'SAMA-CSF': ['3.5'], 'NIST-800-171': ['03.01.01', '03.01.03', '03.01.06', '03.01.07', '03.01.08', '03.01.10', '03.05.01', '03.05.02', '03.05.05', '03.05.12'], 'AICPA-SOC2': ['CC6.2'], 'HIPAA-SECURITY': ['164.308(a)(5)(ii)(D)', '164.312(a)(2)(i)'], 'PCI-DSS': ['8'] }
       },
       {
         key: 'access_authorisation',
@@ -70,7 +70,7 @@ export const ACCESS_DOMAINS = {
           'Role-to-entitlement catalogue (current version)',
           'Sample reconciliation of granted entitlements against approvals'
         ],
-        refs: { 'NCA-ECC': ['2-2-3-3', '2-2-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-1'], 'NCA-OTCC': ['2-2'], 'NCA-CSCC': ['2-2-1-8'], 'NCA-NCNICC': ['2-2-1-3', '2-2-2', '2-2-3'], 'NIST-800-171': ['03.01.02', '03.01.04', '03.01.09', '03.01.18'], 'AICPA-SOC2': ['CC6.1', 'CC6.3'] }
+        refs: { 'NCA-ECC': ['2-2-3-3', '2-2-3'], 'ISO-27001': ['A.5.15', 'A.5.18', 'A.8.3'], 'NIST-CSF': ['PR.AA-05'], 'NIST-800-53': ['AC-3', 'AC-6'], 'CIS-V8': ['6.8'], 'SAMA-CSF': ['3.5'], 'NCA-DCC': ['2-1'], 'NCA-OTCC': ['2-2'], 'NCA-CSCC': ['2-2-1-8'], 'NCA-NCNICC': ['2-2-1-3', '2-2-2', '2-2-3'], 'NIST-800-171': ['03.01.02', '03.01.04', '03.01.09', '03.01.18'], 'AICPA-SOC2': ['CC6.1', 'CC6.3'], 'PCI-DSS': ['7'] }
       },
       {
         key: 'segregation_of_duties',

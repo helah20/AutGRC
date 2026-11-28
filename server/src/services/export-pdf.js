@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
 import { htmlToBlocks, runsToText } from './html-to-blocks.js';
 import { exportHeading } from './export-layout.js';
-import { lastReviewed, FURNITURE, CLASSIFICATION_AR, CLASSIFICATION_LABEL } from './export-docx.js';
+import { lastReviewed, FURNITURE, CLASSIFICATION_AR, CLASSIFICATION_LABEL, controlRoles } from './export-docx.js';
 import { bidiRuns, visualOrder, mirrorBrackets, paragraphDirection } from './bidi.js';
 import { currentBrand, fitWithin } from './brand.js';
 import { arDomainName } from '../knowledge/index.js';
@@ -239,8 +239,7 @@ export function buildPdf(data) {
     [L.version, doc.version],
     [L.status, statusLabel(doc.status)],
     [L.classification, classification],
-    [L.owner, owner?.name ? `${owner.name}${owner.job_title ? `${sep}${owner.job_title}` : ''}` : L.notAssigned],
-    [L.approver, approver?.name ? `${approver.name}${approver.job_title ? `${sep}${approver.job_title}` : ''}` : L.notAssigned],
+    ...controlRoles({ doc, owner, approver, L, lang, sep }),
     [L.effective, doc.effective_date || L.onApproval],
     // Publication sets the next review a year out (routes/documents.js), so the
     // cycle stated here is the one the platform enforces.

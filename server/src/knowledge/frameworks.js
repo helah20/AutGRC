@@ -4,11 +4,14 @@
  * GOVERNANCE RULE (see docs/GOVERNANCE.md): entries in this file represent
  * *source* material — regulatory requirements and framework guidance. The
  * platform never generates entries here; the generation engine may only
- * reference them. Every record is stamped `source_status: 'reference'`,
- * meaning the identifier and title are reproduced as reference metadata for
- * mapping purposes and must be verified against the official publication
- * before being relied upon for audit or regulatory attestation. Customers
- * replace these with `user_imported` records from their licensed copies.
+ * reference them. A framework marked `officialText` holds its controls in the
+ * publisher's own words, taken from the official publication named in its
+ * catalogue file, and those rows are stamped `verified_official` and quoted in
+ * generated policies. Every other record is stamped `source_status:
+ * 'reference'`: the identifier and title are reference metadata for mapping and
+ * must be verified against the official publication before being relied upon.
+ * Customers replace either with `user_imported` records from their licensed
+ * copies, which the catalogue sync never overwrites.
  */
 
 import { ECC_2024_CONTROLS } from './catalogue/ecc-2024.js';
@@ -22,6 +25,10 @@ import { NCA_NCS_2020 } from './catalogue/nca-ncs-2020.js';
 import { SAMA_CSF_TEXT } from './catalogue/sama-csf-text.js';
 import { SAMA_ITGF } from './catalogue/sama-itgf.js';
 import { SAMA_BCM } from './catalogue/sama-bcm.js';
+import { OSMACC_2021_CONTROLS } from './catalogue/osmacc-2021.js';
+import { PCI_DSS_4 } from './catalogue/pci-dss-4.js';
+import { EU_GDPR } from './catalogue/eu-gdpr.js';
+import { ISO_27017 } from './catalogue/iso-27017.js';
 
 export const FRAMEWORKS = [
   {
@@ -41,6 +48,7 @@ export const FRAMEWORKS = [
     // ECC numbers its controls at the third and fourth levels; the first two are
     // domains and subdomains, so counting those would overstate what is held.
     controlLevels: [3, 4],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -57,6 +65,7 @@ export const FRAMEWORKS = [
     // its body numbers 33 main controls (2-3-4 is the one beyond the count).
     publishedControls: 106,
     controlLevels: [3, 4],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -116,6 +125,9 @@ export const FRAMEWORKS = [
     isMandatory: 1,
     description:
       'Cybersecurity controls for an organisation\'s official social media accounts, applied on top of the ECC.',
+    publishedControls: 53,
+    controlLevels: [3, 4],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -130,6 +142,7 @@ export const FRAMEWORKS = [
       'Cybersecurity controls for private-sector entities that are not critical national infrastructure. Category A (large entities) is bound by all 65 main controls, category B (small and medium entities) by 26. The authority publishes it in Arabic only.',
     publishedControls: 112,
     controlLevels: [3, 4],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -142,6 +155,7 @@ export const FRAMEWORKS = [
     isMandatory: 1,
     description:
       'Cyber security framework for member organisations of the Saudi financial sector, organised in four domains with a defined maturity model.',
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -254,6 +268,7 @@ export const FRAMEWORKS = [
       "Security requirements for protecting the confidentiality of Controlled Unclassified Information in nonfederal systems: 17 families and 97 requirements.",
     publishedControls: 97,
     controlLevels: [2],
+    officialText: true,
     provenance: 'framework_guidance'
   },
   {
@@ -282,6 +297,7 @@ export const FRAMEWORKS = [
       "The Kingdom's law on the processing of personal data: data-subject rights, consent, purpose limitation, disclosure, retention, security, breach notification, transfer outside the Kingdom. Held in the official Arabic text.",
     publishedControls: 43,
     controlLevels: [1],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -296,6 +312,7 @@ export const FRAMEWORKS = [
       "Administrative, physical and technical safeguards for electronic protected health information, with Required and Addressable implementation specifications.",
     publishedControls: 61,
     controlLevels: [2, 3],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -310,6 +327,7 @@ export const FRAMEWORKS = [
       "The accepted cryptographic algorithms, schemes, protocols, certificate parameters and key lifecycle requirements for national entities, at MODERATE and ADVANCED levels. ECC 2-8 and the other NCA controls refer to it.",
     publishedControls: 30,
     controlLevels: [2, 3],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -324,6 +342,7 @@ export const FRAMEWORKS = [
       "IT governance requirements for SAMA-regulated Member Organizations: IT governance and leadership, IT risk management, operations management and system change management.",
     publishedControls: 35,
     controlLevels: [2],
+    officialText: true,
     provenance: 'regulatory_requirement'
   },
   {
@@ -338,7 +357,44 @@ export const FRAMEWORKS = [
       "Business continuity requirements for SAMA-regulated Member Organizations: governance, strategy, policy, BIA and risk assessment, BCP, IT DRP, cyber resilience, crisis management, testing, awareness, communication, review and assurance.",
     publishedControls: 15,
     controlLevels: [2, 3],
+    officialText: true,
     provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'PCI-DSS',
+    name: "PCI DSS v4.0.1 — Payment Card Industry Data Security Standard",
+    publisher: "PCI Security Standards Council",
+    version: "v4.0.1",
+    kind: "standard",
+    jurisdiction: "International",
+    isMandatory: 0,
+    description:
+      "Security requirements for any entity that stores, processes or transmits payment card account data. Held as the twelve principal requirements; the requirement text is released under the Council's licence.",
+    provenance: 'framework_guidance'
+  },
+  {
+    code: 'EU-GDPR',
+    name: "EU General Data Protection Regulation (GDPR)",
+    publisher: "European Union",
+    version: "Regulation (EU) 2016/679",
+    kind: "regulation",
+    jurisdiction: "European Union",
+    isMandatory: 0,
+    description:
+      "The EU regulation on the processing of personal data, for organisations that process the personal data of people in the European Union. Held as the articles that place obligations a control can meet, with their titles.",
+    provenance: 'regulatory_requirement'
+  },
+  {
+    code: 'ISO-27017',
+    name: "ISO/IEC 27017:2015 — Information security controls for cloud services",
+    publisher: "ISO/IEC",
+    version: "2015",
+    kind: "standard",
+    jurisdiction: "International",
+    isMandatory: 0,
+    description:
+      "Code of practice for cloud services. Held as the seven cloud-specific controls it adds to ISO/IEC 27002.",
+    provenance: 'framework_guidance'
   }
 ];
 
@@ -560,10 +616,11 @@ export const REQUIREMENTS = {
     ['2-3', 'Information System and Processing Facilities Protection', 'endpoint_security', 2, '2'],
     ['2-4', 'Mobile Device Security', 'endpoint_security', 2, '2'],
     ['2-5', 'Data and Information Protection', 'data_protection', 2, '2'],
-    ['2-6', 'Cybersecurity Events Logs and Monitoring Management', 'social_media_security', 2, '2'],
+    ['2-6', 'Cybersecurity Events Logs and Monitoring Management', 'logging_monitoring', 2, '2'],
     ['2-7', 'Cybersecurity Incident and Threat Management', 'incident_management', 2, '2'],
     ['3', 'Third-Party and Cloud Computing Cybersecurity', 'third_party', 1],
-    ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3']
+    ['3-1', 'Third-Party Cybersecurity', 'third_party', 2, '3'],
+    ...OSMACC_2021_CONTROLS
   ],
 
   'SAMA-CSF': withText(SAMA_CSF_TEXT, [
@@ -921,7 +978,10 @@ export const REQUIREMENTS = {
   'HIPAA-SECURITY': [...HIPAA_SECURITY_RULE],
   'NCA-NCS': [...NCA_NCS_2020],
   'SAMA-ITGF': [...SAMA_ITGF],
-  'SAMA-BCM': [...SAMA_BCM]
+  'SAMA-BCM': [...SAMA_BCM],
+  'PCI-DSS': [...PCI_DSS_4],
+  'EU-GDPR': [...EU_GDPR],
+  'ISO-27017': [...ISO_27017]
 };
 
 /**

@@ -142,6 +142,20 @@ export function withLanguage(language, build) {
 
 function scopeBody(model, params, org) {
   const env = Array.isArray(org?.technology_env) ? org.technology_env : [];
+  // A domain that states its own estate is scoped to it. Listing the whole
+  // technology stack in, say, a social media policy put the core banking
+  // system and the database estate in scope of a document that governs
+  // neither.
+  if (model.scope?.length) {
+    return joinBlocks(
+      h.p(TP('scope.appliesToDomain',
+        `This document applies to all ${params.orgName} employees, contractors, consultants, temporary staff and third parties who manage, operate, support or have access to the assets of the ${model.name} domain.`,
+        { org: params.orgName, domain: model.name })),
+      h.p(TP('scope.domainLead', 'It covers:')),
+      h.ul(model.scope.map((item) => resolveText(item, params))),
+      h.p(TP('scope.conflict', 'Where a requirement in this document conflicts with a legal or regulatory obligation, the legal or regulatory obligation prevails and the conflict shall be recorded as an exception.'))
+    );
+  }
   return joinBlocks(
     h.p(TP('scope.appliesTo',
       `This document applies to all ${params.orgName} employees, contractors, consultants, temporary staff and third parties who access, operate or support information systems within the ${model.name} domain.`,
@@ -157,6 +171,36 @@ function scopeBody(model, params, org) {
     ]),
     h.p(TP('scope.conflict', 'Where a requirement in this document conflicts with a legal or regulatory obligation, the legal or regulatory obligation prevails and the conflict shall be recorded as an exception.'))
   );
+}
+
+// ------------------------------------------------------------ sources -----
+
+/** What kind of source a framework is: a regulation binds, a standard guides. */
+function sourceType(f) {
+  return f.provenance === 'regulatory_requirement' || f.kind === 'regulation'
+    ? TP('provenance.regulatory', 'Regulatory requirement')
+    : TP('provenance.international', 'International standard or framework');
+}
+
+/**
+ * References in three kinds, never mixed: regulatory requirements the
+ * organisation must meet, implementation guides that explain how to meet
+ * them, and international standards and frameworks it has adopted.
+ */
+function referenceGroups(cited, model) {
+  const comma = activeT.isRtl ? '، ' : ', ';
+  const line = (f) => `${fwName(f)} — ${fwPublisher(f)}${f.version ? `${comma}${f.version}` : ''}`;
+  const regulatory = cited.filter((f) => f.provenance === 'regulatory_requirement' || f.kind === 'regulation');
+  const international = cited.filter((f) => !regulatory.includes(f));
+  const guides = (model.guides || []).filter((g) => !g.implements || cited.some((f) => f.code === g.implements));
+  return [
+    regulatory.length ? h.p(TP('references.regulatory', 'Regulatory requirements:')) : '',
+    regulatory.length ? h.ul(regulatory.map(line)) : '',
+    guides.length ? h.p(TP('references.guides', 'Implementation guides (explain how to apply the requirements; not requirements themselves):')) : '',
+    guides.length ? h.ul(guides.map((g) => `${g.name} — ${(activeT.isRtl && g.publisherAr) || g.publisher}`)) : '',
+    international.length ? h.p(TP('references.international', 'International standards and frameworks:')) : '',
+    international.length ? h.ul(international.map(line)) : ''
+  ];
 }
 
 // -------------------------------------------------------------- policy -----
@@ -175,8 +219,9 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
     req: r,
     regulatory: regulatoryClauses(r, regulatory, used, activeT.language)
   }));
-  const quoted = clauses.flatMap((c) => c.regulatory.filter((x) => !x.missing));
+  const quoted = clauses.flatMap((c) => c.regulatory.filter((x) => !x.missing && !x.arabicOnly));
   const missing = clauses.flatMap((c) => c.regulatory.filter((x) => x.missing));
+  const arabicOnly = clauses.flatMap((c) => c.regulatory.filter((x) => x.arabicOnly));
   const englishOnly = quoted.filter((x) => x.englishOnly);
 
   const statementsBody = `<ol class="clause-list">${clauses
@@ -184,7 +229,7 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
       const own = `<li><span class="clause-ref">${escapeHtml(c.ref)}</span> <strong>${escapeHtml(c.req.title)}.</strong> `
         + `${escapeHtml(c.text)} `
         + `<span class="clause-source">[${escapeHtml(refLabel(applicableRefs(c.req, frameworkCodes)))}]</span></li>`;
-      const subs = c.regulatory.filter((x) => !x.missing).map((x, j) =>
+      const subs = c.regulatory.filter((x) => !x.missing && !x.arabicOnly).map((x, j) =>
         `<li class="subclause"><span class="clause-ref">${escapeHtml(`${c.ref}.${j + 1}`)}</span> `
         + `${escapeHtml(x.text)} <span class="clause-source">[${escapeHtml(`${x.framework} ${x.ref}`)}]</span></li>`);
       return own + subs.join('');
@@ -198,6 +243,12 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
           `${englishOnly.length} regulatory control(s) are quoted in English because the publisher's Arabic text has not been imported: ${englishOnly.map((x) => `${x.framework} ${x.ref}`).join(', ')}.`,
           { count: englishOnly.length, list: englishOnly.map((x) => `${x.framework} ${x.ref}`).join('، ') }))
       : '',
+    arabicOnly.length
+      ? h.callout('note', TP('policy.arabicOnlyTitle', 'Regulatory text published in Arabic only'),
+        TP('policy.arabicOnlyBody',
+          `${arabicOnly.length} cited regulatory control(s) are published by the regulator in Arabic only and are quoted in full in the Arabic edition of this Policy: ${arabicOnly.map((x) => `${x.framework} ${x.ref}`).join(', ')}.`,
+          { count: arabicOnly.length, list: arabicOnly.map((x) => `${x.framework} ${x.ref}`).join('، ') }))
+      : '',
     missing.length
       ? h.callout('warn', TP('policy.missingTitle', 'Regulatory controls cited without their text'),
         TP('policy.missingBody',
@@ -205,6 +256,13 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
           { count: missing.length, list: missing.map((x) => `${x.framework} ${x.ref}`).join('، ') }))
       : ''
   ];
+
+  // The sources this Policy cites. An adopted framework this domain never
+  // refers to (CSCC in a social media policy) adds nothing a reader can act on.
+  const citedCodes = new Set(reqs.flatMap((r) => applicableRefs(r, frameworkCodes)).map((x) => x.framework));
+  const cited = frameworks.filter((f) => citedCodes.has(f.code));
+  const omitted = frameworks.filter((f) => !citedCodes.has(f.code));
+  const unadopted = (model.principal || []).filter((code) => frameworkCodes.length && !frameworkCodes.includes(code));
 
   const roleRows = model.roles.map((code) => {
     const acts = model.raciActivities.filter((a) => a.assign[code] === 'A').map((a) => a.activity);
@@ -263,17 +321,22 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
           h.ul([
             TP('governance.owner', 'The Chief Information Security Officer owns this Policy and is accountable for its adequacy.'),
             TP('governance.approver', 'The Cybersecurity Steering Committee approves this Policy and any material amendment to it.'),
-            TP('governance.maintainer', 'The Cybersecurity GRC Manager maintains the Policy, its supporting Standard and Procedure, and the control library that implements it.'),
+            TP('governance.custodian', 'The Cybersecurity GRC Manager is the document custodian: maintains the Policy, its supporting Standard and Procedure and the control library that implements it, and measures compliance with them.'),
             TP('governance.reporting', 'Control performance is reported to the Cybersecurity Steering Committee on the agreed reporting cycle.'),
             TP('governance.assurance', 'Internal Audit provides independent assurance over the controls implementing this Policy.')
           ]),
-          // The four document roles NCA's policy templates name, so an
-          // auditor used to those templates finds them where they expect.
+          // One set of document roles, named the same way in document control,
+          // so the owner, the custodian and the approver never disagree
+          // between the cover page and this section.
           h.table([T('Document role'), T('Assigned to')], [
             [TP('governance.roleOwner', 'Policy owner'), RN('ciso')],
-            [TP('governance.roleReview', 'Policy review and update'), RN('grc_manager')],
+            [TP('governance.roleCustodian', 'Document custodian'), RN('grc_manager')],
+            [TP('governance.roleApprover', 'Policy approver'), TP('governance.committee', 'Cybersecurity Steering Committee')],
+            ...(model.roles.includes('business_owner')
+              ? [[TP('governance.roleBusiness', 'Business owner'), RN('business_owner')]] : []),
             [TP('governance.roleImplement', 'Policy implementation and execution'), implementers(model).map(RN).join(activeT.language === 'ar' ? '، ' : ', ')],
-            [TP('governance.roleCompliance', 'Policy compliance measurement'), RN('grc_manager')]
+            [TP('governance.roleCompliance', 'Policy compliance measurement'), RN('grc_manager')],
+            [TP('governance.roleAssurance', 'Independent assurance'), RN('internal_auditor')]
           ])
         ), P.POLICY, []),
 
@@ -282,12 +345,23 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
           h.p(TP('compliance.mandatory', 'Compliance with this Policy is mandatory. Compliance is assessed through control testing, internal review and independent audit.')),
           h.p(TP('compliance.sourcesLead', 'This Policy supports compliance with the following authoritative sources:')),
           h.table([TP('compliance.colSource', 'Source'), TP('compliance.colType', 'Type'), TP('compliance.colRequirements', 'Referenced requirements')],
-            frameworks.map((f) => [
+            cited.map((f) => [
               fwName(f),
-              f.kind === 'regulation' ? TP('provenance.regulatory', 'Regulatory requirement') : TP('provenance.framework', 'Framework guidance'),
+              sourceType(f),
               refLabel(reqs.flatMap((r) => applicableRefs(r, [f.code])))
-            ]))
-        ), P.FRAMEWORK, frameworkCodes.map((c) => ({ type: 'framework', framework: c }))),
+            ])),
+          unadopted.length
+            ? h.callout('warn', TP('compliance.principalTitle', 'The regulation written for this domain is not adopted'),
+              TP('compliance.principalBody',
+                `${unadopted.join(', ')} sets the controls for this domain, but the organisation profile does not list it among the adopted sources, so this Policy cannot cite its controls. Adopt it under Settings and regenerate, or record why it does not apply.`,
+                { list: unadopted.join('، ') }))
+            : '',
+          omitted.length
+            ? h.p(TP('compliance.omitted',
+              `Adopted sources this Policy does not cite are not listed: ${omitted.map((f) => f.code).join(', ')}.`,
+              { list: omitted.map((f) => f.code).join('، ') }))
+            : ''
+        ), P.FRAMEWORK, cited.map((f) => ({ type: 'framework', framework: f.code }))),
 
       section('exceptions', 'Exceptions',
         joinBlocks(
@@ -295,6 +369,9 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
           h.ul([
             TP('exceptions.record', 'Exception requests shall record the requirement not met, the business reason, the compensating controls in place and the residual risk.'),
             TP('exceptions.approve', 'Exceptions shall be approved by the Chief Information Security Officer, and by the Cybersecurity Steering Committee where the residual risk is rated Critical.'),
+            TP('exceptions.independent', 'An exception shall never be approved by the person responsible for implementing the control alone; the approval shall come from a party independent of its implementation.'),
+            TP('exceptions.scope', 'Exceptions cover administrative and organisational controls as well as technical ones.'),
+            TP('exceptions.regulatory', 'No exception shall be approved that would breach a mandatory legal or regulatory requirement, unless the competent regulator has expressly permitted it.'),
             TP('exceptions.expiry', 'Exceptions shall carry an expiry date not exceeding 12 months and shall be re-evaluated on expiry rather than automatically renewed.'),
             TP('exceptions.register', 'All exceptions in force shall be recorded in the exception register and reported to the Cybersecurity Steering Committee.')
           ])
@@ -318,7 +395,7 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
             TP('review.incident', 'A cybersecurity incident of high or critical severity within this domain.'),
             TP('review.auditFinding', 'An audit or assessment finding showing that the Policy does not achieve its objectives.')
           ]),
-          h.p(TP('review.owner', 'The Document Owner is responsible for initiating the review and the approving authority for reissuing the Policy.'))
+          h.p(TP('review.policyOwner', 'The Policy owner initiates the review through the document custodian, and the Policy approver reissues the Policy.'))
         ), P.POLICY, []),
 
       section('enforcement', 'Enforcement',
@@ -340,8 +417,7 @@ export function buildPolicy({ model, params, org, frameworkCodes, frameworks, re
             TP('references.classification', 'Information Classification and Handling Standard'),
             TP('references.incident', 'Cybersecurity Incident Management Procedure')
           ]),
-          h.p(TP('references.sourcesLead', 'Authoritative sources:')),
-          h.ul(frameworks.map((f) => `${fwName(f)} — ${fwPublisher(f)}${f.version ? `, ${f.version}` : ''}`))
+          ...referenceGroups(cited, model)
         ), P.POLICY, [])
     ]
   };

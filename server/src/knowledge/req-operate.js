@@ -242,7 +242,7 @@ export const OPERATE_DOMAINS = {
         risk: 'Statutory notification deadlines are missed, attracting regulatory sanction independently of the incident itself.',
         riskRating: 'critical',
         evidence: ['Notification register with timestamps and approvals', 'Copies of notifications issued', 'Verified regulator contact list'],
-        refs: { 'NCA-ECC': ['2-13-3', '2-13-3-3'], 'ISO-27001': ['A.5.5', 'A.5.24'], 'NIST-800-53': ['IR-6'], 'NIST-CSF': ['RS.CO'], 'SAMA-CSF': ['3.15'], 'NCA-NCNICC': ['2-13-1-2'], 'NIST-800-171': ['03.06.02'], 'SDAIA-PDPL': ['20'] } },
+        refs: { 'NCA-ECC': ['2-13-3', '2-13-3-3'], 'ISO-27001': ['A.5.5', 'A.5.24'], 'NIST-800-53': ['IR-6'], 'NIST-CSF': ['RS.CO'], 'SAMA-CSF': ['3.15'], 'NCA-NCNICC': ['2-13-1-2'], 'NIST-800-171': ['03.06.02'], 'SDAIA-PDPL': ['20'], 'EU-GDPR': ['Art.33'] } },
       { key: 'threat_intelligence', title: 'Threat intelligence and information sharing',
         policy: 'Threat intelligence relevant to {{orgName}} shall be collected, assessed and used to inform detection, response and risk decisions.',
         standard: 'Intelligence sources shall include the national authority, sector sharing communities and commercial feeds where subscribed. Actionable indicators shall be deployed to detection tooling, and relevant advisories assessed for applicability within 2 business days of receipt.',
@@ -275,7 +275,7 @@ export const OPERATE_DOMAINS = {
         risk: 'Uncoordinated disclosure misstates the facts, compounding regulatory and reputational damage.',
         riskRating: 'medium',
         evidence: ['Communication log per incident', 'Approved spokesperson designation', 'Out-of-band channel test records'],
-        refs: { 'NIST-CSF': ['RS.CO'], 'ISO-27001': ['A.5.24'], 'NCA-ECC': ['2-13-3'] } }
+        refs: { 'NIST-CSF': ['RS.CO'], 'ISO-27001': ['A.5.24'], 'NCA-ECC': ['2-13-3'], 'EU-GDPR': ['Art.34'] } }
     ],
     procedure: {
       purpose: 'To define the end-to-end handling of cybersecurity events and incidents at {{orgName}}, from detection through to closure and improvement.',
@@ -345,7 +345,7 @@ export const OPERATE_DOMAINS = {
         risk: 'Vulnerability handling is inconsistent and unmeasurable, so exposure cannot be demonstrated to be under control.',
         riskRating: 'high',
         evidence: ['Approved vulnerability management process document', 'Severity model and remediation service levels', 'Scope statement covering asset classes'],
-        refs: { 'NCA-ECC': ['2-10-1', '2-10-3', '2-10-2', '2-10-4', '2-10-3-5'], 'ISO-27001': ['A.8.8'], 'CIS-V8': ['7.1'], 'NIST-800-53': ['RA-5'], 'SAMA-CSF': ['3.17'], 'NCA-NCNICC': ['2-10-2', '2-10-3'] } },
+        refs: { 'NCA-ECC': ['2-10-1', '2-10-3', '2-10-2', '2-10-4', '2-10-3-5'], 'ISO-27001': ['A.8.8'], 'CIS-V8': ['7.1'], 'NIST-800-53': ['RA-5'], 'SAMA-CSF': ['3.17'], 'NCA-NCNICC': ['2-10-2', '2-10-3'], 'PCI-DSS': ['11'] } },
       { key: 'vuln_scanning', title: 'Vulnerability discovery and scanning',
         policy: 'Technical vulnerabilities shall be identified through regular automated scanning of all in-scope assets.',
         standard: 'Internal scanning shall run {{internalScanFrequency}}, external perimeter scanning {{externalScanFrequency}}, and authenticated scanning {{authenticatedScanFrequency}}. Scan coverage shall reach {{scanCoverageTarget}}, reconciled against the asset inventory. Assets excluded from scanning shall be recorded with justification and a compensating control.',

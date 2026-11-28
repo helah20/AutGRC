@@ -47,6 +47,18 @@ const force = process.argv.includes('--force');
  * reference rows are touched; requirements imported from the organisation's
  * licensed copy are never removed or rewritten.
  */
+/**
+ * The status a shipped catalogue row carries. A framework marked
+ * `officialText` holds its controls in the publisher's own words, taken from
+ * the official publication, so those rows are quoted in generated policies;
+ * every other row is reference metadata compiled for mapping.
+ */
+export function shippedStatus(f, level, title, statement) {
+  if (!f.officialText || !statement) return 'reference';
+  const isControl = f.controlLevels ? f.controlLevels.includes(level) : statement !== title;
+  return isControl ? 'verified_official' : 'reference';
+}
+
 export function syncCatalogue() {
   seedFrameworks();
   let changed = 0;
@@ -58,7 +70,7 @@ export function syncCatalogue() {
       f.name, f.version, f.publisher, fw.id, f.name, f.version, f.publisher
     ).changes;
     const current = new Set((REQUIREMENTS[f.code] || []).map((r) => r[0]));
-    for (const row of q.all(`SELECT id, ref FROM framework_requirements WHERE framework_id = ? AND source_status = 'reference'`, fw.id)) {
+    for (const row of q.all(`SELECT id, ref FROM framework_requirements WHERE framework_id = ? AND source_status != 'user_imported'`, fw.id)) {
       if (!current.has(row.ref)) changed += q.run('DELETE FROM framework_requirements WHERE id = ?', row.id).changes;
     }
   }
@@ -73,10 +85,16 @@ export function syncCatalogueDomains() {
     // The catalogue's own description of a framework, corrected in the
     // knowledge base, reaches installations already seeded.
     changed += q.run('UPDATE frameworks SET description = ? WHERE id = ? AND description != ?', f.description, fw.id, f.description).changes;
-    for (const [ref, title, domainKey, , , statement] of REQUIREMENTS[f.code] || []) {
+    for (const [ref, title, domainKey, level, , statement] of REQUIREMENTS[f.code] || []) {
+      const status = shippedStatus(f, level, title, statement);
+      changed += q.run(
+        `UPDATE framework_requirements SET source_status = ?
+          WHERE framework_id = ? AND ref = ? AND source_status != 'user_imported' AND source_status != ?`,
+        status, fw.id, ref, status
+      ).changes;
       changed += q.run(
         `UPDATE framework_requirements SET domain_key = ?
-          WHERE framework_id = ? AND ref = ? AND source_status = 'reference' AND COALESCE(domain_key, '') != ?`,
+          WHERE framework_id = ? AND ref = ? AND source_status != 'user_imported' AND COALESCE(domain_key, '') != ?`,
         domainKey || null, fw.id, ref, domainKey || ''
       ).changes;
       // A reference title corrected in the catalogue (to the publication's
@@ -84,7 +102,7 @@ export function syncCatalogueDomains() {
       // from the organisation's licensed copy is never touched.
       changed += q.run(
         `UPDATE framework_requirements SET title = ?, statement = ?
-          WHERE framework_id = ? AND ref = ? AND source_status = 'reference' AND (title != ? OR statement != ?)`,
+          WHERE framework_id = ? AND ref = ? AND source_status != 'user_imported' AND (title != ? OR statement != ?)`,
         title, statement || title, fw.id, ref, title, statement || title
       ).changes;
     }
@@ -160,7 +178,7 @@ export function seedFrameworks() {
           `INSERT INTO framework_requirements (id, framework_id, ref, parent_ref, title, statement, domain_key, level, provenance, source_status, created_at)
            VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
           reqId, fwId, ref, parentRef || null, title, statement || title, domainKey || null, level || 1,
-          f.provenance || 'framework_guidance', 'reference', at
+          f.provenance || 'framework_guidance', shippedStatus(f, level || 1, title, statement), at
         );
         indexFrameworkRequirement(
           { id: reqId, ref, title, statement: title, domain_key: domainKey }, f.code
@@ -237,7 +255,7 @@ export function seedOrg() {
     // Saudi bank is bound by the NCA controls and the SAMA framework, and is
     // working towards ISO/IEC 27001; the rest of the catalogue stays available
     // for mapping without being cited as though the organisation had adopted it.
-    toJson(['NCA-ECC', 'NCA-CSCC', 'NCA-DCC', 'NCA-TCC', 'NCA-CCC', 'SAMA-CSF', 'ISO-27001', 'ISO-22301']),
+    toJson(['NCA-ECC', 'NCA-CSCC', 'NCA-DCC', 'NCA-TCC', 'NCA-CCC', 'NCA-OSMACC', 'SAMA-CSF', 'ISO-27001', 'ISO-22301']),
     at
   );
   return q.get('SELECT * FROM org_profile WHERE id = 1');

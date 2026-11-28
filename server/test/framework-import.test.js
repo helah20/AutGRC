@@ -227,7 +227,9 @@ test('a file holding several publications imports only the one asked for', async
 test('a Policy quotes the imported regulatory text under the clause that cites it', async () => {
   const { previewPackage } = await import('../src/services/generator.js');
   const build = (language) => previewPackage({
-    domainKey: 'governance', docTypes: ['policy'], frameworkCodes: ['NCA-ECC', 'NCA-CSCC'],
+    // NCA-TCC is held by reference only, so its controls are listed rather
+    // than quoted; the ECC and CSCC are held in the publishers' own words.
+    domainKey: 'governance', docTypes: ['policy'], frameworkCodes: ['NCA-ECC', 'NCA-CSCC', 'NCA-TCC'],
     org: { org_name: 'Test Org' }, language
   }).documents[0].sections.find((s) => s.key === 'statements').body;
 
