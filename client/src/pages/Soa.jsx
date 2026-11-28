@@ -26,7 +26,7 @@ const IMPLEMENTATION_TONE = {
  */
 export default function Soa() {
   const labels = useLabels();
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, language } = useI18n();
   const toast = useToast();
   const { can } = useAuth();
   const [code, setCode] = useState('ISO-27001');
@@ -150,7 +150,7 @@ export default function Soa() {
               {
                 key: 'title', header: t('soa.columnControl'),
                 render: (r) => (<>
-                  <div className={`${r.level <= 2 ? 'cell-title' : ''} source-text`} dir="auto">{r.title}</div>
+                  <div className={`${r.level <= 2 ? 'cell-title' : ''} source-text`} dir="auto">{(language === 'ar' && r.level > 2 && r.statement_ar) || r.title}</div>
                   {r.domain_label && <div className="cell-sub">{labels.domain(r.domain_key, r.domain_label)}</div>}
                 </>)
               },

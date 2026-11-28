@@ -123,3 +123,37 @@ test('the quality engine flags a policy made before these rules', async () => {
   assert.deepEqual(checkPolicyDesign({ doc: { ...doc, generation_meta: JSON.stringify({ frameworks: ['NCA-ECC', 'NCA-OSMACC', 'ISO-27001'] }) }, sections: generated }), [],
     'a policy generated now passes its own design rules');
 });
+
+test('an Arabic policy quotes the ECC in its Arabic wording', () => {
+  const doc = previewPackage({ domainKey: 'iam', docTypes: ['policy'], frameworkCodes: ['NCA-ECC'], org, language: 'ar' }).documents[0];
+  const statements = doc.sections.find((s) => s.key === 'statements').body;
+  assert.match(statements, /التحقق من الهوية أحادي العنصر \(Single-factor authentication\)[^<]*<span class="clause-source">\[NCA-ECC 2-2-3-1\]/);
+  assert.doesNotMatch(statements, /data-callout="note"/, 'no ECC control is left in English');
+});
+
+test('every ECC control carries Arabic text, and the two renumbered ones carry the right text', async () => {
+  const { ECC_2024_CONTROLS } = await import('../src/knowledge/catalogue/ecc-2024.js');
+  assert.equal(ECC_2024_CONTROLS.filter((r) => r[6]?.ar).length, 200);
+  const ar = Object.fromEntries(ECC_2024_CONTROLS.map((r) => [r[0], r[6].ar]));
+  assert.match(ar['1-7-1'], /اتفاقيات أو التزامات دولية/, 'English 1-7-1 is the international agreements control');
+  assert.match(ar['2-7-3'], /مراجعة تطبيق متطلبات الأمن السيبراني لحماية بيانات/, 'English 2-7-3 is the periodic review');
+});
+
+test('the NCNICC category decides which controls a policy states as recommended', () => {
+  const statements = (category) => previewPackage({
+    // NCNICC is published in Arabic only, so it is quoted in the Arabic policy.
+    domainKey: 'iam', docTypes: ['policy'], frameworkCodes: ['NCA-NCNICC'], org: { ...org, ncnicc_category: category }, language: 'ar'
+  }).documents[0].sections.find((s) => s.key === 'statements').body;
+  assert.match(statements('B'), /موصى به، وليس ملزماً، للفئة \(ب\)/);
+  assert.doesNotMatch(statements('A'), /موصى به، وليس ملزماً/);
+  assert.match(statements(null), /حدّد فئة الجهة في ملف المنظمة/);
+});
+
+test('a cloud tenant\'s policy does not quote the provider controls', () => {
+  const body = previewPackage({
+    domainKey: 'cloud_security', docTypes: ['policy'], frameworkCodes: ['NCA-CCC'], org: { ...org, cloud_roles: ['CST'] }, language: 'en'
+  }).documents[0].sections.find((s) => s.key === 'statements').body;
+  assert.doesNotMatch(body, /class="subclause">[^]*?\[NCA-CCC \d-\d+-P-/);
+  assert.match(body, /\[NCA-CCC \d-\d+-T-/);
+  assert.match(body, /Cloud controls for the other party are not quoted/);
+});
